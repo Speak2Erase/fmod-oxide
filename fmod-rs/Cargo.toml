@@ -1,9 +1,10 @@
 [package]
 name = "fmod-rs"
-version = "0.1.0"
+version = "2.2.20"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fmod-sys = { version = "0.1.0", path = "../fmod-sys" }
+bitflags = "2.4.2"
+fmod-sys = { version = "2.2.20", path = "../fmod-sys" }

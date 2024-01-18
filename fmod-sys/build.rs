@@ -17,6 +17,8 @@ fn main() {
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .clang_arg(format!("-I{api_dir_display}/core/inc"))
         .clang_arg(format!("-I{api_dir_display}/studio/inc"))
+        .newtype_enum("FMOD_RESULT")
+        .must_use_type("FMOD_RESULT")
         .header("src/wrapper.h");
 
     #[cfg(target_arch = "x86")]

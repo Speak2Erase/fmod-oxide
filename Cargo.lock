@@ -84,14 +84,15 @@ dependencies = [
 
 [[package]]
 name = "fmod-rs"
-version = "0.1.0"
+version = "2.2.20"
 dependencies = [
+ "bitflags",
  "fmod-sys",
 ]
 
 [[package]]
 name = "fmod-sys"
-version = "0.1.0"
+version = "2.2.20"
 dependencies = [
  "bindgen",
 ]
