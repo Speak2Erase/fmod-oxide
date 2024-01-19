@@ -18,12 +18,17 @@
 use fmod_sys::*;
 use std::ffi::{c_int, c_uint, CStr};
 
+use crate::Guid;
+
+use super::Bank;
+
 /// The main system object for FMOD Studio.
 ///
 /// Initializing the FMOD Studio System object will also initialize the core System object.
 ///
 /// Created with [`SystemBuilder`], which handles initialization for you.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)] // todo: should this logically be copy?
+#[repr(transparent)] // so we can transmute between types
 pub struct System {
     pub(crate) inner: *mut FMOD_STUDIO_SYSTEM,
 }
@@ -50,16 +55,24 @@ pub struct AdvancedSettings {
 }
 
 bitflags::bitflags! {
-  #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-  pub struct InitFlags: c_uint {
-    const NORMAL                = 0x0000_0000;
-    const LIVEUPDATE            = 0x0000_0001;
-    const ALLOW_MISSING_PLUGINS = 0x0000_0002;
-    const SYNCHRONOUS_UPDATE    = 0x0000_0004;
-    const DEFERRED_CALLBACKS    = 0x0000_0008;
-    const LOAD_FROM_UPDATE      = 0x0000_0010;
-    const MEMORY_TRACKING       = 0x0000_0020;
-  }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct InitFlags: c_uint {
+        const NORMAL                = FMOD_STUDIO_INIT_NORMAL;
+        const LIVEUPDATE            = FMOD_STUDIO_INIT_LIVEUPDATE;
+        const ALLOW_MISSING_PLUGINS = FMOD_STUDIO_INIT_ALLOW_MISSING_PLUGINS;
+        const SYNCHRONOUS_UPDATE    = FMOD_STUDIO_INIT_SYNCHRONOUS_UPDATE;
+        const DEFERRED_CALLBACKS    = FMOD_STUDIO_INIT_DEFERRED_CALLBACKS;
+        const LOAD_FROM_UPDATE      = FMOD_STUDIO_INIT_LOAD_FROM_UPDATE;
+        const MEMORY_TRACKING       = FMOD_STUDIO_INIT_MEMORY_TRACKING;
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct LoadBankFlags: c_uint {
+        const NORMAL             = FMOD_STUDIO_LOAD_BANK_NORMAL;
+        const NONBLOCKING        = FMOD_STUDIO_LOAD_BANK_NONBLOCKING;
+        const DECOMPRESS_SAMPLES = FMOD_STUDIO_LOAD_BANK_DECOMPRESS_SAMPLES;
+        const UNENCRYPTED        = FMOD_STUDIO_LOAD_BANK_UNENCRYPTED;
+    }
 }
 
 impl SystemBuilder {
@@ -253,5 +266,173 @@ impl System {
     /// This function may stall for a long time if other threads are continuing to issue calls to load and unload sample data, e.g. by creating new event instances.
     pub fn flush_sample_loading(&self) -> Result<()> {
         unsafe { FMOD_Studio_System_FlushSampleLoading(self.inner) }.to_result()
+    }
+}
+
+impl System {
+    // todo: load bank with callbacks
+    pub fn load_bank_custom(&self) -> Result<Bank> {
+        todo!()
+    }
+
+    /// Sample data must be loaded separately.
+    ///
+    /// By default this function will block until the file load finishes.
+    ///
+    /// Using the [`LoadBankFlags::NONBLOCKING`] flag will cause the bank to be loaded asynchronously.
+    /// In that case this function will always return [`Ok`] and bank will contain a valid bank handle.
+    /// Load errors for asynchronous banks can be detected by calling [`Bank::get_loading_state`].
+    /// Failed asynchronous banks should be released by calling [`Bank::unload`].
+    ///
+    /// If a bank has been split, separating out assets and optionally streams from the metadata bank, all parts must be loaded before any APIs that use the data are called.
+    /// It is recommended you load each part one after another (order is not important), then proceed with dependent API calls such as [`Bank::load_sample_data`] or [`System::get_event`].
+    pub fn load_bank_file(&self, filename: &CStr, load_flags: LoadBankFlags) -> Result<Bank> {
+        let mut bank = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_LoadBankFile(
+                self.inner,
+                filename.as_ptr(),
+                load_flags.bits(),
+                &mut bank,
+            )
+            .to_result()?;
+        }
+        Ok(bank.into())
+    }
+
+    /// Sample data must be loaded separately.
+    ///
+    /// This function is the safe counterpart of [`System::load_bank_pointer`].
+    /// FMOD will allocate an internal buffer and copy the data from the passed in buffer before using it.
+    /// The buffer passed to this function may be cleaned up at any time after this function returns.
+    ///
+    /// By default this function will block until the load finishes.
+    ///
+    /// Using the [`LoadBankFlags::NONBLOCKING`] flag will cause the bank to be loaded asynchronously.
+    /// In that case this function will always return [`Ok`] and bank will contain a valid bank handle.
+    /// Load errors for asynchronous banks can be detected by calling [`Bank::get_loading_state`].
+    /// Failed asynchronous banks should be released by calling [`Bank::unload`].
+    ///
+    /// This function is not compatible with [`AdvancedSettings::encryption_key`], using them together will cause an error to be returned.
+    ///
+    /// If a bank has been split, separating out assets and optionally streams from the metadata bank, all parts must be loaded before any APIs that use the data are called.
+    /// It is recommended you load each part one after another (order is not important), then proceed with dependent API calls such as [`Bank::load_sample_data`] or [`System::get_event`].
+    pub fn load_bank_memory(&self, buffer: &[u8], flags: LoadBankFlags) -> Result<Bank> {
+        let mut bank = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_LoadBankMemory(
+                self.inner,
+                buffer.as_ptr().cast::<i8>(),
+                buffer.len() as c_int,
+                FMOD_STUDIO_LOAD_MEMORY_MODE_FMOD_STUDIO_LOAD_MEMORY,
+                flags.bits(),
+                &mut bank,
+            )
+            .to_result()?;
+        }
+        Ok(bank.into())
+    }
+
+    /// Sample data must be loaded separately.
+    ///
+    /// This function is the unsafe counterpart of [`System::load_bank_memory`].
+    /// FMOD will use the passed memory buffer directly.
+    ///
+    /// By default this function will block until the load finishes.
+    ///
+    /// Using the [`LoadBankFlags::NONBLOCKING`] flag will cause the bank to be loaded asynchronously.
+    /// In that case this function will always return [`Ok`] and bank will contain a valid bank handle.
+    /// Load errors for asynchronous banks can be detected by calling [`Bank::get_loading_state`].
+    /// Failed asynchronous banks should be released by calling [`Bank::unload`].
+    ///
+    /// This function is not compatible with [`AdvancedSettings::encryption_key`], using them together will cause an error to be returned.
+    ///
+    /// If a bank has been split, separating out assets and optionally streams from the metadata bank, all parts must be loaded before any APIs that use the data are called.
+    /// It is recommended you load each part one after another (order is not important), then proceed with dependent API calls such as [`Bank::load_sample_data`] or [`System::get_event`].
+    ///
+    /// # Safety
+    /// When using this function the buffer must be aligned to [`FMOD_STUDIO_LOAD_MEMORY_ALIGNMENT`]
+    /// and the memory must persist until the bank has been fully unloaded, which can be some time after calling [`Bank::unload`] to unload the bank.
+    /// You can ensure the memory is not being freed prematurely by only freeing it after receiving the [`FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD`] callback.
+    pub unsafe fn load_bank_pointer(
+        &self,
+        buffer: *const [u8],
+        flags: LoadBankFlags,
+    ) -> Result<Bank> {
+        let mut bank = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_LoadBankMemory(
+                self.inner,
+                buffer.cast::<i8>(),
+                (*buffer).len() as c_int,
+                FMOD_STUDIO_LOAD_MEMORY_MODE_FMOD_STUDIO_LOAD_MEMORY_POINT,
+                flags.bits(),
+                &mut bank,
+            )
+            .to_result()?;
+        }
+        Ok(bank.into())
+    }
+
+    /// Unloads all currently loaded banks.
+    pub fn unload_all_banks(&self) -> Result<()> {
+        unsafe { FMOD_Studio_System_UnloadAll(self.inner).to_result() }
+    }
+
+    /// Retrieves a loaded bank
+    ///
+    /// `path_or_id` may be a path, such as `bank:/Weapons` or an ID string such as `{793cddb6-7fa1-4e06-b805-4c74c0fd625b}`.
+    ///
+    /// Note that path lookups will only succeed if the strings bank has been loaded.
+    pub fn get_bank(&self, path_or_id: &CStr) -> Result<Bank> {
+        let mut bank = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_GetBank(self.inner, path_or_id.as_ptr(), &mut bank).to_result()?;
+        }
+        Ok(bank.into())
+    }
+
+    /// Retrieves a loaded bank.
+    pub fn get_bank_by_id(&self, id: Guid) -> Result<Bank> {
+        let mut bank = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_GetBankByID(self.inner, &id.into(), &mut bank).to_result()?;
+        }
+        Ok(bank.into())
+    }
+
+    /// Retrieves the number of loaded banks.
+    pub fn bank_count(&self) -> Result<c_int> {
+        let mut count = 0;
+        unsafe {
+            FMOD_Studio_System_GetBankCount(self.inner, &mut count).to_result()?;
+        }
+        Ok(count)
+    }
+
+    pub fn get_bank_list(&self) -> Result<Vec<Bank>> {
+        let expected_count = self.bank_count()?;
+        let mut count = 0;
+        let mut list = vec![
+            Bank {
+                inner: std::ptr::null_mut()
+            };
+            expected_count as usize
+        ];
+
+        unsafe {
+            FMOD_Studio_System_GetBankList(
+                self.inner,
+                // bank is repr transparent and has the same layout as *mut FMOD_STUDIO_BANK, so this cast is ok
+                list.as_mut_ptr().cast::<*mut FMOD_STUDIO_BANK>(),
+                list.capacity() as c_int,
+                &mut count,
+            )
+            .to_result()?;
+
+            debug_assert_eq!(count, expected_count);
+
+            Ok(list)
+        }
     }
 }

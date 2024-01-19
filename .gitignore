@@ -1,2 +1,4 @@
 fmod-sys/fmod/
+# used for tests
+fmod-rs/media/ 
 /target/

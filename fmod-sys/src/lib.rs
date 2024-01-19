@@ -4,9 +4,18 @@
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Error {
     pub code: FMOD_RESULT,
+}
+
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Error")
+            .field("code", &self.code)
+            .field("message", &error_code_to_str(self.code))
+            .finish()
+    }
 }
 
 impl std::fmt::Display for Error {
@@ -48,6 +57,18 @@ impl FMOD_RESULT {
 
     pub fn to_error(self) -> Option<Error> {
         self.to_result().err()
+    }
+}
+
+impl From<FMOD_BOOL> for bool {
+    fn from(val: FMOD_BOOL) -> Self {
+        val.0 > 0
+    }
+}
+
+impl From<bool> for FMOD_BOOL {
+    fn from(value: bool) -> Self {
+        Self(value as _)
     }
 }
 

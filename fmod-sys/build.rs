@@ -19,6 +19,7 @@ fn main() {
         .clang_arg(format!("-I{api_dir_display}/studio/inc"))
         .newtype_enum("FMOD_RESULT")
         .must_use_type("FMOD_RESULT")
+        .new_type_alias("FMOD_BOOL")
         .header("src/wrapper.h");
 
     #[cfg(target_arch = "x86")]
