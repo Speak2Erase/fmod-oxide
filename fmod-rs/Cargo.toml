@@ -11,3 +11,6 @@ fmod-sys = { version = "2.2.20", path = "../fmod-sys" }
 
 [dev-dependencies]
 once_cell = "1.19"
+
+[features]
+safe-userdata = []

@@ -16,18 +16,21 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use fmod_sys::*;
-use std::ffi::{c_int, c_uint, CStr};
+use std::{
+    ffi::{c_float, c_int, c_uint, CStr},
+    mem::MaybeUninit,
+};
 
-use crate::Guid;
+use crate::{Attributes3D, Guid, Vector};
 
-use super::Bank;
+use super::{Bank, Bus};
 
 /// The main system object for FMOD Studio.
 ///
 /// Initializing the FMOD Studio System object will also initialize the core System object.
 ///
 /// Created with [`SystemBuilder`], which handles initialization for you.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)] // todo: should this logically be copy?
+#[derive(Debug, Clone, Copy, PartialEq, Eq)] // TODO: should this logically be copy?
 #[repr(transparent)] // so we can transmute between types
 pub struct System {
     pub(crate) inner: *mut FMOD_STUDIO_SYSTEM,
@@ -49,7 +52,7 @@ pub struct AdvancedSettings {
     pub studioupdateperiod: c_int,
     pub idle_sample_data_pool_size: c_int,
     pub streaming_schedule_delay: c_uint,
-    // todo: lifetime requirements for this struct?
+    // TODO: lifetime requirements for this struct?
     // fmod might copy this to a managed string, so we can relax the 'static
     pub encryption_key: Option<&'static CStr>,
 }
@@ -97,7 +100,7 @@ impl SystemBuilder {
         Ok(self)
     }
 
-    // todo: move to a core system builder
+    // TODO: move to a core system builder
     pub fn software_format(
         self,
         sample_rate: c_int,
@@ -211,7 +214,7 @@ impl From<System> for *mut FMOD_STUDIO_SYSTEM {
 unsafe impl Send for System {}
 unsafe impl Sync for System {}
 
-// todo: could we solve this with an "owned" system and a shared system?
+// TODO: could we solve this with an "owned" system and a shared system?
 impl System {
     /// A convenience function over [`SystemBuilder`] with sane defaults.
     ///
@@ -240,7 +243,7 @@ impl System {
 }
 
 impl System {
-    // todo: take &self or not?
+    // TODO: take &self or not?
     /// Update the FMOD Studio System.
     ///
     /// When Studio is initialized in the default asynchronous processing mode this function submits all buffered commands for execution on the Studio Update thread for asynchronous processing.
@@ -270,7 +273,7 @@ impl System {
 }
 
 impl System {
-    // todo: load bank with callbacks
+    // TODO: load bank with callbacks
     pub fn load_bank_custom(&self) -> Result<Bank> {
         todo!()
     }
@@ -434,5 +437,120 @@ impl System {
 
             Ok(list)
         }
+    }
+}
+
+impl System {
+    /// Sets the 3D attributes of the listener.
+    pub fn set_listener_attributes(
+        &self,
+        listener: c_int,
+        attributes: Attributes3D,
+        attenuation_position: Option<Vector>,
+    ) -> Result<()> {
+        // we need to do this conversion seperately, for lifetime reasons
+        let attenuation_position = attenuation_position.map(Into::into);
+        unsafe {
+            FMOD_Studio_System_SetListenerAttributes(
+                self.inner,
+                listener,
+                &attributes.into(),
+                attenuation_position
+                    .as_ref()
+                    .map_or(std::ptr::null(), |a| a as *const _),
+            )
+            .to_result()
+        }
+    }
+
+    /// Retrieves listener 3D attributes.
+    pub fn get_listener_attributes(&self, listener: c_int) -> Result<(Attributes3D, Vector)> {
+        let mut attributes = MaybeUninit::uninit();
+        let mut attenuation_position = MaybeUninit::uninit();
+
+        unsafe {
+            FMOD_Studio_System_GetListenerAttributes(
+                self.inner,
+                listener,
+                attributes.as_mut_ptr(),
+                attenuation_position.as_mut_ptr(),
+            )
+            .to_result()?;
+
+            // TODO: check safety
+            Ok((
+                attributes.assume_init().into(),
+                attenuation_position.assume_init().into(),
+            ))
+        }
+    }
+
+    /// Sets the listener weighting.
+    ///
+    /// Listener weighting is a factor which determines how much the listener influences the mix.
+    /// It is taken into account for 3D panning, doppler, and the automatic distance event parameter. A listener with a weight of 0 has no effect on the mix.
+    ///
+    /// Listener weighting can be used to fade in and out multiple listeners.
+    /// For example to do a crossfade, an additional listener can be created with a weighting of 0 that ramps up to 1 while the old listener weight is ramped down to 0.
+    /// After the crossfade is finished the number of listeners can be reduced to 1 again.
+    ///
+    /// The sum of all the listener weights should add up to at least 1. It is a user error to set all listener weights to 0.
+    pub fn set_listener_weight(&self, listener: c_int, weight: c_float) -> Result<()> {
+        unsafe { FMOD_Studio_System_SetListenerWeight(self.inner, listener, weight).to_result() }
+    }
+
+    /// Retrieves listener weighting.
+    pub fn get_listener_weight(&self, listener: c_int) -> Result<c_float> {
+        let mut weight = 0.0;
+        unsafe {
+            FMOD_Studio_System_GetListenerWeight(self.inner, listener, &mut weight).to_result()?;
+        }
+        Ok(weight)
+    }
+
+    /// Sets the number of listeners in the 3D sound scene.
+    ///
+    /// If the number of listeners is set to more than 1 then FMOD uses a 'closest sound to the listener' method to determine what should be heard.
+    pub fn set_listener_count(&self, amount: c_int) -> Result<()> {
+        unsafe { FMOD_Studio_System_SetNumListeners(self.inner, amount).to_result() }
+    }
+
+    /// Sets the number of listeners in the 3D sound scene.
+    ///
+    /// If the number of listeners is set to more than 1 then FMOD uses a 'closest sound to the listener' method to determine what should be heard.
+    pub fn get_listener_count(&self) -> Result<c_int> {
+        let mut amount = 0;
+        unsafe {
+            FMOD_Studio_System_GetNumListeners(self.inner, &mut amount).to_result()?;
+        }
+        Ok(amount)
+    }
+}
+
+impl System {
+    /// Retrieves a loaded bus.
+    ///
+    /// This function allows you to retrieve a handle for any bus in the global mixer.
+    ///
+    /// `path_or_id` may be a path, such as `bus:/SFX/Ambience`, or an ID string, such as `{d9982c58-a056-4e6c-b8e3-883854b4bffb}`.
+    ///
+    /// Note that path lookups will only succeed if the strings bank has been loaded.
+    pub fn get_bus(&self, path_or_id: &CStr) -> Result<Bus> {
+        let mut bus = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_GetBus(self.inner, path_or_id.as_ptr(), &mut bus).to_result()?;
+        }
+        Ok(bus.into())
+    }
+
+    /// Retrieves a loaded bus.
+    ///
+    /// This function allows you to retrieve a handle for any bus in the global mixer.
+    pub fn get_bus_by_id(&self, id: Guid) -> Result<Bus> {
+        let mut bus = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_GetBusByID(self.inner, &id.into(), &mut bus).to_result()?;
+        }
+        Ok(bus.into())
     }
 }

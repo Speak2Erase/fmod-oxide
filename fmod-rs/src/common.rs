@@ -16,7 +16,7 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    ffi::{c_uchar, c_uint, c_ushort, CStr},
+    ffi::{c_float, c_uchar, c_uint, c_ushort, CStr},
     mem::MaybeUninit,
 };
 
@@ -24,10 +24,10 @@ use fmod_sys::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
 pub struct Guid {
-    data_1: c_uint,
-    data_2: c_ushort,
-    data_3: c_ushort,
-    data_4: [c_uchar; 8],
+    pub data_1: c_uint,
+    pub data_2: c_ushort,
+    pub data_3: c_ushort,
+    pub data_4: [c_uchar; 8],
 }
 
 impl Guid {
@@ -78,5 +78,62 @@ impl std::fmt::Display for Guid {
         }
 
         f.write_fmt(format_args!("}}"))
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
+pub struct Vector {
+    pub x: c_float,
+    pub y: c_float,
+    pub z: c_float,
+}
+
+impl From<Vector> for FMOD_VECTOR {
+    fn from(value: Vector) -> Self {
+        FMOD_VECTOR {
+            x: value.x,
+            y: value.y,
+            z: value.z,
+        }
+    }
+}
+
+impl From<FMOD_VECTOR> for Vector {
+    fn from(value: FMOD_VECTOR) -> Self {
+        Vector {
+            x: value.x,
+            y: value.y,
+            z: value.z,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
+pub struct Attributes3D {
+    pub position: Vector,
+    pub velocity: Vector,
+    pub forward: Vector,
+    pub up: Vector,
+}
+
+impl From<FMOD_3D_ATTRIBUTES> for Attributes3D {
+    fn from(value: FMOD_3D_ATTRIBUTES) -> Self {
+        Attributes3D {
+            position: value.position.into(),
+            velocity: value.velocity.into(),
+            forward: value.forward.into(),
+            up: value.up.into(),
+        }
+    }
+}
+
+impl From<Attributes3D> for FMOD_3D_ATTRIBUTES {
+    fn from(value: Attributes3D) -> Self {
+        FMOD_3D_ATTRIBUTES {
+            position: value.position.into(),
+            velocity: value.velocity.into(),
+            forward: value.forward.into(),
+            up: value.up.into(),
+        }
     }
 }
