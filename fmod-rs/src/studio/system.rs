@@ -23,7 +23,7 @@ use std::{
 
 use crate::{Attributes3D, Guid, Vector};
 
-use super::{Bank, Bus};
+use super::{Bank, Bus, EventDescription};
 
 /// The main system object for FMOD Studio.
 ///
@@ -528,7 +528,7 @@ impl System {
 }
 
 impl System {
-    /// Retrieves a loaded bus.
+    /// Retrieves a loaded [`Bus`].
     ///
     /// This function allows you to retrieve a handle for any bus in the global mixer.
     ///
@@ -543,7 +543,7 @@ impl System {
         Ok(bus.into())
     }
 
-    /// Retrieves a loaded bus.
+    /// Retrieves a loaded [`Bus`].
     ///
     /// This function allows you to retrieve a handle for any bus in the global mixer.
     pub fn get_bus_by_id(&self, id: Guid) -> Result<Bus> {
@@ -552,5 +552,33 @@ impl System {
             FMOD_Studio_System_GetBusByID(self.inner, &id.into(), &mut bus).to_result()?;
         }
         Ok(bus.into())
+    }
+}
+
+impl System {
+    /// Retrieves an [`EventDescription`].
+    ///
+    /// This function allows you to retrieve a handle to any loaded event description.
+    ///
+    /// `path+or_id` may be a path, such as `event:/UI/Cancel` or `snapshot:/IngamePause`, or an ID string, such as `{2a3e48e6-94fc-4363-9468-33d2dd4d7b00}`.
+    ///
+    /// Note that path lookups will only succeed if the strings bank has been loaded.
+    pub fn get_event(&self, path_or_id: &CStr) -> Result<EventDescription> {
+        let mut event = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_GetEvent(self.inner, path_or_id.as_ptr(), &mut event).to_result()?;
+        }
+        Ok(event.into())
+    }
+
+    /// Retrieves an [`EventDescription`].
+    ///
+    /// This function allows you to retrieve a handle to any loaded event description.
+    pub fn get_event_by_id(&self, id: Guid) -> Result<EventDescription> {
+        let mut event = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_GetEventByID(self.inner, &id.into(), &mut event).to_result()?;
+        }
+        Ok(event.into())
     }
 }
