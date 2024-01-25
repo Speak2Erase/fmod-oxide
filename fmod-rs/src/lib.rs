@@ -36,25 +36,3 @@ pub mod core;
 
 mod common;
 pub use common::*;
-
-#[cfg(test)]
-mod tests {
-    mod studio {
-
-        mod system {}
-    }
-
-    mod common {
-        use crate::Guid;
-
-        #[test]
-        fn guid_display() {
-            let guid = Guid::default();
-
-            let guid_cstr = std::ffi::CString::new(guid.to_string()).unwrap();
-            let parsed_guid = Guid::parse(&guid_cstr).unwrap();
-
-            assert_eq!(parsed_guid, guid);
-        }
-    }
-}

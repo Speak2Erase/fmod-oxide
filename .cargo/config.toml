@@ -1,0 +1,2 @@
+[env]
+FMOD_SYS_FMOD_DIRECTORY = { value = "fmod/", relative = true }
