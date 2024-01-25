@@ -23,7 +23,7 @@ use std::{
 
 use crate::{Attributes3D, Guid, Vector};
 
-use super::{Bank, Bus, EventDescription};
+use super::{AdvancedSettings, Bank, Bus, EventDescription, InitFlags, LoadBankFlags, ParameterID};
 
 /// The main system object for FMOD Studio.
 ///
@@ -42,40 +42,6 @@ pub struct System {
 #[must_use]
 pub struct SystemBuilder {
     system: *mut FMOD_STUDIO_SYSTEM,
-}
-
-// default impl is ok, all values are zero or none.
-#[derive(Clone, Copy, Default)]
-pub struct AdvancedSettings {
-    pub command_queue_size: c_uint,
-    pub handle_initial_size: c_uint,
-    pub studioupdateperiod: c_int,
-    pub idle_sample_data_pool_size: c_int,
-    pub streaming_schedule_delay: c_uint,
-    // TODO: lifetime requirements for this struct?
-    // fmod might copy this to a managed string, so we can relax the 'static
-    pub encryption_key: Option<&'static CStr>,
-}
-
-bitflags::bitflags! {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-    pub struct InitFlags: c_uint {
-        const NORMAL                = FMOD_STUDIO_INIT_NORMAL;
-        const LIVEUPDATE            = FMOD_STUDIO_INIT_LIVEUPDATE;
-        const ALLOW_MISSING_PLUGINS = FMOD_STUDIO_INIT_ALLOW_MISSING_PLUGINS;
-        const SYNCHRONOUS_UPDATE    = FMOD_STUDIO_INIT_SYNCHRONOUS_UPDATE;
-        const DEFERRED_CALLBACKS    = FMOD_STUDIO_INIT_DEFERRED_CALLBACKS;
-        const LOAD_FROM_UPDATE      = FMOD_STUDIO_INIT_LOAD_FROM_UPDATE;
-        const MEMORY_TRACKING       = FMOD_STUDIO_INIT_MEMORY_TRACKING;
-    }
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-    pub struct LoadBankFlags: c_uint {
-        const NORMAL             = FMOD_STUDIO_LOAD_BANK_NORMAL;
-        const NONBLOCKING        = FMOD_STUDIO_LOAD_BANK_NONBLOCKING;
-        const DECOMPRESS_SAMPLES = FMOD_STUDIO_LOAD_BANK_DECOMPRESS_SAMPLES;
-        const UNENCRYPTED        = FMOD_STUDIO_LOAD_BANK_UNENCRYPTED;
-    }
 }
 
 impl SystemBuilder {
@@ -104,7 +70,7 @@ impl SystemBuilder {
     pub fn software_format(
         self,
         sample_rate: c_int,
-        speaker_mode: FMOD_SPEAKERMODE,
+        speaker_mode: FMOD_SPEAKERMODE, // todo convert to enum
         raw_speakers: c_int,
     ) -> Result<Self> {
         let mut core = std::ptr::null_mut();
@@ -138,7 +104,7 @@ impl SystemBuilder {
         self,
         max_channels: c_int,
         studio_flags: InitFlags,
-        flags: FMOD_INITFLAGS,
+        flags: FMOD_INITFLAGS, // todo core init flags
     ) -> Result<System> {
         unsafe {
             FMOD_Studio_System_Initialize(
@@ -151,49 +117,6 @@ impl SystemBuilder {
             .to_result()?;
         }
         Ok(System { inner: self.system })
-    }
-}
-
-impl AdvancedSettings {
-    /// Create a safe [`AdvancedSettings`] struct from the FFI equivalent.
-    ///
-    /// # Safety
-    ///
-    /// The encryption key from [`FMOD_STUDIO_ADVANCEDSETTINGS`] must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
-    ///
-    /// See [`CStr::from_ptr`] for more information.
-    pub unsafe fn from_ffi(value: FMOD_STUDIO_ADVANCEDSETTINGS) -> Self {
-        let encryption_key = if value.encryptionkey.is_null() {
-            None
-        } else {
-            unsafe { Some(CStr::from_ptr(value.encryptionkey)) }
-        };
-
-        Self {
-            command_queue_size: value.commandqueuesize,
-            handle_initial_size: value.handleinitialsize,
-            studioupdateperiod: value.studioupdateperiod,
-            idle_sample_data_pool_size: value.idlesampledatapoolsize,
-            streaming_schedule_delay: value.streamingscheduledelay,
-            encryption_key,
-        }
-    }
-}
-
-// It's safe to go from AdvancedSettings to FMOD_STUDIO_ADVANCEDSETTINGS because a &'static CStr meets all the safety FMOD expects. (aligned, null termienated, etc)
-impl From<AdvancedSettings> for FMOD_STUDIO_ADVANCEDSETTINGS {
-    fn from(value: AdvancedSettings) -> Self {
-        let encryption_key = value.encryption_key.map_or(std::ptr::null(), CStr::as_ptr);
-
-        FMOD_STUDIO_ADVANCEDSETTINGS {
-            cbsize: std::mem::size_of::<Self>() as c_int,
-            commandqueuesize: value.command_queue_size,
-            handleinitialsize: value.handle_initial_size,
-            studioupdateperiod: value.studioupdateperiod,
-            idlesampledatapoolsize: value.idle_sample_data_pool_size,
-            streamingscheduledelay: value.streaming_schedule_delay,
-            encryptionkey: encryption_key,
-        }
     }
 }
 
@@ -580,5 +503,113 @@ impl System {
             FMOD_Studio_System_GetEventByID(self.inner, &id.into(), &mut event).to_result()?;
         }
         Ok(event.into())
+    }
+}
+
+impl System {
+    /// Retrieves a global parameter value by unique identifier.
+    ///
+    /// The second tuple field is the final value of the parameter after applying adjustments due to automation, modulation, seek speed, and parameter velocity to value.
+    /// This is calculated asynchronously when the Studio system updates.
+    pub fn get_parameter_by_id(&self, id: ParameterID) -> Result<(c_float, c_float)> {
+        let mut value = 0.0;
+        let mut final_value = 0.0;
+
+        unsafe {
+            FMOD_Studio_System_GetParameterByID(
+                self.inner,
+                id.into(),
+                &mut value,
+                &mut final_value,
+            )
+            .to_result()?;
+        }
+
+        Ok((value, final_value))
+    }
+
+    /// Sets a global parameter value by unique identifier.
+    pub fn set_parameter_by_id(
+        &self,
+        id: ParameterID,
+        value: c_float,
+        ignore_seek_speed: bool,
+    ) -> Result<()> {
+        unsafe {
+            FMOD_Studio_System_SetParameterByID(
+                self.inner,
+                id.into(),
+                value,
+                ignore_seek_speed.into(),
+            )
+            .to_result()
+        }
+    }
+
+    /// Sets a global parameter value by unique identifier, looking up the value label.
+    ///
+    /// If the specified label is not found, [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned.
+    /// This lookup is case sensitive.
+    pub fn set_parameter_by_id_with_label(
+        &self,
+        id: ParameterID,
+        label: &CStr,
+        ignore_seek_speed: bool,
+    ) -> Result<()> {
+        unsafe {
+            FMOD_Studio_System_SetParameterByIDWithLabel(
+                self.inner,
+                id.into(),
+                label.as_ptr(),
+                ignore_seek_speed.into(),
+            )
+            .to_result()
+        }
+    }
+
+    /// Sets multiple global parameter values by unique identifier.
+    ///
+    /// If any ID is set to all zeroes then the corresponding value will be ignored.
+    // TODO iterator version?
+    pub fn set_parameters_by_ids(
+        &self,
+        ids: &[ParameterID],
+        values: &mut [c_float], // TODO is this &mut correct? does fmod perform any writes?
+        ignore_seek_speed: bool,
+    ) -> Result<()> {
+        // TODO don't panic, return result
+        assert_eq!(ids.len(), values.len());
+
+        unsafe {
+            FMOD_Studio_System_SetParametersByIDs(
+                self.inner,
+                ids.as_ptr().cast(),
+                values.as_mut_ptr(),
+                ids.len() as c_int,
+                ignore_seek_speed.into(),
+            )
+            .to_result()
+        }
+    }
+
+    /// Retrieves a global parameter value by name.
+    ///
+    /// The second tuple field is the final value of the parameter after applying adjustments due to automation, modulation, seek speed, and parameter velocity to value.
+    /// This is calculated asynchronously when the Studio system updates.
+    pub fn get_parameter_by_name(&self, name: &CStr) -> Result<(c_float, c_float)> {
+        let mut value = 0.0;
+        let mut final_value = 0.0;
+
+        unsafe {
+            FMOD_Studio_System_GetParameterByName(
+                self.inner,
+                name.as_ptr(),
+                &mut value,
+                &mut final_value,
+            )
+            .to_result()?;
+        }
+
+        Ok((value, final_value))
     }
 }

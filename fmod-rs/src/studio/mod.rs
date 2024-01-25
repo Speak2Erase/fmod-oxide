@@ -1,4 +1,4 @@
-use std::ffi::c_int;
+use std::ffi::{c_int, c_uint, CStr};
 
 // Copyright (C) 2024 Lily Lyons
 //
@@ -112,6 +112,109 @@ impl From<MemoryUsage> for FMOD_STUDIO_MEMORY_USAGE {
             exclusive: value.exclusive,
             inclusive: value.inclusive,
             sampledata: value.sample_data,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+// force this type to have the exact same layout as FMOD_STUDIO_PARAMETER_ID so we can safely transmute between them.
+#[repr(C)]
+pub struct ParameterID {
+    pub data_1: c_uint,
+    pub data_2: c_uint,
+}
+
+impl From<FMOD_STUDIO_PARAMETER_ID> for ParameterID {
+    fn from(value: FMOD_STUDIO_PARAMETER_ID) -> Self {
+        ParameterID {
+            data_1: value.data1,
+            data_2: value.data2,
+        }
+    }
+}
+
+impl From<ParameterID> for FMOD_STUDIO_PARAMETER_ID {
+    fn from(value: ParameterID) -> Self {
+        FMOD_STUDIO_PARAMETER_ID {
+            data1: value.data_1,
+            data2: value.data_2,
+        }
+    }
+}
+
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct InitFlags: c_uint {
+        const NORMAL                = FMOD_STUDIO_INIT_NORMAL;
+        const LIVEUPDATE            = FMOD_STUDIO_INIT_LIVEUPDATE;
+        const ALLOW_MISSING_PLUGINS = FMOD_STUDIO_INIT_ALLOW_MISSING_PLUGINS;
+        const SYNCHRONOUS_UPDATE    = FMOD_STUDIO_INIT_SYNCHRONOUS_UPDATE;
+        const DEFERRED_CALLBACKS    = FMOD_STUDIO_INIT_DEFERRED_CALLBACKS;
+        const LOAD_FROM_UPDATE      = FMOD_STUDIO_INIT_LOAD_FROM_UPDATE;
+        const MEMORY_TRACKING       = FMOD_STUDIO_INIT_MEMORY_TRACKING;
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct LoadBankFlags: c_uint {
+        const NORMAL             = FMOD_STUDIO_LOAD_BANK_NORMAL;
+        const NONBLOCKING        = FMOD_STUDIO_LOAD_BANK_NONBLOCKING;
+        const DECOMPRESS_SAMPLES = FMOD_STUDIO_LOAD_BANK_DECOMPRESS_SAMPLES;
+        const UNENCRYPTED        = FMOD_STUDIO_LOAD_BANK_UNENCRYPTED;
+    }
+}
+
+// default impl is ok, all values are zero or none.
+#[derive(Clone, Copy, Default)]
+pub struct AdvancedSettings {
+    pub command_queue_size: c_uint,
+    pub handle_initial_size: c_uint,
+    pub studioupdateperiod: c_int,
+    pub idle_sample_data_pool_size: c_int,
+    pub streaming_schedule_delay: c_uint,
+    // TODO: lifetime requirements for this struct?
+    // fmod might copy this to a managed string, so we can relax the 'static
+    pub encryption_key: Option<&'static CStr>,
+}
+
+impl AdvancedSettings {
+    /// Create a safe [`AdvancedSettings`] struct from the FFI equivalent.
+    ///
+    /// # Safety
+    ///
+    /// The encryption key from [`FMOD_STUDIO_ADVANCEDSETTINGS`] must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
+    ///
+    /// See [`CStr::from_ptr`] for more information.
+    pub unsafe fn from_ffi(value: FMOD_STUDIO_ADVANCEDSETTINGS) -> Self {
+        let encryption_key = if value.encryptionkey.is_null() {
+            None
+        } else {
+            unsafe { Some(CStr::from_ptr(value.encryptionkey)) }
+        };
+
+        Self {
+            command_queue_size: value.commandqueuesize,
+            handle_initial_size: value.handleinitialsize,
+            studioupdateperiod: value.studioupdateperiod,
+            idle_sample_data_pool_size: value.idlesampledatapoolsize,
+            streaming_schedule_delay: value.streamingscheduledelay,
+            encryption_key,
+        }
+    }
+}
+
+// It's safe to go from AdvancedSettings to FMOD_STUDIO_ADVANCEDSETTINGS because a &'static CStr meets all the safety FMOD expects. (aligned, null termienated, etc)
+impl From<AdvancedSettings> for FMOD_STUDIO_ADVANCEDSETTINGS {
+    fn from(value: AdvancedSettings) -> Self {
+        let encryption_key = value.encryption_key.map_or(std::ptr::null(), CStr::as_ptr);
+
+        FMOD_STUDIO_ADVANCEDSETTINGS {
+            cbsize: std::mem::size_of::<Self>() as c_int,
+            commandqueuesize: value.command_queue_size,
+            handleinitialsize: value.handle_initial_size,
+            studioupdateperiod: value.studioupdateperiod,
+            idlesampledatapoolsize: value.idle_sample_data_pool_size,
+            streamingscheduledelay: value.streaming_schedule_delay,
+            encryptionkey: encryption_key,
         }
     }
 }
