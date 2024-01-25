@@ -27,6 +27,9 @@ pub use bus::*;
 mod system;
 pub use system::*;
 
+mod command_replay;
+pub use command_replay::*;
+
 mod event_description;
 pub use event_description::*;
 
@@ -472,5 +475,26 @@ impl From<UserProperty> for FMOD_STUDIO_USER_PROPERTY {
             type_: kind,
             __bindgen_anon_1: union,
         }
+    }
+}
+
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct CommandCaptureFlags: c_uint {
+        const NORMAL = FMOD_STUDIO_COMMANDCAPTURE_NORMAL;
+        const FILE_FLUSH = FMOD_STUDIO_COMMANDCAPTURE_FILEFLUSH;
+        const SKIP_INITIAL_STATE = FMOD_STUDIO_COMMANDCAPTURE_SKIP_INITIAL_STATE;
+    }
+}
+
+impl From<FMOD_STUDIO_COMMANDCAPTURE_FLAGS> for CommandCaptureFlags {
+    fn from(value: FMOD_STUDIO_COMMANDCAPTURE_FLAGS) -> Self {
+        CommandCaptureFlags::from_bits_truncate(value)
+    }
+}
+
+impl From<CommandCaptureFlags> for FMOD_STUDIO_COMMANDCAPTURE_FLAGS {
+    fn from(value: CommandCaptureFlags) -> Self {
+        value.bits()
     }
 }
