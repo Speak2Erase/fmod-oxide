@@ -30,6 +30,9 @@ pub use system::*;
 mod event_description;
 pub use event_description::*;
 
+mod event_instance;
+pub use event_instance::*;
+
 mod vca;
 pub use vca::*;
 
@@ -192,7 +195,7 @@ impl From<LoadBankFlags> for FMOD_STUDIO_LOAD_BANK_FLAGS {
 }
 
 // default impl is ok, all values are zero or none.
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
 pub struct AdvancedSettings {
     pub command_queue_size: c_uint,
     pub handle_initial_size: c_uint,
@@ -201,6 +204,7 @@ pub struct AdvancedSettings {
     pub streaming_schedule_delay: c_uint,
     // TODO: lifetime requirements for this struct?
     // fmod might copy this to a managed string, so we can relax the 'static
+    // TODO: set custom memory alloc callbacks to see if/how fmod copies strings
     pub encryption_key: Option<&'static CStr>,
 }
 
@@ -247,7 +251,7 @@ impl From<AdvancedSettings> for FMOD_STUDIO_ADVANCEDSETTINGS {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct ParameterDescription {
     // FIXME this 'static is WRONG, figure out lifetimes!!!
     // TODO change to regular str
@@ -386,6 +390,87 @@ impl ParameterDescription {
                 flags: value.flags.into(),
                 guid: value.guid.into(),
             }
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct UserProperty {
+    // FIXME this 'static is WRONG, figure out lifetimes!!!
+    name: &'static CStr,
+    kind: UserPropertyKind,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum UserPropertyKind {
+    Int(c_int),
+    Bool(bool),
+    Float(c_float),
+    // FIXME this 'static is WRONG, figure out lifetimes!!!
+    String(&'static CStr),
+}
+
+impl UserProperty {
+    /// Create a safe [`UserPropertyKind`] struct from the FFI equivalent.
+    ///
+    /// # Safety
+    ///
+    /// All string values from the FFI struct must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
+    /// The type field must match the type assigned to the union.
+    ///
+    /// See [`CStr::from_ptr`] for more information.
+    unsafe fn from_ffi(value: FMOD_STUDIO_USER_PROPERTY) -> Self {
+        unsafe {
+            UserProperty {
+                name: CStr::from_ptr(value.name),
+                kind: match value.type_ {
+                    FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_INTEGER => {
+                        UserPropertyKind::Int(value.__bindgen_anon_1.intvalue)
+                    }
+                    FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_BOOLEAN => {
+                        UserPropertyKind::Bool(value.__bindgen_anon_1.boolvalue.into())
+                    }
+                    FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_FLOAT => {
+                        UserPropertyKind::Float(value.__bindgen_anon_1.floatvalue)
+                    }
+                    FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_STRING => {
+                        UserPropertyKind::String(CStr::from_ptr(value.__bindgen_anon_1.stringvalue))
+                    }
+                    v => panic!("invalid user property type {v}"),
+                },
+            }
+        }
+    }
+}
+
+impl From<UserProperty> for FMOD_STUDIO_USER_PROPERTY {
+    fn from(value: UserProperty) -> Self {
+        let (kind, union) = match value.kind {
+            UserPropertyKind::Int(v) => (
+                FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_INTEGER,
+                FMOD_STUDIO_USER_PROPERTY__bindgen_ty_1 { intvalue: v },
+            ),
+            UserPropertyKind::Bool(v) => (
+                FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_BOOLEAN,
+                FMOD_STUDIO_USER_PROPERTY__bindgen_ty_1 {
+                    boolvalue: v.into(),
+                },
+            ),
+            UserPropertyKind::Float(v) => (
+                FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_FLOAT,
+                FMOD_STUDIO_USER_PROPERTY__bindgen_ty_1 { floatvalue: v },
+            ),
+            UserPropertyKind::String(v) => (
+                FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_STRING,
+                FMOD_STUDIO_USER_PROPERTY__bindgen_ty_1 {
+                    stringvalue: v.as_ptr(),
+                },
+            ),
+        };
+        FMOD_STUDIO_USER_PROPERTY {
+            name: value.name.as_ptr(),
+            type_: kind,
+            __bindgen_anon_1: union,
         }
     }
 }

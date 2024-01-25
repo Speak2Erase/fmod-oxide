@@ -4,6 +4,9 @@
 //! This crate tries to be as rusty as possible, without comprimising on any APIs.
 //! Certain APIs, such as loading banks from a pointer, are marked as unsafe, but are still available for use.
 //!
+//! Most documentation is copied directly from the FMOD docs, however some information (such as parameter values) are excluded.
+//! Please refer to the FMOD documentation for more usage information.
+//!
 //! # Memory management & Copy types
 //! TODO
 //!
