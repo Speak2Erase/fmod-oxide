@@ -23,6 +23,8 @@ use std::{
 use fmod_sys::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
+// force this type to have the exact same layout as FMOD_STUDIO_PARAMETER_ID so we can safely transmute between them.
+#[repr(C)]
 pub struct Guid {
     pub data_1: c_uint,
     pub data_2: c_ushort,

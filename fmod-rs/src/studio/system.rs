@@ -23,7 +23,10 @@ use std::{
 
 use crate::{Attributes3D, Guid, Vector};
 
-use super::{AdvancedSettings, Bank, Bus, EventDescription, InitFlags, LoadBankFlags, ParameterID};
+use super::{
+    AdvancedSettings, Bank, Bus, EventDescription, InitFlags, LoadBankFlags, ParameterDescription,
+    ParameterID, Vca,
+};
 
 /// The main system object for FMOD Studio.
 ///
@@ -573,7 +576,7 @@ impl System {
     // TODO iterator version?
     pub fn set_parameters_by_ids(
         &self,
-        ids: &[ParameterID],
+        ids: &[ParameterID], // TODO fmod says that the size of this must range from 1-32. do we need to enforce this?
         values: &mut [c_float], // TODO is this &mut correct? does fmod perform any writes?
         ignore_seek_speed: bool,
     ) -> Result<()> {
@@ -611,5 +614,271 @@ impl System {
         }
 
         Ok((value, final_value))
+    }
+
+    /// Sets a global parameter value by name.
+    pub fn set_parameter_by_name(
+        &self,
+        name: &CStr,
+        value: c_float,
+        ignore_seek_speed: bool,
+    ) -> Result<()> {
+        unsafe {
+            FMOD_Studio_System_SetParameterByName(
+                self.inner,
+                name.as_ptr(),
+                value,
+                ignore_seek_speed.into(),
+            )
+            .to_result()
+        }
+    }
+
+    /// Sets a global parameter value by name, looking up the value label.
+    ///
+    /// If the specified label is not found, [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned. This lookup is case sensitive.
+    pub fn set_parameter_by_name_with_label(
+        &self,
+        name: &CStr,
+        label: &CStr,
+        ignore_seek_speed: bool,
+    ) -> Result<()> {
+        unsafe {
+            FMOD_Studio_System_SetParameterByNameWithLabel(
+                self.inner,
+                name.as_ptr(),
+                label.as_ptr(),
+                ignore_seek_speed.into(),
+            )
+            .to_result()
+        }
+    }
+
+    /// Retrieves a global parameter by name or path.
+    ///
+    /// `name` can be the short name (such as `Wind`) or the full path (such as `parameter:/Ambience/Wind`).
+    /// Path lookups will only succeed if the strings bank has been loaded.
+    pub fn get_parameter_description_by_name(&self, name: &CStr) -> Result<ParameterDescription> {
+        let mut description = MaybeUninit::zeroed();
+        unsafe {
+            FMOD_Studio_System_GetParameterDescriptionByName(
+                self.inner,
+                name.as_ptr(),
+                description.as_mut_ptr(),
+            )
+            .to_result()?;
+
+            // FIXME lifetimes are incorrect and MUST be relaxed from 'static
+            let description = ParameterDescription::from_ffi(description.assume_init());
+            Ok(description)
+        }
+    }
+
+    /// Retrieves a global parameter by ID.
+    pub fn get_parameter_description_by_id(&self, id: ParameterID) -> Result<ParameterDescription> {
+        let mut description = MaybeUninit::zeroed();
+        unsafe {
+            FMOD_Studio_System_GetParameterDescriptionByID(
+                self.inner,
+                id.into(),
+                description.as_mut_ptr(),
+            )
+            .to_result()?;
+
+            // FIXME lifetimes are incorrect and MUST be relaxed from 'static
+            let description = ParameterDescription::from_ffi(description.assume_init());
+            Ok(description)
+        }
+    }
+
+    /// Retrieves the number of global parameters.
+    pub fn parameter_description_count(&self) -> Result<c_int> {
+        let mut count = 0;
+        unsafe {
+            FMOD_Studio_System_GetParameterDescriptionCount(self.inner, &mut count).to_result()?;
+        }
+        Ok(count)
+    }
+
+    /// Retrieves a list of global parameters.
+    pub fn get_parameter_description_list(&self) -> Result<Vec<ParameterDescription>> {
+        let expected_count = self.parameter_description_count()?;
+        let mut count = 0;
+        // FIXME: is the use of MaybeUninit necessary?
+        // it does imply intention though, which is ok.
+        let mut list = vec![MaybeUninit::zeroed(); expected_count as usize];
+
+        unsafe {
+            FMOD_Studio_System_GetParameterDescriptionList(
+                self.inner,
+                // bank is repr transparent and has the same layout as *mut FMOD_STUDIO_BANK, so this cast is ok
+                list.as_mut_ptr()
+                    .cast::<FMOD_STUDIO_PARAMETER_DESCRIPTION>(),
+                list.capacity() as c_int,
+                &mut count,
+            )
+            .to_result()?;
+
+            debug_assert_eq!(count, expected_count);
+
+            // FIXME lifetimes are incorrect and MUST be relaxed from 'static
+            let list = list
+                .into_iter()
+                .map(|uninit| {
+                    let description = uninit.assume_init();
+                    ParameterDescription::from_ffi(description)
+                })
+                .collect();
+
+            Ok(list)
+        }
+    }
+
+    /// Retrieves a global parameter label by name or path.
+    ///
+    /// `name` can be the short name (such as `Wind`) or the full path (such as `parameter:/Ambience/Wind`).
+    /// Path lookups will only succeed if the strings bank has been loaded.
+    pub fn get_parameter_label_by_name(&self, name: &CStr, label_index: c_int) -> Result<String> {
+        let mut string_len = 0;
+
+        // retrieve the length of the string.
+        // this includes the null terminator, so we don't need to account for that.
+        unsafe {
+            let error = FMOD_Studio_System_GetParameterLabelByName(
+                self.inner,
+                name.as_ptr(),
+                label_index,
+                std::ptr::null_mut(),
+                0,
+                &mut string_len,
+            )
+            .to_error();
+
+            // we expect the error to be fmod_err_truncated.
+            // if it isn't, we return the error.
+            match error {
+                Some(error) if error.code != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
+                _ => {}
+            }
+        };
+
+        let mut path = vec![0u8; string_len as usize];
+        let mut expected_string_len = 0;
+
+        unsafe {
+            FMOD_Studio_System_GetParameterLabelByName(
+                self.inner,
+                name.as_ptr(),
+                label_index,
+                // u8 and i8 have the same layout, so this is ok
+                path.as_mut_ptr().cast(),
+                string_len,
+                &mut expected_string_len,
+            )
+            .to_result()?;
+
+            debug_assert_eq!(string_len, expected_string_len);
+
+            // all public fmod apis return UTF-8 strings. this should be safe.
+            // if i turn out to be wrong, perhaps we should add extra error types?
+            let path = String::from_utf8_unchecked(path);
+
+            Ok(path)
+        }
+    }
+
+    /// Retrieves a global parameter label by ID.
+    pub fn get_parameter_label_by_id(&self, id: ParameterID, label_index: c_int) -> Result<String> {
+        let mut string_len = 0;
+
+        // retrieve the length of the string.
+        // this includes the null terminator, so we don't need to account for that.
+        unsafe {
+            let error = FMOD_Studio_System_GetParameterLabelByID(
+                self.inner,
+                id.into(),
+                label_index,
+                std::ptr::null_mut(),
+                0,
+                &mut string_len,
+            )
+            .to_error();
+
+            // we expect the error to be fmod_err_truncated.
+            // if it isn't, we return the error.
+            match error {
+                Some(error) if error.code != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
+                _ => {}
+            }
+        };
+
+        let mut path = vec![0u8; string_len as usize];
+        let mut expected_string_len = 0;
+
+        unsafe {
+            FMOD_Studio_System_GetParameterLabelByID(
+                self.inner,
+                id.into(),
+                label_index,
+                // u8 and i8 have the same layout, so this is ok
+                path.as_mut_ptr().cast(),
+                string_len,
+                &mut expected_string_len,
+            )
+            .to_result()?;
+
+            debug_assert_eq!(string_len, expected_string_len);
+
+            // all public fmod apis return UTF-8 strings. this should be safe.
+            // if i turn out to be wrong, perhaps we should add extra error types?
+            let path = String::from_utf8_unchecked(path);
+
+            Ok(path)
+        }
+    }
+}
+
+impl System {
+    /// Retrieves a loaded VCA.
+    ///
+    /// This function allows you to retrieve a handle for any VCA in the global mixer.
+    ///
+    /// `path_or_id` may be a path, such as `vca:/MyVCA`, or an ID string, such as `{d9982c58-a056-4e6c-b8e3-883854b4bffb`}.
+    ///
+    /// Note that path lookups will only succeed if the strings bank has been loaded.
+    pub fn get_vca(&self, path_or_id: &CStr) -> Result<Vca> {
+        let mut vca = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_GetVCA(self.inner, path_or_id.as_ptr(), &mut vca).to_result()?;
+        }
+        Ok(vca.into())
+    }
+
+    /// Retrieves a loaded VCA.
+    ///
+    /// This function allows you to retrieve a handle for any VCA in the global mixer.
+    pub fn get_vca_by_id(&self, id: Guid) -> Result<Vca> {
+        let mut vca = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_GetVCAByID(self.inner, &id.into(), &mut vca).to_result()?;
+        }
+        Ok(vca.into())
+    }
+}
+
+impl System {
+    /// Retrieves advanced settings.
+    pub fn get_advanced_settings(&self) -> Result<AdvancedSettings> {
+        let mut advanced_settings = MaybeUninit::zeroed();
+
+        unsafe {
+            FMOD_Studio_System_GetAdvancedSettings(self.inner, advanced_settings.as_mut_ptr())
+                .to_result()?;
+
+            // FIXME advancedsettings here is a 'static. this is probably invalid!
+            let advanced_settings = AdvancedSettings::from_ffi(advanced_settings.assume_init());
+
+            Ok(advanced_settings)
+        }
     }
 }

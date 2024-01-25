@@ -1,4 +1,4 @@
-use std::ffi::{c_int, c_uint, CStr};
+use std::ffi::{c_float, c_int, c_uint, CStr};
 
 // Copyright (C) 2024 Lily Lyons
 //
@@ -32,6 +32,8 @@ pub use event_description::*;
 
 mod vca;
 pub use vca::*;
+
+use crate::Guid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -153,7 +155,21 @@ bitflags::bitflags! {
         const LOAD_FROM_UPDATE      = FMOD_STUDIO_INIT_LOAD_FROM_UPDATE;
         const MEMORY_TRACKING       = FMOD_STUDIO_INIT_MEMORY_TRACKING;
     }
+}
 
+impl From<FMOD_STUDIO_INITFLAGS> for InitFlags {
+    fn from(value: FMOD_STUDIO_INITFLAGS) -> Self {
+        InitFlags::from_bits_truncate(value)
+    }
+}
+
+impl From<InitFlags> for FMOD_STUDIO_INITFLAGS {
+    fn from(value: InitFlags) -> Self {
+        value.bits()
+    }
+}
+
+bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub struct LoadBankFlags: c_uint {
         const NORMAL             = FMOD_STUDIO_LOAD_BANK_NORMAL;
@@ -163,8 +179,20 @@ bitflags::bitflags! {
     }
 }
 
+impl From<FMOD_STUDIO_LOAD_BANK_FLAGS> for LoadBankFlags {
+    fn from(value: FMOD_STUDIO_LOAD_BANK_FLAGS) -> Self {
+        LoadBankFlags::from_bits_truncate(value)
+    }
+}
+
+impl From<LoadBankFlags> for FMOD_STUDIO_LOAD_BANK_FLAGS {
+    fn from(value: LoadBankFlags) -> Self {
+        value.bits()
+    }
+}
+
 // default impl is ok, all values are zero or none.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct AdvancedSettings {
     pub command_queue_size: c_uint,
     pub handle_initial_size: c_uint,
@@ -215,6 +243,149 @@ impl From<AdvancedSettings> for FMOD_STUDIO_ADVANCEDSETTINGS {
             idlesampledatapoolsize: value.idle_sample_data_pool_size,
             streamingscheduledelay: value.streaming_schedule_delay,
             encryptionkey: encryption_key,
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub struct ParameterDescription {
+    // FIXME this 'static is WRONG, figure out lifetimes!!!
+    // TODO change to regular str
+    // (probably hard to do because of null termination. perhaps we should add our own utf-8 null terminated string type?)
+    name: &'static CStr,
+    id: ParameterID,
+    minimum: c_float,
+    maximum: c_float,
+    default_value: c_float,
+    kind: ParameterKind,
+    flags: ParameterFlags,
+    guid: Guid,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum ParameterKind {
+    GameControlled = FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_GAME_CONTROLLED,
+    AutomaticDistance = FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_DISTANCE,
+    AutomaticEventConeAngle =
+        FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_EVENT_CONE_ANGLE,
+    AutomaticEventOrientation =
+        FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_EVENT_ORIENTATION,
+    AutomaticDirection = FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_DIRECTION,
+    AutomaticElevation = FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_ELEVATION,
+    AutomaticListenerOrientation =
+        FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_LISTENER_ORIENTATION,
+    AutomaticSpeed = FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_SPEED,
+    AutomaticSpeedAbsolute =
+        FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_SPEED_ABSOLUTE,
+    AutomaticDistanceNormalized =
+        FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_DISTANCE_NORMALIZED,
+}
+
+impl From<FMOD_STUDIO_PARAMETER_TYPE> for ParameterKind {
+    fn from(value: FMOD_STUDIO_PARAMETER_TYPE) -> Self {
+        match value {
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_GAME_CONTROLLED => {
+                ParameterKind::GameControlled
+            }
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_DISTANCE => {
+                ParameterKind::AutomaticDistance
+            }
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_EVENT_CONE_ANGLE => {
+                ParameterKind::AutomaticEventConeAngle
+            }
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_EVENT_ORIENTATION => {
+                ParameterKind::AutomaticEventOrientation
+            }
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_DIRECTION => {
+                ParameterKind::AutomaticDirection
+            }
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_ELEVATION => {
+                ParameterKind::AutomaticElevation
+            }
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_LISTENER_ORIENTATION => {
+                ParameterKind::AutomaticListenerOrientation
+            }
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_SPEED => {
+                ParameterKind::AutomaticSpeed
+            }
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_SPEED_ABSOLUTE => {
+                ParameterKind::AutomaticSpeedAbsolute
+            }
+            FMOD_STUDIO_PARAMETER_TYPE_FMOD_STUDIO_PARAMETER_AUTOMATIC_DISTANCE_NORMALIZED => {
+                ParameterKind::AutomaticDistanceNormalized
+            }
+            // TODO: is this the right way to handle invalid states?
+            v => panic!("invalid loading state {v}"),
+        }
+    }
+}
+
+impl From<ParameterKind> for FMOD_STUDIO_PARAMETER_TYPE {
+    fn from(value: ParameterKind) -> Self {
+        value as FMOD_STUDIO_PARAMETER_TYPE
+    }
+}
+
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct ParameterFlags: c_uint {
+        const READONLY = FMOD_STUDIO_PARAMETER_READONLY;
+        const AUTOMATIC = FMOD_STUDIO_PARAMETER_AUTOMATIC;
+        const GLOBAL = FMOD_STUDIO_PARAMETER_GLOBAL;
+        const DISCRETE = FMOD_STUDIO_PARAMETER_DISCRETE;
+        const LABELED = FMOD_STUDIO_PARAMETER_LABELED;
+    }
+}
+
+impl From<FMOD_STUDIO_PARAMETER_FLAGS> for ParameterFlags {
+    fn from(value: FMOD_STUDIO_PARAMETER_FLAGS) -> Self {
+        ParameterFlags::from_bits_truncate(value)
+    }
+}
+
+impl From<ParameterFlags> for FMOD_STUDIO_PARAMETER_FLAGS {
+    fn from(value: ParameterFlags) -> Self {
+        value.bits()
+    }
+}
+
+// It's safe to go from ParameterDescription to FMOD_STUDIO_PARAMETER_DESCRIPTION because a &'static CStr meets all the safety FMOD expects. (aligned, null terminated, etc)
+impl From<ParameterDescription> for FMOD_STUDIO_PARAMETER_DESCRIPTION {
+    fn from(value: ParameterDescription) -> Self {
+        FMOD_STUDIO_PARAMETER_DESCRIPTION {
+            name: value.name.as_ptr(),
+            id: value.id.into(),
+            minimum: value.minimum,
+            maximum: value.maximum,
+            defaultvalue: value.default_value,
+            type_: value.kind.into(),
+            flags: value.flags.into(),
+            guid: value.guid.into(),
+        }
+    }
+}
+
+impl ParameterDescription {
+    /// Create a safe [`ParameterDescription`] struct from the FFI equivalent.
+    ///
+    /// # Safety
+    ///
+    /// The name from [`FMOD_STUDIO_PARAMETER_DESCRIPTION`] must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
+    ///
+    /// See [`CStr::from_ptr`] for more information.
+    pub unsafe fn from_ffi(value: FMOD_STUDIO_PARAMETER_DESCRIPTION) -> ParameterDescription {
+        unsafe {
+            ParameterDescription {
+                name: CStr::from_ptr(value.name),
+                id: value.id.into(),
+                minimum: value.minimum,
+                maximum: value.maximum,
+                default_value: value.defaultvalue,
+                kind: value.type_.into(),
+                flags: value.flags.into(),
+                guid: value.guid.into(),
+            }
         }
     }
 }
