@@ -139,3 +139,39 @@ impl From<Attributes3D> for FMOD_3D_ATTRIBUTES {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
+pub struct CpuUsage {
+    pub dsp: c_float,
+    pub stream: c_float,
+    pub geometry: c_float,
+    pub update: c_float,
+    pub convolution_1: c_float,
+    pub convolution_2: c_float,
+}
+
+impl From<FMOD_CPU_USAGE> for CpuUsage {
+    fn from(value: FMOD_CPU_USAGE) -> Self {
+        CpuUsage {
+            dsp: value.dsp,
+            stream: value.stream,
+            geometry: value.geometry,
+            update: value.update,
+            convolution_1: value.convolution1,
+            convolution_2: value.convolution2,
+        }
+    }
+}
+
+impl From<CpuUsage> for FMOD_CPU_USAGE {
+    fn from(value: CpuUsage) -> Self {
+        FMOD_CPU_USAGE {
+            dsp: value.dsp,
+            stream: value.stream,
+            geometry: value.geometry,
+            update: value.update,
+            convolution1: value.convolution_1,
+            convolution2: value.convolution_2,
+        }
+    }
+}

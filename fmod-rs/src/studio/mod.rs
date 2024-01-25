@@ -259,14 +259,14 @@ pub struct ParameterDescription {
     // FIXME this 'static is WRONG, figure out lifetimes!!!
     // TODO change to regular str
     // (probably hard to do because of null termination. perhaps we should add our own utf-8 null terminated string type?)
-    name: &'static CStr,
-    id: ParameterID,
-    minimum: c_float,
-    maximum: c_float,
-    default_value: c_float,
-    kind: ParameterKind,
-    flags: ParameterFlags,
-    guid: Guid,
+    pub name: &'static CStr,
+    pub id: ParameterID,
+    pub minimum: c_float,
+    pub maximum: c_float,
+    pub default_value: c_float,
+    pub kind: ParameterKind,
+    pub flags: ParameterFlags,
+    pub guid: Guid,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -400,8 +400,8 @@ impl ParameterDescription {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct UserProperty {
     // FIXME this 'static is WRONG, figure out lifetimes!!!
-    name: &'static CStr,
-    kind: UserPropertyKind,
+    pub name: &'static CStr,
+    pub kind: UserPropertyKind,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -496,5 +496,144 @@ impl From<FMOD_STUDIO_COMMANDCAPTURE_FLAGS> for CommandCaptureFlags {
 impl From<CommandCaptureFlags> for FMOD_STUDIO_COMMANDCAPTURE_FLAGS {
     fn from(value: CommandCaptureFlags) -> Self {
         value.bits()
+    }
+}
+
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct CommandReplayFlags: c_uint {
+        const NORMAL = FMOD_STUDIO_COMMANDCAPTURE_NORMAL;
+        const SKIP_CLEANUP = FMOD_STUDIO_COMMANDREPLAY_SKIP_CLEANUP;
+        const FAST_FORWARD = FMOD_STUDIO_COMMANDREPLAY_FAST_FORWARD;
+        const SKIP_BANK_LOAD = FMOD_STUDIO_COMMANDREPLAY_SKIP_BANK_LOAD;
+    }
+}
+
+impl From<FMOD_STUDIO_COMMANDREPLAY_FLAGS> for CommandReplayFlags {
+    fn from(value: FMOD_STUDIO_COMMANDREPLAY_FLAGS) -> Self {
+        CommandReplayFlags::from_bits_truncate(value)
+    }
+}
+
+impl From<CommandReplayFlags> for FMOD_STUDIO_COMMANDREPLAY_FLAGS {
+    fn from(value: CommandReplayFlags) -> Self {
+        value.bits()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct BufferInfo {
+    pub current_usage: c_int,
+    pub peak_usage: c_int,
+    pub capacity: c_int,
+    pub stall_count: c_int,
+    pub stall_time: c_float,
+}
+
+impl From<FMOD_STUDIO_BUFFER_INFO> for BufferInfo {
+    fn from(value: FMOD_STUDIO_BUFFER_INFO) -> Self {
+        BufferInfo {
+            current_usage: value.currentusage,
+            peak_usage: value.peakusage,
+            capacity: value.capacity,
+            stall_count: value.stallcount,
+            stall_time: value.stalltime,
+        }
+    }
+}
+
+impl From<BufferInfo> for FMOD_STUDIO_BUFFER_INFO {
+    fn from(value: BufferInfo) -> Self {
+        FMOD_STUDIO_BUFFER_INFO {
+            currentusage: value.current_usage,
+            peakusage: value.peak_usage,
+            capacity: value.capacity,
+            stallcount: value.stall_count,
+            stalltime: value.stall_time,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct BufferUsage {
+    pub studio_command_queue: BufferInfo,
+    pub studio_handle: BufferInfo,
+}
+
+impl From<FMOD_STUDIO_BUFFER_USAGE> for BufferUsage {
+    fn from(value: FMOD_STUDIO_BUFFER_USAGE) -> Self {
+        BufferUsage {
+            studio_command_queue: value.studiocommandqueue.into(),
+            studio_handle: value.studiohandle.into(),
+        }
+    }
+}
+
+impl From<BufferUsage> for FMOD_STUDIO_BUFFER_USAGE {
+    fn from(value: BufferUsage) -> Self {
+        FMOD_STUDIO_BUFFER_USAGE {
+            studiocommandqueue: value.studio_command_queue.into(),
+            studiohandle: value.studio_handle.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct CpuUsage {
+    pub update: c_float,
+}
+
+impl From<FMOD_STUDIO_CPU_USAGE> for CpuUsage {
+    fn from(value: FMOD_STUDIO_CPU_USAGE) -> Self {
+        CpuUsage {
+            update: value.update,
+        }
+    }
+}
+
+impl From<CpuUsage> for FMOD_STUDIO_CPU_USAGE {
+    fn from(value: CpuUsage) -> Self {
+        FMOD_STUDIO_CPU_USAGE {
+            update: value.update,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SoundInfo {
+    pub name_or_data: &'static CStr,
+    pub mode: FMOD_MODE, // FIXME ffi types
+    pub ex_info: FMOD_CREATESOUNDEXINFO,
+    pub subsound_index: c_int,
+}
+
+impl SoundInfo {
+    /// Create a safe [`SoundInfo`] struct from the FFI equivalent.
+    ///
+    /// # Safety
+    ///
+    /// All string values from the FFI struct must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
+    ///
+    /// See [`CStr::from_ptr`] for more information.
+    unsafe fn from_ffi(value: FMOD_STUDIO_SOUND_INFO) -> Self {
+        unsafe {
+            SoundInfo {
+                name_or_data: CStr::from_ptr(value.name_or_data),
+                mode: value.mode,
+                ex_info: value.exinfo,
+                subsound_index: value.subsoundindex,
+            }
+        }
+    }
+}
+
+impl From<SoundInfo> for FMOD_STUDIO_SOUND_INFO {
+    fn from(value: SoundInfo) -> Self {
+        FMOD_STUDIO_SOUND_INFO {
+            name_or_data: value.name_or_data.as_ptr(),
+            mode: value.mode,
+            exinfo: value.ex_info,
+            subsoundindex: value.subsound_index,
+        }
     }
 }

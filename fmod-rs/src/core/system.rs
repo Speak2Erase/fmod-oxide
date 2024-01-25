@@ -15,8 +15,25 @@
 // You should have received a copy of the GNU General Public License
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
-mod channel_group;
-pub use channel_group::*;
+use fmod_sys::*;
 
-mod system;
-pub use system::*;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)] // so we can transmute between types
+pub struct System {
+    pub(crate) inner: *mut FMOD_SYSTEM,
+}
+
+unsafe impl Send for System {}
+unsafe impl Sync for System {}
+
+impl From<*mut FMOD_SYSTEM> for System {
+    fn from(value: *mut FMOD_SYSTEM) -> Self {
+        System { inner: value }
+    }
+}
+
+impl From<System> for *mut FMOD_SYSTEM {
+    fn from(value: System) -> Self {
+        value.inner
+    }
+}

@@ -21,11 +21,12 @@ use std::{
     mem::MaybeUninit,
 };
 
-use crate::{Attributes3D, Guid, Vector};
+use crate::{core, Attributes3D, Guid, Vector};
 
 use super::{
-    AdvancedSettings, Bank, Bus, CommandCaptureFlags, CommandReplay, EventDescription, InitFlags,
-    LoadBankFlags, ParameterDescription, ParameterID, Vca,
+    AdvancedSettings, Bank, BufferUsage, Bus, CommandCaptureFlags, CommandReplay,
+    CommandReplayFlags, EventDescription, InitFlags, LoadBankFlags, MemoryUsage,
+    ParameterDescription, ParameterID, SoundInfo, Vca,
 };
 
 /// The main system object for FMOD Studio.
@@ -101,6 +102,10 @@ impl SystemBuilder {
             FMOD_System_SetDSPBufferSize(core, buffer_size, buffer_count).to_result()?;
         };
         Ok(self)
+    }
+
+    pub fn get_core_system_builder(&self) -> Result<()> {
+        todo!()
     }
 
     pub fn build(
@@ -905,7 +910,7 @@ impl System {
     pub fn load_command_replay(
         &self,
         filename: &CStr,
-        flags: CommandCaptureFlags,
+        flags: CommandReplayFlags,
     ) -> Result<CommandReplay> {
         let mut replay = std::ptr::null_mut();
         unsafe {
@@ -918,5 +923,226 @@ impl System {
             .to_result()?;
         }
         Ok(replay.into())
+    }
+}
+
+impl System {
+    /// Retrieves buffer usage information.
+    ///
+    /// Stall count and time values are cumulative. They can be reset by calling [`System::reset_buffer_usage`].
+    ///
+    /// Stalls due to the studio command queue overflowing can be avoided by setting a larger command queue size with [`SystemBuilder::settings`].
+    pub fn get_buffer_usage(&self) -> Result<BufferUsage> {
+        let mut usage = MaybeUninit::zeroed();
+        unsafe {
+            FMOD_Studio_System_GetBufferUsage(self.inner, usage.as_mut_ptr()).to_result()?;
+
+            let usage = usage.assume_init().into();
+            Ok(usage)
+        }
+    }
+
+    /// Resets memory buffer usage statistics.
+    ///
+    /// This function resets the buffer usage data tracked by the FMOD Studio System.
+    pub fn reset_buffer_usage(&self) -> Result<()> {
+        unsafe { FMOD_Studio_System_ResetBufferUsage(self.inner).to_result() }
+    }
+
+    /// Retrieves the amount of CPU used for different parts of the Studio engine.
+    ///
+    /// For readability, the percentage values are smoothed to provide a more stable output.
+    pub fn get_cpu_usage(&self) -> Result<(super::CpuUsage, crate::CpuUsage)> {
+        let mut usage = MaybeUninit::zeroed();
+        let mut usage_core = MaybeUninit::zeroed();
+        unsafe {
+            FMOD_Studio_System_GetCPUUsage(self.inner, usage.as_mut_ptr(), usage_core.as_mut_ptr())
+                .to_result()?;
+
+            let usage = usage.assume_init().into();
+            let usage_core = usage_core.assume_init().into();
+            Ok((usage, usage_core))
+        }
+    }
+
+    /// Retrieves memory usage statistics.
+    ///
+    /// The memory usage `sample_data` field for the system is the total size of non-streaming sample data currently loaded.
+    ///
+    /// Memory usage statistics are only available in logging builds, in release builds memoryusage will contain zero for all values after calling this function.
+    pub fn get_memory_usage(&self) -> Result<MemoryUsage> {
+        let mut usage = MaybeUninit::zeroed();
+        unsafe {
+            FMOD_Studio_System_GetMemoryUsage(self.inner, usage.as_mut_ptr()).to_result()?;
+
+            let usage = usage.assume_init().into();
+            Ok(usage)
+        }
+    }
+}
+
+impl System {
+    /// Registers a plugin DSP.
+    ///
+    /// Plugin DSPs used by an event must be registered using this function before loading the bank containing the event.
+    ///
+    /// # Safety
+    /// TODO
+    pub unsafe fn register_plugin(&self) {
+        todo!()
+    }
+
+    /// Unregisters a plugin DSP.
+    ///
+    /// # Safety
+    /// TODO
+    pub unsafe fn unregister_plugin(&self) {
+        todo!()
+    }
+}
+
+impl System {
+    /// Sets a callback for the FMOD Studio System.
+    ///
+    /// The system callback function is called for a variety of reasons, use the callbackmask to choose which callbacks you are interested in.
+    ///
+    /// Callbacks are called from the Studio Update Thread in default / async mode and the main (calling) thread in synchronous mode. See the [`FMOD_STUDIO_SYSTEM_CALLBACK_TYPE`] for details.
+    pub fn set_callback<F>(&self, callback: F, mask: FMOD_STUDIO_SYSTEM_CALLBACK_TYPE)
+    where
+        F: Fn() + Send + Sync,
+    {
+        todo!()
+    }
+
+    /// Sets the user data.
+    ///
+    /// This function allows arbitrary user data to be attached to this object, which wll be passed through the userdata parameter in any [`FMOD_STUDIO_SYSTEM_CALLBACK`]s.
+    /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
+    pub fn set_user_data<T>(&self, data: T) -> Result<()>
+    where
+        T: Send + Sync + 'static,
+    {
+        // TODO
+        todo!()
+    }
+
+    /// Retrieves the user data.
+    ///
+    /// This function allows arbitrary user data to be retrieved from this object.
+    pub fn get_user_data<T>(&self) -> Result<Option<&T>>
+    where
+        T: Send + Sync + 'static,
+    {
+        // TODO
+        todo!()
+    }
+}
+
+impl System {
+    /// Retrieves information for loading a sound from the audio table.
+    ///
+    /// The [`SoundInfo`] structure contains information to be passed to [`crate::System::create_sound`] (which will create a parent sound),
+    /// along with a subsound index to be passed to [`crate::Sound::get_sub_sound`] once the parent sound is loaded.
+    ///
+    /// The user is expected to call [`System::create_sound `]with the given information.
+    /// It is up to the user to combine in any desired loading flags, such as [`FMOD_CREATESTREAM`], [`FMOD_CREATECOMPRESSEDSAMPLE`] or [`FMOD_NONBLOCKING`] with the flags in [`FMOD_STUDIO_SOUND_INFO::mode`].
+    ///
+    /// When the banks have been loaded via [`System::load_bank_memory`], the mode will be returned as [`FMOD_OPENMEMORY_POINT`].
+    /// This won't work with the default [`FMOD_CREATESAMPLE`] mode.
+    /// For memory banks, you should add in the [`FMOD_CREATECOMPRESSEDSAMPLE`] or [`FMOD_CREATESTREAM`] flag, or remove [`FMOD_OPENMEMORY_POINT`] and add [`FMOD_OPENMEMORY`] to decompress the sample into a new allocation.
+    // TODO flags
+    pub fn get_sound_info(&self, key: &CStr) -> Result<SoundInfo> {
+        let mut sound_info = MaybeUninit::zeroed();
+        unsafe {
+            FMOD_Studio_System_GetSoundInfo(self.inner, key.as_ptr(), sound_info.as_mut_ptr())
+                .to_result()?;
+
+            let sound_info = SoundInfo::from_ffi(sound_info.assume_init());
+            Ok(sound_info)
+        }
+    }
+}
+
+impl System {
+    /// Retrieves the Core System.
+    pub fn get_core_system(&self) -> Result<core::System> {
+        let mut system = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_System_GetCoreSystem(self.inner, &mut system).to_result()?;
+        }
+        Ok(system.into())
+    }
+}
+
+impl System {
+    /// Retrieves the ID for a bank, event, snapshot, bus or VCA.
+    ///
+    /// The strings bank must be loaded prior to calling this function, otherwise [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned.
+    ///
+    /// The path can be copied to the system clipboard from FMOD Studio using the "Copy Path" context menu command.
+    pub fn lookup_id(&self, path: &CStr) -> Result<Guid> {
+        let mut guid = MaybeUninit::zeroed();
+        unsafe {
+            FMOD_Studio_System_LookupID(self.inner, path.as_ptr(), guid.as_mut_ptr())
+                .to_result()?;
+
+            let guid = guid.assume_init().into();
+            Ok(guid)
+        }
+    }
+
+    /// Retrieves the path for a bank, event, snapshot, bus or VCA.
+    ///
+    /// The strings bank must be loaded prior to calling this function, otherwise [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned.
+    pub fn lookup_path(&self, id: Guid) -> Result<String> {
+        let mut string_len = 0;
+
+        // retrieve the length of the string.
+        // this includes the null terminator, so we don't need to account for that.
+        unsafe {
+            let error = FMOD_Studio_System_LookupPath(
+                self.inner,
+                &id.into(),
+                std::ptr::null_mut(),
+                0,
+                &mut string_len,
+            )
+            .to_error();
+
+            // we expect the error to be fmod_err_truncated.
+            // if it isn't, we return the error.
+            match error {
+                Some(error) if error.code != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
+                _ => {}
+            }
+        };
+
+        let mut path = vec![0u8; string_len as usize];
+        let mut expected_string_len = 0;
+
+        unsafe {
+            FMOD_Studio_System_LookupPath(
+                self.inner,
+                &id.into(),
+                // u8 and i8 have the same layout, so this is ok
+                path.as_mut_ptr().cast(),
+                string_len,
+                &mut expected_string_len,
+            )
+            .to_result()?;
+
+            debug_assert_eq!(string_len, expected_string_len);
+
+            // all public fmod apis return UTF-8 strings. this should be safe.
+            // if i turn out to be wrong, perhaps we should add extra error types?
+            let path = String::from_utf8_unchecked(path);
+
+            Ok(path)
+        }
+    }
+
+    /// Checks that the [`System`] reference is valid and has been initialized.
+    pub fn is_valid(&self) -> bool {
+        unsafe { FMOD_Studio_System_IsValid(self.inner).into() }
     }
 }
