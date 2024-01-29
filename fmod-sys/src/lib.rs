@@ -50,6 +50,16 @@ impl From<FMOD_RESULT> for Result<()> {
     }
 }
 
+impl<T> From<Result<T>> for FMOD_RESULT {
+    fn from(value: Result<T>) -> Self {
+        if let Some(error) = value.err() {
+            error.code
+        } else {
+            FMOD_RESULT::FMOD_OK
+        }
+    }
+}
+
 impl FMOD_RESULT {
     pub fn to_result(self) -> Result<()> {
         self.into()

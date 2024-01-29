@@ -341,9 +341,9 @@ impl Bank {
 
     /// Sets the bank user data.
     ///
-    /// This function allows arbitrary user data to be retrieved from this object.
+    /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data<T>(&self, data: T) -> Result<()>
+    pub fn set_user_data<T>(&self, data: Option<T>) -> Result<()>
     where
         T: Send + Sync + 'static,
     {

@@ -72,7 +72,7 @@ impl EventDescription {
         Ok(count)
     }
 
-    pub fn get_bank_list(&self) -> Result<Vec<EventInstance>> {
+    pub fn get_instance_list(&self) -> Result<Vec<EventInstance>> {
         let expected_count = self.instance_count()?;
         let mut count = 0;
         let mut list = vec![
@@ -612,7 +612,7 @@ impl EventDescription {
 
     /// Sets the event user data.
     ///
-    /// This function allows arbitrary user data to be retrieved from this object.
+    /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
     pub fn set_user_data<T>(&self, data: T) -> Result<()>
     where

@@ -637,3 +637,77 @@ impl From<SoundInfo> for FMOD_STUDIO_SOUND_INFO {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum PlaybackState {
+    Playing = FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_PLAYING,
+    Sustaining = FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_SUSTAINING,
+    Stopped = FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_STOPPED,
+    Starting = FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_STARTING,
+    Stopping = FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_STOPPING,
+}
+
+impl From<FMOD_STUDIO_PLAYBACK_STATE> for PlaybackState {
+    fn from(value: FMOD_STUDIO_PLAYBACK_STATE) -> Self {
+        match value {
+            FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_PLAYING => PlaybackState::Playing,
+            FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_SUSTAINING => PlaybackState::Sustaining,
+            FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_STOPPED => PlaybackState::Stopped,
+            FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_STARTING => PlaybackState::Starting,
+            FMOD_STUDIO_PLAYBACK_STATE_FMOD_STUDIO_PLAYBACK_STOPPING => PlaybackState::Stopping,
+            // TODO: is this the right way to handle invalid states?
+            v => panic!("invalid loading state {v}"),
+        }
+    }
+}
+
+impl From<PlaybackState> for FMOD_STUDIO_PLAYBACK_STATE {
+    fn from(value: PlaybackState) -> Self {
+        value as FMOD_STUDIO_PLAYBACK_STATE
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum EventProperty {
+    ChannelPriority = FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_CHANNELPRIORITY,
+    ScheduleDelay = FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_SCHEDULE_DELAY,
+    ScheduleLookahead = FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_SCHEDULE_LOOKAHEAD,
+    MinimumDistance = FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_MINIMUM_DISTANCE,
+    MaximumDistance = FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_MAXIMUM_DISTANCE,
+    Cooldown = FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_COOLDOWN,
+}
+
+impl From<FMOD_STUDIO_EVENT_PROPERTY> for EventProperty {
+    fn from(value: FMOD_STUDIO_EVENT_PROPERTY) -> Self {
+        match value {
+            FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_CHANNELPRIORITY => {
+                EventProperty::ChannelPriority
+            }
+            FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_SCHEDULE_DELAY => {
+                EventProperty::ScheduleDelay
+            }
+            FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_SCHEDULE_LOOKAHEAD => {
+                EventProperty::ScheduleLookahead
+            }
+            FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_MINIMUM_DISTANCE => {
+                EventProperty::MinimumDistance
+            }
+            FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_MAXIMUM_DISTANCE => {
+                EventProperty::MaximumDistance
+            }
+            FMOD_STUDIO_EVENT_PROPERTY_FMOD_STUDIO_EVENT_PROPERTY_COOLDOWN => {
+                EventProperty::Cooldown
+            }
+            // TODO: is this the right way to handle invalid states?
+            v => panic!("invalid loading state {v}"),
+        }
+    }
+}
+
+impl From<EventProperty> for FMOD_STUDIO_EVENT_PROPERTY {
+    fn from(value: EventProperty) -> Self {
+        value as FMOD_STUDIO_EVENT_PROPERTY
+    }
+}
