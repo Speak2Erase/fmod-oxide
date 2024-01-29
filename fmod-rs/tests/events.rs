@@ -15,18 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
-use fmod_rs::studio::LoadBankFlags;
+use fmod::studio::LoadBankFlags;
 use once_cell::sync::Lazy;
 
 struct State {
-    system: fmod_rs::studio::System,
-    master_bank: fmod_rs::studio::Bank,
-    string_bank: fmod_rs::studio::Bank,
+    system: fmod::studio::System,
+    master_bank: fmod::studio::Bank,
+    string_bank: fmod::studio::Bank,
 }
 
 static STATE: Lazy<State> = Lazy::new(|| {
     // # Safety: Lazy ensures that this is called from only one thread
-    let system = unsafe { fmod_rs::studio::System::new().unwrap() };
+    let system = unsafe { fmod::studio::System::new().unwrap() };
 
     let master_bank = system
         .load_bank_file(

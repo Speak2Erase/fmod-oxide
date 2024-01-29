@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
-use fmod_rs::studio::LoadBankFlags;
+use fmod::studio::LoadBankFlags;
 use fmod_sys::FMOD_Studio_Bank_GetUserData;
 
-fn main() -> fmod_rs::Result<()> {
+fn main() -> fmod::Result<()> {
     // # Safety: we are only calling this from the main fn and the main thread.
     // No other thread or api call will overlap this.
-    let system = unsafe { fmod_rs::studio::System::new()? };
+    let system = unsafe { fmod::studio::System::new()? };
 
     let main_bank = system.load_bank_file(
         c"fmod/api/studio/examples/media/Master.bank",

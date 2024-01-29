@@ -3,6 +3,9 @@ name = "fmod-rs"
 version = "2.2.20"
 edition = "2021"
 
+[lib]
+name = "fmod"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
