@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 fn main() {
-    let fmod_dir = option_env!("FMOD_SYS_FMOD_DIRECTORY")
+    let fmod_dir = std::env::var_os("FMOD_SYS_FMOD_DIRECTORY")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fmod"));
     let api_dir = fmod_dir.join("api");
