@@ -261,8 +261,10 @@ impl System {
             FMOD_Studio_System_Release(self.inner).to_result()?;
 
             // deallocate the userdata after the system is released
-            let userdata = Box::from_raw(userdata.cast::<InternalUserdata>());
-            drop(userdata);
+            if !userdata.is_null() {
+                let userdata = Box::from_raw(userdata.cast::<InternalUserdata>());
+                drop(userdata);
+            }
         }
         Ok(())
     }

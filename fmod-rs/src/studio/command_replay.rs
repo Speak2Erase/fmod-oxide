@@ -494,11 +494,46 @@ impl CommandReplay {
     where
         T: Send + Sync + 'static,
     {
-        todo!()
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_CommandReplay_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            if userdata.is_null() {
+                return Ok(None);
+            }
+
+            // userdata should ALWAYS be InternalUserdata
+            let userdata = &mut *userdata.cast::<InternalUserdata>();
+            let userdata = userdata
+                .userdata
+                .clone()
+                .map(Arc::downcast::<T>)
+                .and_then(std::result::Result::ok);
+            Ok(userdata)
+        }
     }
 
     /// Checks that the [`CommandReplay`] reference is valid.
     pub fn is_valid(&self) -> bool {
         unsafe { FMOD_Studio_CommandReplay_IsValid(self.inner).into() }
+    }
+}
+
+impl CommandReplay {
+    pub fn release(self) -> Result<()> {
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_CommandReplay_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            FMOD_Studio_CommandReplay_Release(self.inner).to_result()?;
+
+            // deallocate the userdata after the replay is released
+            if !userdata.is_null() {
+                let userdata = Box::from_raw(userdata.cast::<InternalUserdata>());
+                drop(userdata);
+            }
+
+            Ok(())
+        }
     }
 }

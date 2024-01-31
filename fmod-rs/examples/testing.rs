@@ -29,8 +29,6 @@ fn main() -> fmod::Result<()> {
     // No other thread or api call will overlap this.
     let system = unsafe { fmod::studio::System::new()? };
 
-    system.set_user_data(Some(PrintOnDrop("haiiiiii :3")))?;
-
     let print_on_drop = PrintOnDrop("bank userdata has been dropped :3");
     let master_bank = system.load_bank_file(
         c"fmod/api/studio/examples/media/Master.bank",
