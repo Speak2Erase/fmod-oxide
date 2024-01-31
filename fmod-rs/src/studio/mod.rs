@@ -711,3 +711,35 @@ impl From<EventProperty> for FMOD_STUDIO_EVENT_PROPERTY {
         value as FMOD_STUDIO_EVENT_PROPERTY
     }
 }
+
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct SystemCallbackMask: c_uint {
+        const Preupdate = FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE;
+        const Postupdate = FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE;
+        const BankUnload = FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD;
+        const LiveupdateConnected = FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_CONNECTED;
+        const LiveupdateDisconnected = FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_DISCONNECTED;
+    }
+}
+
+impl From<FMOD_STUDIO_SYSTEM_CALLBACK_TYPE> for SystemCallbackMask {
+    fn from(value: FMOD_STUDIO_SYSTEM_CALLBACK_TYPE) -> Self {
+        SystemCallbackMask::from_bits_truncate(value)
+    }
+}
+
+impl From<SystemCallbackMask> for FMOD_STUDIO_SYSTEM_CALLBACK_TYPE {
+    fn from(value: SystemCallbackMask) -> Self {
+        value.bits()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SystemCallbackKind {
+    Preupdate,
+    Postupdate,
+    BankUnload(Bank),
+    LiveupdateConnected,
+    LiveupdateDisconnected,
+}

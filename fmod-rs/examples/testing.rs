@@ -15,34 +15,33 @@
 // You should have received a copy of the GNU General Public License
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
-use fmod::studio::LoadBankFlags;
-use fmod_sys::FMOD_Studio_Bank_GetUserData;
+#[derive(Debug)]
+struct PrintOnDrop(&'static str);
+
+impl Drop for PrintOnDrop {
+    fn drop(&mut self) {
+        println!("print on drop: {}", self.0);
+    }
+}
 
 fn main() -> fmod::Result<()> {
     // # Safety: we are only calling this from the main fn and the main thread.
     // No other thread or api call will overlap this.
     let system = unsafe { fmod::studio::System::new()? };
 
-    let main_bank = system.load_bank_file(
+    system.set_user_data(Some(PrintOnDrop("haiiiiii :3")))?;
+
+    let print_on_drop = PrintOnDrop("bank userdata has been dropped :3");
+    let master_bank = system.load_bank_file(
         c"fmod/api/studio/examples/media/Master.bank",
-        LoadBankFlags::NORMAL,
+        fmod::studio::LoadBankFlags::NORMAL,
     )?;
-    let strings_bank = system.load_bank_file(
-        c"fmod/api/studio/examples/media/Master.strings.bank",
-        LoadBankFlags::NORMAL,
-    )?;
-    let vehicles_bank = system.load_bank_file(
-        c"fmod/api/studio/examples/media/Vehicles.bank",
-        LoadBankFlags::NORMAL,
-    );
+    master_bank.set_user_data(Some(print_on_drop))?;
+    master_bank.set_user_data(None::<()>)?;
 
-    let event_desc = system.get_event(c"event:/Vehicles/Car Engine")?;
+    println!("updating system");
 
-    unsafe {
-        let mut userdata = std::ptr::null_mut();
-        FMOD_Studio_Bank_GetUserData(main_bank.into(), &mut userdata).to_result()?;
-        println!("{userdata:p}")
-    }
+    system.update()?;
 
     println!("releasing system");
 
@@ -51,6 +50,8 @@ fn main() -> fmod::Result<()> {
         // No other API calls can happen after this.
         system.release()?;
     }
+
+    println!("system released");
 
     Ok(())
 }

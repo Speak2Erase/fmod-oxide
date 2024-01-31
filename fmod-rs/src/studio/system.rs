@@ -17,8 +17,11 @@
 
 use fmod_sys::*;
 use std::{
+    any::Any,
     ffi::{c_float, c_int, c_uint, CStr},
     mem::MaybeUninit,
+    os::raw::c_void,
+    sync::Arc,
 };
 
 use crate::{core, Attributes3D, Guid, Vector};
@@ -26,7 +29,7 @@ use crate::{core, Attributes3D, Guid, Vector};
 use super::{
     AdvancedSettings, Bank, BufferUsage, Bus, CommandCaptureFlags, CommandReplay,
     CommandReplayFlags, EventDescription, InitFlags, LoadBankFlags, MemoryUsage,
-    ParameterDescription, ParameterID, SoundInfo, Vca,
+    ParameterDescription, ParameterID, SoundInfo, SystemCallbackKind, SystemCallbackMask, Vca,
 };
 
 /// The main system object for FMOD Studio.
@@ -46,6 +49,78 @@ pub struct System {
 #[must_use]
 pub struct SystemBuilder {
     system: *mut FMOD_STUDIO_SYSTEM,
+}
+
+pub(crate) struct InternalUserdata {
+    // we don't expose the callback at all so it's fine to just use a box
+    callback: Option<Box<CallbackFn>>,
+    // this is an arc in case someone releases the system while holding onto a reference to the userdata
+    userdata: Option<Userdata>,
+    // used to ensure we don't misfire callbacks (we always subscribe to unloading banks to ensure userdata is freed)
+    enabled_callbacks: SystemCallbackMask,
+}
+
+// hilariously long type signature because clippy
+type CallbackFn =
+    dyn Fn(System, SystemCallbackKind, Option<Userdata>) -> Result<()> + Send + Sync + 'static;
+type Userdata = Arc<dyn Any + Send + Sync + 'static>;
+
+unsafe extern "C" fn internal_callback(
+    system: *mut FMOD_STUDIO_SYSTEM,
+    kind: FMOD_STUDIO_SYSTEM_CALLBACK_TYPE,
+    command_data: *mut c_void,
+    userdata: *mut c_void,
+) -> FMOD_RESULT {
+    let mut result = FMOD_RESULT::FMOD_OK;
+
+    // userdata should always be InternalUserdata, and if not null, it should be a valid reference to InternalUserdata
+    // FIXME: this as_ref() might violate rust aliasing rules, should we use UnsafeCell?
+    if let Some(internal_userdata) = unsafe { userdata.cast::<InternalUserdata>().as_ref() } {
+        if let Some(callback) = &internal_userdata.callback {
+            let system = system.into();
+
+            let kind = match kind {
+                FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE => SystemCallbackKind::Preupdate,
+                FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE => SystemCallbackKind::Postupdate,
+                FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD => {
+                    let bank = command_data.cast::<FMOD_STUDIO_BANK>().into();
+                    SystemCallbackKind::BankUnload(bank)
+                }
+                FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_CONNECTED => {
+                    SystemCallbackKind::LiveupdateConnected
+                }
+                FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_DISCONNECTED => {
+                    SystemCallbackKind::LiveupdateDisconnected
+                }
+                _ => {
+                    eprintln!("wrong system callback type {kind}, aborting");
+                    std::process::abort()
+                }
+            };
+
+            let userdata = internal_userdata.userdata.clone();
+            result = callback(system, kind, userdata).into();
+        }
+    }
+
+    if kind == FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD {
+        let bank = command_data.cast::<FMOD_STUDIO_BANK>();
+
+        let mut userdata = std::ptr::null_mut();
+        let error = unsafe { FMOD_Studio_Bank_GetUserData(bank, &mut userdata) }.to_error();
+
+        // we don't want this error
+        if let Some(error) = error {
+            eprintln!("error grabbing the bank userdata to deallocate it: {error}");
+        }
+        // deallocate the userdata if it is not null
+        if !userdata.is_null() {
+            let userdata = userdata.cast::<super::bank::InternalUserdata>();
+            unsafe { drop(Box::from_raw(userdata)) };
+        }
+    }
+
+    result
 }
 
 impl SystemBuilder {
@@ -123,6 +198,14 @@ impl SystemBuilder {
                 std::ptr::null_mut(), // not sure how to handle this
             )
             .to_result()?;
+
+            // ensure the callback is always set so we can properly deallocate bank userdata
+            FMOD_Studio_System_SetCallback(
+                self.system,
+                Some(internal_callback),
+                FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD,
+            )
+            .to_result()?;
         }
         Ok(System { inner: self.system })
     }
@@ -169,7 +252,18 @@ impl System {
     ///
     /// This function is not safe to be called at the same time across multiple threads.
     pub unsafe fn release(self) -> Result<()> {
-        unsafe { FMOD_Studio_System_Release(self.inner) }.to_result()
+        unsafe {
+            // fetch userdata before release is called
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            FMOD_Studio_System_Release(self.inner).to_result()?;
+
+            // deallocate the userdata after the system is released
+            let userdata = Box::from_raw(userdata.cast::<InternalUserdata>());
+            drop(userdata);
+        }
+        Ok(())
     }
 }
 
@@ -1007,34 +1101,99 @@ impl System {
     /// The system callback function is called for a variety of reasons, use the callbackmask to choose which callbacks you are interested in.
     ///
     /// Callbacks are called from the Studio Update Thread in default / async mode and the main (calling) thread in synchronous mode. See the [`FMOD_STUDIO_SYSTEM_CALLBACK_TYPE`] for details.
-    pub fn set_callback<F>(&self, callback: F, mask: FMOD_STUDIO_SYSTEM_CALLBACK_TYPE)
+    pub fn set_callback<F>(&self, callback: F, mask: SystemCallbackMask) -> Result<()>
     where
-        F: Fn() + Send + Sync,
+        F: Fn(System, SystemCallbackKind, Option<Userdata>) -> Result<()> + Send + Sync + 'static,
     {
-        todo!()
+        // Always enable BankUnload to deallocate any userdata attached to banks
+        let raw_mask = (mask | SystemCallbackMask::BankUnload).into();
+
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+
+            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            // create & set the userdata if we haven't already
+            if userdata.is_null() {
+                let boxed_userdata = Box::new(InternalUserdata {
+                    callback: None,
+                    enabled_callbacks: SystemCallbackMask::empty(),
+                    userdata: None,
+                });
+                userdata = Box::into_raw(boxed_userdata).cast();
+
+                FMOD_Studio_System_SetUserData(self.inner, userdata).to_result()?;
+            }
+
+            // userdata should ALWAYS be InternalUserdata
+            let userdata = &mut *userdata.cast::<InternalUserdata>();
+            userdata.callback = Some(Box::new(callback));
+            userdata.enabled_callbacks = mask;
+
+            // is this allowed to be null?
+            FMOD_Studio_System_SetCallback(self.inner, Some(internal_callback), raw_mask)
+                .to_result()
+        }
     }
 
     /// Sets the user data.
     ///
     /// This function allows arbitrary user data to be attached to this object, which wll be passed through the userdata parameter in any [`FMOD_STUDIO_SYSTEM_CALLBACK`]s.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data<T>(&self, data: T) -> Result<()>
+    pub fn set_user_data<T>(&self, data: Option<T>) -> Result<()>
     where
-        T: Send + Sync + 'static,
+        T: Any + Send + Sync + 'static,
     {
-        // TODO
-        todo!()
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+
+            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            // create & set the userdata if we haven't already
+            if userdata.is_null() {
+                let boxed_userdata = Box::new(InternalUserdata {
+                    callback: None,
+                    enabled_callbacks: SystemCallbackMask::empty(),
+                    userdata: None,
+                });
+                userdata = Box::into_raw(boxed_userdata).cast();
+
+                FMOD_Studio_System_SetUserData(self.inner, userdata).to_result()?;
+            }
+
+            // userdata should ALWAYS be InternalUserdata
+            let userdata = &mut *userdata.cast::<InternalUserdata>();
+            userdata.userdata = data.map(|d| Arc::new(d) as _); // closure is necessary to unsize type
+        }
+
+        Ok(())
     }
 
     /// Retrieves the user data.
     ///
     /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data<T>(&self) -> Result<Option<&T>>
+    // TODO should we just return the dyn Userdata directly?
+    pub fn get_user_data<T>(&self) -> Result<Option<Arc<T>>>
     where
-        T: Send + Sync + 'static,
+        T: Any + Send + Sync + 'static,
     {
-        // TODO
-        todo!()
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            if userdata.is_null() {
+                return Ok(None);
+            }
+
+            // userdata should ALWAYS be InternalUserdata
+            let userdata = &mut *userdata.cast::<InternalUserdata>();
+            let userdata = userdata
+                .userdata
+                .clone()
+                .map(Arc::downcast::<T>)
+                .and_then(std::result::Result::ok);
+            Ok(userdata)
+        }
     }
 }
 

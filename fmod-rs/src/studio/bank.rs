@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::{ffi::c_int, mem::MaybeUninit};
+use std::{any::Any, ffi::c_int, mem::MaybeUninit, sync::Arc};
 
 use crate::Guid;
 
@@ -27,6 +27,15 @@ use fmod_sys::*;
 pub struct Bank {
     pub(crate) inner: *mut FMOD_STUDIO_BANK,
 }
+
+pub(crate) struct InternalUserdata {
+    // this is an arc in case someone unloads the bank while holding onto a reference to the userdata
+    // we don't convert the Arc<T> to a raw pointer because that would be a dyn pointer which is not ffi safe
+    // ideally we should be doing C++ style polymorphism, but the cost of dereferencing the userdata twice is... fine
+    userdata: Option<Userdata>,
+}
+
+type Userdata = Arc<dyn Any + Send + Sync + 'static>;
 
 unsafe impl Send for Bank {}
 unsafe impl Sync for Bank {}
@@ -91,6 +100,7 @@ impl Bank {
     /// If the bank was loaded from user-managed memory, e.g. by [`super::System::load_bank_pointer`], then the memory must not be freed until the unload has completed.
     /// Poll the loading state using [`Bank::get_loading_state`] or use the [`FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD`] system callback to determine when it is safe to free the memory.
     pub fn unload(self) -> Result<()> {
+        // we don't deallocate userdata here because the system callback will take care of that for us
         unsafe { FMOD_Studio_Bank_Unload(self.inner).to_result() }
     }
 }
@@ -345,21 +355,52 @@ impl Bank {
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
     pub fn set_user_data<T>(&self, data: Option<T>) -> Result<()>
     where
-        T: Send + Sync + 'static,
+        T: Any + Send + Sync + 'static,
     {
-        // TODO
-        todo!()
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_Bank_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            // create and set the userdata if we haven't already
+            if userdata.is_null() {
+                let boxed_userdata = Box::new(InternalUserdata { userdata: None });
+                userdata = Box::into_raw(boxed_userdata).cast();
+
+                FMOD_Studio_Bank_SetUserData(self.inner, userdata).to_result()?;
+            }
+
+            let userdata = &mut *userdata.cast::<InternalUserdata>();
+            userdata.userdata = data.map(|d| Arc::new(d) as _); // closure is necessary to unsize type
+        }
+
+        Ok(())
     }
 
     /// Retrieves the bank user data.
     ///
     /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data<T>(&self) -> Result<Option<&T>>
+    pub fn get_user_data<T>(&self) -> Result<Option<Arc<T>>>
     where
         T: Send + Sync + 'static,
     {
-        // TODO
-        todo!()
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+
+            FMOD_Studio_Bank_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            if userdata.is_null() {
+                return Ok(None);
+            }
+
+            // userdata should ALWAYS be InternalUserdata
+            let userdata = &mut *userdata.cast::<InternalUserdata>();
+            let userdata = userdata
+                .userdata
+                .clone()
+                .map(Arc::downcast::<T>)
+                .and_then(std::result::Result::ok);
+            Ok(userdata)
+        }
     }
 
     /// Checks that the Bank reference is valid.
