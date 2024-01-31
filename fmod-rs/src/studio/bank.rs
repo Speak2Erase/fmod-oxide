@@ -35,7 +35,7 @@ pub(crate) struct InternalUserdata {
     userdata: Option<Userdata>,
 }
 
-type Userdata = Arc<dyn Any + Send + Sync + 'static>;
+type Userdata = Arc<dyn Any + Send + Sync>;
 
 unsafe impl Send for Bank {}
 unsafe impl Sync for Bank {}

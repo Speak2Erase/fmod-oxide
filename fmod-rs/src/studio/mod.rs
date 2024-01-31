@@ -743,3 +743,115 @@ pub enum SystemCallbackKind {
     LiveupdateConnected,
     LiveupdateDisconnected,
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct CommandInfo {
+    pub command_name: &'static CStr, // FIXME: WRONG
+    pub parent_command_index: c_int,
+    pub frame_number: c_int,
+    pub frame_time: c_float,
+    pub instance_type: InstanceType,
+    pub output_type: InstanceType,
+    pub instance_handle: c_uint,
+    pub output_handle: c_uint,
+}
+
+impl From<CommandInfo> for FMOD_STUDIO_COMMAND_INFO {
+    fn from(value: CommandInfo) -> Self {
+        FMOD_STUDIO_COMMAND_INFO {
+            commandname: value.command_name.as_ptr(),
+            parentcommandindex: value.parent_command_index,
+            framenumber: value.frame_number,
+            frametime: value.frame_time,
+            instancetype: value.instance_type.into(),
+            outputtype: value.output_type.into(),
+            instancehandle: value.instance_handle,
+            outputhandle: value.output_handle,
+        }
+    }
+}
+
+impl CommandInfo {
+    /// Create a safe [`CommandInfo`] struct from the FFI equivalent.
+    ///
+    /// # Safety
+    ///
+    /// All string values from the FFI struct must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
+    ///
+    /// See [`CStr::from_ptr`] for more information.
+    pub unsafe fn from_ffi(value: FMOD_STUDIO_COMMAND_INFO) -> Self {
+        CommandInfo {
+            command_name: unsafe { CStr::from_ptr(value.commandname) },
+            parent_command_index: value.parentcommandindex,
+            frame_number: value.framenumber,
+            frame_time: value.frametime,
+            instance_type: value.instancetype.into(),
+            output_type: value.outputtype.into(),
+            instance_handle: value.instancehandle,
+            output_handle: value.outputhandle,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum InstanceType {
+    None = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_NONE,
+    System = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_SYSTEM,
+    EventDescription = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_EVENTDESCRIPTION,
+    EventInstance = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_EVENTINSTANCE,
+    ParameterInstance = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_PARAMETERINSTANCE,
+    Bus = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_BUS,
+    Vca = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_VCA,
+    Bank = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_BANK,
+    CommandReplay = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_COMMANDREPLAY,
+}
+
+impl From<FMOD_STUDIO_INSTANCETYPE> for InstanceType {
+    fn from(value: FMOD_STUDIO_INSTANCETYPE) -> Self {
+        match value {
+            FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_NONE => InstanceType::None,
+            FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_SYSTEM => InstanceType::System,
+            FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_EVENTDESCRIPTION => {
+                InstanceType::EventDescription
+            }
+            FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_EVENTINSTANCE => {
+                InstanceType::EventInstance
+            }
+            FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_PARAMETERINSTANCE => {
+                InstanceType::ParameterInstance
+            }
+            FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_BUS => InstanceType::Bus,
+            FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_VCA => InstanceType::Vca,
+            FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_BANK => InstanceType::Bank,
+            FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_COMMANDREPLAY => {
+                InstanceType::CommandReplay
+            }
+            _ => panic!("invalid instance type"),
+        }
+    }
+}
+
+impl From<InstanceType> for FMOD_STUDIO_INSTANCETYPE {
+    fn from(value: InstanceType) -> Self {
+        match value {
+            InstanceType::None => FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_NONE,
+            InstanceType::System => FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_SYSTEM,
+            InstanceType::EventDescription => {
+                FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_EVENTDESCRIPTION
+            }
+            InstanceType::EventInstance => {
+                FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_EVENTINSTANCE
+            }
+            InstanceType::ParameterInstance => {
+                FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_PARAMETERINSTANCE
+            }
+            InstanceType::Bus => FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_BUS,
+            InstanceType::Vca => FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_VCA,
+            InstanceType::Bank => FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_BANK,
+            InstanceType::CommandReplay => {
+                FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_COMMANDREPLAY
+            }
+        }
+    }
+}

@@ -61,9 +61,8 @@ pub(crate) struct InternalUserdata {
 }
 
 // hilariously long type signature because clippy
-type CallbackFn =
-    dyn Fn(System, SystemCallbackKind, Option<Userdata>) -> Result<()> + Send + Sync + 'static;
-type Userdata = Arc<dyn Any + Send + Sync + 'static>;
+type CallbackFn = dyn Fn(System, SystemCallbackKind, Option<Userdata>) -> Result<()> + Send + Sync;
+type Userdata = Arc<dyn Any + Send + Sync>;
 
 unsafe extern "C" fn internal_callback(
     system: *mut FMOD_STUDIO_SYSTEM,
@@ -72,6 +71,8 @@ unsafe extern "C" fn internal_callback(
     userdata: *mut c_void,
 ) -> FMOD_RESULT {
     let mut result = FMOD_RESULT::FMOD_OK;
+
+    // FIXME: handle unwinding panics
 
     // userdata should always be InternalUserdata, and if not null, it should be a valid reference to InternalUserdata
     // FIXME: this as_ref() might violate rust aliasing rules, should we use UnsafeCell?
