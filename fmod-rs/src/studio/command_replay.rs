@@ -520,6 +520,7 @@ impl CommandReplay {
 }
 
 impl CommandReplay {
+    /// Releases the command replay.
     pub fn release(self) -> Result<()> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
