@@ -15,14 +15,25 @@
 // You should have received a copy of the GNU General Public License
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
-mod channel_group;
-pub use channel_group::*;
+use fmod_sys::*;
 
-mod system;
-pub use system::*;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)] // so we can transmute between types
+pub struct Dsp {
+    pub(crate) inner: *mut FMOD_DSP,
+}
 
-mod sound;
-pub use sound::*;
+unsafe impl Send for Dsp {}
+unsafe impl Sync for Dsp {}
 
-mod dsp;
-pub use dsp::*;
+impl From<*mut FMOD_DSP> for Dsp {
+    fn from(value: *mut FMOD_DSP) -> Self {
+        Dsp { inner: value }
+    }
+}
+
+impl From<Dsp> for *mut FMOD_DSP {
+    fn from(value: Dsp) -> Self {
+        value.inner
+    }
+}

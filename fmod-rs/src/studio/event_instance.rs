@@ -18,13 +18,18 @@
 use std::{
     ffi::{c_float, c_int, c_uint, CStr},
     mem::MaybeUninit,
+    sync::Arc,
 };
 
 use fmod_sys::*;
 
 use crate::{core::ChannelGroup, Attributes3D};
 
-use super::{EventDescription, EventProperty, MemoryUsage, ParameterID, PlaybackState, StopMode};
+use super::{
+    event_description::{internal_event_callback, InternalUserdata},
+    EventCallbackKind, EventCallbackMask, EventDescription, EventProperty, MemoryUsage,
+    ParameterID, PlaybackState, StopMode,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)] // so we can transmute between types
@@ -481,11 +486,26 @@ impl EventInstance {
     /// Sets the user callback.
     ///
     /// See the event callbacks section in the FMOD docs for more information about when callbacks occur.
-    pub fn set_callback<F>(&self, callback: F, mask: FMOD_STUDIO_EVENT_CALLBACK_TYPE)
+    pub fn set_callback<F>(&self, callback: F, mask: EventCallbackMask) -> Result<()>
     where
-        F: Fn() + Send + Sync,
+        F: Fn(EventCallbackKind, EventInstance) -> Result<()> + Send + Sync + 'static,
     {
-        todo!()
+        // Always enable destroyed to deallocate any userdata attached to events
+        let raw_mask = (mask | EventCallbackMask::DESTROYED).into();
+
+        unsafe {
+            let userdata = &mut *self.get_or_insert_userdata()?;
+            userdata.callback = Some(Arc::new(callback));
+            userdata.callback_mask = mask;
+
+            // is this allowed to be null?
+            FMOD_Studio_EventInstance_SetCallback(
+                self.inner,
+                Some(internal_event_callback),
+                raw_mask,
+            )
+            .to_result()
+        }
     }
 
     /// Sets the event instance user data.
@@ -496,19 +516,76 @@ impl EventInstance {
     where
         T: Send + Sync + 'static,
     {
-        // TODO
-        todo!()
+        unsafe {
+            let userdata: &mut InternalUserdata = &mut *self.get_or_insert_userdata()?;
+            userdata.userdata = data.map(|d| Arc::new(d) as _); // closure is necessary to unsize type
+        }
+
+        Ok(())
     }
 
     /// Retrieves the event instance user data.
     ///
     /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data<T>(&self) -> Result<Option<&T>>
+    pub fn get_user_data<T>(&self) -> Result<Option<Arc<T>>>
     where
         T: Send + Sync + 'static,
     {
-        // TODO
-        todo!()
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_EventInstance_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            if userdata.is_null() {
+                return Ok(None);
+            }
+
+            // userdata should ALWAYS be InternalUserdata
+            let userdata = &mut *userdata.cast::<InternalUserdata>();
+            let userdata = userdata
+                .userdata
+                .clone()
+                .map(Arc::downcast::<T>)
+                .and_then(std::result::Result::ok);
+            Ok(userdata)
+        }
+    }
+
+    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata> {
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_EventInstance_GetUserData(self.inner, &mut userdata).to_result()?;
+
+            // create and set the userdata if we haven't already
+            if userdata.is_null() {
+                let boxed_userdata = Box::new(InternalUserdata {
+                    callback: None,
+                    callback_mask: EventCallbackMask::empty(),
+                    userdata: None,
+                    // mark this as true because we have created the instance
+                    is_from_event_instance: true,
+                });
+                userdata = Box::into_raw(boxed_userdata).cast();
+
+                FMOD_Studio_EventInstance_SetUserData(self.inner, userdata).to_result()?;
+            } else {
+                // if it is set, check that it's not from an event instance
+                let desc_userdata = &*userdata.cast::<InternalUserdata>();
+                if !desc_userdata.is_from_event_instance {
+                    // create new userdata and copy over anything set from the original userdata
+                    let boxed_userdata = Box::new(InternalUserdata {
+                        callback: desc_userdata.callback.clone(),
+                        userdata: desc_userdata.userdata.clone(),
+                        callback_mask: desc_userdata.callback_mask,
+                        is_from_event_instance: true,
+                    });
+                    userdata = Box::into_raw(boxed_userdata).cast();
+
+                    FMOD_Studio_EventInstance_SetUserData(self.inner, userdata).to_result()?;
+                }
+            }
+
+            Ok(userdata.cast::<InternalUserdata>())
+        }
     }
 }
 

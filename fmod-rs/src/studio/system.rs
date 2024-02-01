@@ -78,50 +78,84 @@ unsafe extern "C" fn internal_callback(
     // FIXME: this as_ref() might violate rust aliasing rules, should we use UnsafeCell?
     if let Some(internal_userdata) = unsafe { userdata.cast::<InternalUserdata>().as_ref() } {
         if let Some(callback) = &internal_userdata.callback {
-            let system = system.into();
+            if internal_userdata.enabled_callbacks.contains(kind.into()) {
+                let system = system.into();
 
-            let kind = match kind {
-                FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE => SystemCallbackKind::Preupdate,
-                FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE => SystemCallbackKind::Postupdate,
-                FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD => {
-                    let bank = command_data.cast::<FMOD_STUDIO_BANK>().into();
-                    SystemCallbackKind::BankUnload(bank)
-                }
-                FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_CONNECTED => {
-                    SystemCallbackKind::LiveupdateConnected
-                }
-                FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_DISCONNECTED => {
-                    SystemCallbackKind::LiveupdateDisconnected
-                }
-                _ => {
-                    eprintln!("wrong system callback type {kind}, aborting");
-                    std::process::abort()
-                }
-            };
+                let kind = match kind {
+                    FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE => SystemCallbackKind::Preupdate,
+                    FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE => SystemCallbackKind::Postupdate,
+                    FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD => {
+                        let bank = command_data.cast::<FMOD_STUDIO_BANK>().into();
+                        SystemCallbackKind::BankUnload(bank)
+                    }
+                    FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_CONNECTED => {
+                        SystemCallbackKind::LiveupdateConnected
+                    }
+                    FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_DISCONNECTED => {
+                        SystemCallbackKind::LiveupdateDisconnected
+                    }
+                    _ => {
+                        eprintln!("wrong system callback type {kind}, aborting");
+                        std::process::abort()
+                    }
+                };
 
-            let userdata = internal_userdata.userdata.clone();
-            result = callback(system, kind, userdata).into();
+                let userdata = internal_userdata.userdata.clone();
+                result = callback(system, kind, userdata).into();
+            }
         }
     }
 
     if kind == FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD {
-        let bank = command_data.cast::<FMOD_STUDIO_BANK>();
-
-        let mut userdata = std::ptr::null_mut();
-        let error = unsafe { FMOD_Studio_Bank_GetUserData(bank, &mut userdata) }.to_error();
-
-        // we don't want this error
-        if let Some(error) = error {
-            eprintln!("error grabbing the bank userdata to deallocate it: {error}");
-        }
-        // deallocate the userdata if it is not null
-        if !userdata.is_null() {
-            let userdata = userdata.cast::<super::bank::InternalUserdata>();
-            unsafe { drop(Box::from_raw(userdata)) };
+        let bank = Bank {
+            inner: command_data.cast(),
+        };
+        if let Err(error) = deallocate_bank(bank) {
+            eprintln!("error deallocating bank: {error}");
         }
     }
 
     result
+}
+
+fn deallocate_bank(bank: Bank) -> Result<()> {
+    let mut userdata = std::ptr::null_mut();
+    unsafe { FMOD_Studio_Bank_GetUserData(bank.inner, &mut userdata).to_result()? };
+
+    // deallocate the userdata if it is not null
+    if !userdata.is_null() {
+        unsafe {
+            let userdata = userdata.cast::<super::bank::InternalUserdata>();
+
+            drop(Box::from_raw(userdata));
+
+            FMOD_Studio_Bank_SetUserData(bank.inner, std::ptr::null_mut()).to_result()?;
+        }
+    }
+
+    bank.load_sample_data()?;
+
+    let list = bank.get_event_list()?;
+    for event in list {
+        let mut userdata = std::ptr::null_mut();
+        unsafe {
+            FMOD_Studio_EventDescription_GetUserData(event.inner, &mut userdata).to_result()?;
+        };
+
+        // deallocate the userdata if it is not null
+        if !userdata.is_null() {
+            unsafe {
+                let userdata = userdata.cast::<super::event_description::InternalUserdata>();
+
+                drop(Box::from_raw(userdata));
+
+                FMOD_Studio_EventDescription_SetUserData(event.inner, std::ptr::null_mut())
+                    .to_result()?;
+            }
+        }
+    }
+
+    Ok(())
 }
 
 impl SystemBuilder {
@@ -1109,7 +1143,7 @@ impl System {
         F: Fn(System, SystemCallbackKind, Option<Userdata>) -> Result<()> + Send + Sync + 'static,
     {
         // Always enable BankUnload to deallocate any userdata attached to banks
-        let raw_mask = (mask | SystemCallbackMask::BankUnload).into();
+        let raw_mask = (mask | SystemCallbackMask::BANK_UNLOAD).into();
 
         unsafe {
             let mut userdata = std::ptr::null_mut();

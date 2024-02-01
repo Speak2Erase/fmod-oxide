@@ -526,13 +526,15 @@ impl CommandReplay {
             let mut userdata = std::ptr::null_mut();
             FMOD_Studio_CommandReplay_GetUserData(self.inner, &mut userdata).to_result()?;
 
-            FMOD_Studio_CommandReplay_Release(self.inner).to_result()?;
-
-            // deallocate the userdata after the replay is released
+            // deallocate the userdata
             if !userdata.is_null() {
                 let userdata = Box::from_raw(userdata.cast::<InternalUserdata>());
                 drop(userdata);
+                FMOD_Studio_CommandReplay_SetUserData(self.inner, std::ptr::null_mut())
+                    .to_result()?;
             }
+
+            FMOD_Studio_CommandReplay_Release(self.inner).to_result()?;
 
             Ok(())
         }

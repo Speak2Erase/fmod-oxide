@@ -39,7 +39,10 @@ pub use event_instance::*;
 mod vca;
 pub use vca::*;
 
-use crate::Guid;
+use crate::{
+    core::{Dsp, Sound},
+    Guid,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -715,11 +718,11 @@ impl From<EventProperty> for FMOD_STUDIO_EVENT_PROPERTY {
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub struct SystemCallbackMask: c_uint {
-        const Preupdate = FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE;
-        const Postupdate = FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE;
-        const BankUnload = FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD;
-        const LiveupdateConnected = FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_CONNECTED;
-        const LiveupdateDisconnected = FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_DISCONNECTED;
+        const PREUPDATE = FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE;
+        const POSTUPDATE = FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE;
+        const BANK_UNLOAD = FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD;
+        const LIVEUPDATE_CONNECTED = FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_CONNECTED;
+        const LIVEUPDATE_DISCONNECTED = FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_DISCONNECTED;
     }
 }
 
@@ -852,6 +855,194 @@ impl From<InstanceType> for FMOD_STUDIO_INSTANCETYPE {
             InstanceType::CommandReplay => {
                 FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_COMMANDREPLAY
             }
+        }
+    }
+}
+
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct EventCallbackMask: c_uint {
+        const CREATED = FMOD_STUDIO_EVENT_CALLBACK_CREATED;
+        const DESTROYED = FMOD_STUDIO_EVENT_CALLBACK_DESTROYED;
+        const STARTING = FMOD_STUDIO_EVENT_CALLBACK_STARTING;
+        const STARTED = FMOD_STUDIO_EVENT_CALLBACK_STARTED;
+        const RESTARTED = FMOD_STUDIO_EVENT_CALLBACK_RESTARTED;
+        const STOPPED = FMOD_STUDIO_EVENT_CALLBACK_STOPPED;
+        const START_FAILED = FMOD_STUDIO_EVENT_CALLBACK_START_FAILED;
+        const CREATE_PROGRAMMER_SOUND = FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND;
+        const DESTROY_PROGRAMMER_SOUND = FMOD_STUDIO_EVENT_CALLBACK_DESTROY_PROGRAMMER_SOUND;
+        const PLUGIN_CREATED = FMOD_STUDIO_EVENT_CALLBACK_PLUGIN_CREATED;
+        const PLUGIN_DESTROYED = FMOD_STUDIO_EVENT_CALLBACK_PLUGIN_DESTROYED;
+        const TIMELINE_MARKER = FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_MARKER;
+        const TIMELINE_BEAT = FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_BEAT;
+        const SOUND_PLAYED = FMOD_STUDIO_EVENT_CALLBACK_SOUND_PLAYED;
+        const SOUND_STOPPED = FMOD_STUDIO_EVENT_CALLBACK_SOUND_STOPPED;
+        const REAL_TO_VIRTUAL = FMOD_STUDIO_EVENT_CALLBACK_REAL_TO_VIRTUAL;
+        const VIRTUAL_TO_REAL = FMOD_STUDIO_EVENT_CALLBACK_VIRTUAL_TO_REAL;
+        const START_EVENT_COMMAND = FMOD_STUDIO_EVENT_CALLBACK_START_EVENT_COMMAND;
+        const NESTED_TIMELINE_BEAT = FMOD_STUDIO_EVENT_CALLBACK_NESTED_TIMELINE_BEAT;
+        const ALL = FMOD_STUDIO_EVENT_CALLBACK_ALL;
+    }
+}
+
+impl From<FMOD_STUDIO_EVENT_CALLBACK_TYPE> for EventCallbackMask {
+    fn from(value: FMOD_STUDIO_EVENT_CALLBACK_TYPE) -> Self {
+        EventCallbackMask::from_bits_truncate(value)
+    }
+}
+
+impl From<EventCallbackMask> for FMOD_STUDIO_EVENT_CALLBACK_TYPE {
+    fn from(value: EventCallbackMask) -> Self {
+        value.bits()
+    }
+}
+
+pub enum EventCallbackKind {
+    Created,
+    Destroyed,
+    Starting,
+    Started,
+    Restarted,
+    Stopped,
+    StartFailed,
+    CreateProgrammerSound(ProgrammerSoundProperties),
+    DestroyProgrammerSound(ProgrammerSoundProperties),
+    PluginCreated(PluginInstanceProperties),
+    PluginDestroyed(PluginInstanceProperties),
+    TimelineMarker(TimelineMarkerProperties),
+    TimelineBeat(TimelineBeatProperties),
+    SoundPlayed(Sound),
+    SoundStopped(Sound),
+    RealToVirtual,
+    VirtualToReal,
+    StartEventCommand(EventInstance),
+    NestedTimelineBeat(TimelineNestedBeatProperties),
+}
+
+pub struct ProgrammerSoundProperties {
+    // FIXME lifetimes & mutability
+    // FIXME enforce that writes MUST happen to this somehow also use option too
+    pub name: &'static CStr,
+    pub sound: &'static mut Sound,
+    pub subsound_index: &'static mut c_int,
+}
+
+pub struct PluginInstanceProperties {
+    // FIXME lifetimes
+    pub name: &'static CStr,
+    pub dsp: Dsp,
+}
+
+impl From<PluginInstanceProperties> for FMOD_STUDIO_PLUGIN_INSTANCE_PROPERTIES {
+    fn from(value: PluginInstanceProperties) -> Self {
+        FMOD_STUDIO_PLUGIN_INSTANCE_PROPERTIES {
+            name: value.name.as_ptr(),
+            dsp: value.dsp.inner,
+        }
+    }
+}
+
+impl PluginInstanceProperties {
+    /// Create a safe [`PluginInstanceProperties`] struct from the FFI equivalent.
+    ///
+    /// # Safety
+    ///
+    /// All string values from the FFI struct must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
+    ///
+    /// See [`CStr::from_ptr`] for more information.
+    pub unsafe fn from_ffi(value: FMOD_STUDIO_PLUGIN_INSTANCE_PROPERTIES) -> Self {
+        PluginInstanceProperties {
+            name: unsafe { CStr::from_ptr(value.name) },
+            dsp: value.dsp.into(),
+        }
+    }
+}
+
+pub struct TimelineMarkerProperties {
+    // FIXME lifetimes
+    pub name: &'static CStr,
+    pub position: c_int,
+}
+
+impl From<TimelineMarkerProperties> for FMOD_STUDIO_TIMELINE_MARKER_PROPERTIES {
+    fn from(value: TimelineMarkerProperties) -> Self {
+        FMOD_STUDIO_TIMELINE_MARKER_PROPERTIES {
+            name: value.name.as_ptr(),
+            position: value.position,
+        }
+    }
+}
+
+impl TimelineMarkerProperties {
+    /// Create a safe [`TimelineMarkerProperties`] struct from the FFI equivalent.
+    ///
+    /// # Safety
+    ///
+    /// All string values from the FFI struct must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
+    ///
+    /// See [`CStr::from_ptr`] for more information.
+    pub unsafe fn from_ffi(value: FMOD_STUDIO_TIMELINE_MARKER_PROPERTIES) -> Self {
+        TimelineMarkerProperties {
+            name: unsafe { CStr::from_ptr(value.name) },
+            position: value.position,
+        }
+    }
+}
+
+pub struct TimelineBeatProperties {
+    pub bar: c_int,
+    pub beat: c_int,
+    pub position: c_int,
+    pub tempo: c_float,
+    pub time_signature_upper: c_int,
+    pub time_signature_lower: c_int,
+}
+
+impl From<TimelineBeatProperties> for FMOD_STUDIO_TIMELINE_BEAT_PROPERTIES {
+    fn from(value: TimelineBeatProperties) -> Self {
+        FMOD_STUDIO_TIMELINE_BEAT_PROPERTIES {
+            bar: value.bar,
+            beat: value.beat,
+            position: value.position,
+            tempo: value.tempo,
+            timesignatureupper: value.time_signature_upper,
+            timesignaturelower: value.time_signature_lower,
+        }
+    }
+}
+
+impl From<FMOD_STUDIO_TIMELINE_BEAT_PROPERTIES> for TimelineBeatProperties {
+    fn from(value: FMOD_STUDIO_TIMELINE_BEAT_PROPERTIES) -> Self {
+        TimelineBeatProperties {
+            bar: value.bar,
+            beat: value.beat,
+            position: value.position,
+            tempo: value.tempo,
+            time_signature_upper: value.timesignatureupper,
+            time_signature_lower: value.timesignaturelower,
+        }
+    }
+}
+
+pub struct TimelineNestedBeatProperties {
+    pub event_guid: Guid,
+    pub properties: TimelineBeatProperties,
+}
+
+impl From<TimelineNestedBeatProperties> for FMOD_STUDIO_TIMELINE_NESTED_BEAT_PROPERTIES {
+    fn from(value: TimelineNestedBeatProperties) -> Self {
+        FMOD_STUDIO_TIMELINE_NESTED_BEAT_PROPERTIES {
+            eventid: value.event_guid.into(),
+            properties: value.properties.into(),
+        }
+    }
+}
+
+impl From<FMOD_STUDIO_TIMELINE_NESTED_BEAT_PROPERTIES> for TimelineNestedBeatProperties {
+    fn from(value: FMOD_STUDIO_TIMELINE_NESTED_BEAT_PROPERTIES) -> Self {
+        TimelineNestedBeatProperties {
+            event_guid: value.eventid.into(),
+            properties: value.properties.into(),
         }
     }
 }

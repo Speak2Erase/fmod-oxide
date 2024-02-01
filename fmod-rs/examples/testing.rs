@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct PrintOnDrop(&'static str);
 
 impl Drop for PrintOnDrop {
@@ -29,15 +29,34 @@ fn main() -> fmod::Result<()> {
     // No other thread or api call will overlap this.
     let system = unsafe { fmod::studio::System::new()? };
 
-    let print_on_drop = PrintOnDrop("bank userdata has been dropped :3");
-    let master_bank = system.load_bank_file(
+    system.load_bank_file(
         c"fmod/api/studio/examples/media/Master.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
-    master_bank.set_user_data(Some(print_on_drop))?;
-    master_bank.set_user_data(None::<()>)?;
+    system.load_bank_file(
+        c"fmod/api/studio/examples/media/Master.strings.bank",
+        fmod::studio::LoadBankFlags::NORMAL,
+    )?;
+    system.load_bank_file(
+        c"fmod/api/studio/examples/media/Vehicles.bank",
+        fmod::studio::LoadBankFlags::NORMAL,
+    )?;
+
+    let event_description = system.get_event(c"event:/Vehicles/Ride-on Mower")?;
+    event_description
+        .set_user_data(Some(PrintOnDrop("event desc userdata has been dropped :3")))?;
+
+    let instance = event_description.create_instance()?;
+
+    instance.set_user_data(Some(PrintOnDrop(
+        "event instance userdata has been dropped :3",
+    )))?;
 
     println!("updating system");
+
+    system.update()?;
+
+    system.unload_all_banks()?;
 
     system.update()?;
 
