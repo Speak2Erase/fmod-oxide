@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build(
             1024,
             fmod::studio::InitFlags::NORMAL,
-            fmod_sys::FMOD_INIT_NORMAL,
+            fmod::InitFlags::NORMAL,
         )?;
 
     system.load_bank_file(

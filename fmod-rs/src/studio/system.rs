@@ -214,23 +214,40 @@ impl SystemBuilder {
         Ok(self)
     }
 
-    pub fn get_core_system_builder(&self) -> Result<()> {
-        todo!()
-    }
-
     pub fn build(
         self,
         max_channels: c_int,
         studio_flags: InitFlags,
-        flags: FMOD_INITFLAGS, // todo core init flags
+        flags: crate::InitFlags,
+    ) -> Result<System> {
+        unsafe {
+            // we don't need
+            self.build_with_extra_driver_data(
+                max_channels,
+                studio_flags,
+                flags,
+                std::ptr::null_mut(),
+            )
+        }
+    }
+
+    /// # Safety
+    ///
+    /// See the FMOD docs explaining driver data for more safety information.
+    pub unsafe fn build_with_extra_driver_data(
+        self,
+        max_channels: c_int,
+        studio_flags: InitFlags,
+        flags: crate::InitFlags,
+        driver_data: *mut c_void,
     ) -> Result<System> {
         unsafe {
             FMOD_Studio_System_Initialize(
                 self.system,
                 max_channels,
                 studio_flags.bits(),
-                flags,
-                std::ptr::null_mut(), // not sure how to handle this
+                flags.bits(),
+                driver_data,
             )
             .to_result()?;
 
@@ -271,7 +288,7 @@ impl System {
     ///
     /// See [`SystemBuilder::new`] for safety info.
     pub unsafe fn new() -> Result<Self> {
-        unsafe { SystemBuilder::new() }?.build(0, InitFlags::NORMAL, 0)
+        unsafe { SystemBuilder::new() }?.build(0, InitFlags::NORMAL, crate::InitFlags::NORMAL)
     }
 
     ///This function will free the memory used by the Studio System object and everything created under it.

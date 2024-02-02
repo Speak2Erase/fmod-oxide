@@ -183,8 +183,7 @@ impl Bus {
     ///
     /// The second tuple field is the CPU time spent processing the events and all input buses of this bus, in microseconds.
     ///
-    /// FMOD_INIT_PROFILE_ENABLE with System::init is required to call this function.
-    // TODO: core init flags
+    /// [`crate::InitFlags::PROFILE_ENABLE`] with [`crate::SystemBuilder::build`] is required to call this function.
     pub fn get_cpu_usage(&self) -> Result<(c_uint, c_uint)> {
         let mut exclusive = 0;
         let mut inclusive = 0;

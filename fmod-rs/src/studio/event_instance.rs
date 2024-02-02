@@ -455,7 +455,7 @@ impl EventInstance {
 impl EventInstance {
     /// Retrieves the event CPU usage data.
     ///
-    /// FMOD_INIT_PROFILE_ENABLE with System::init is required to call this function.
+    /// [`crate::InitFlags::PROFILE_ENABLE`] with [`crate::SystemBuilder::build`] is required to call this function.
     // TODO fmod core docs
     pub fn get_cpu_usage(&self) -> Result<(c_uint, c_uint)> {
         let mut exclusive = 0;

@@ -33,6 +33,7 @@ pub use fmod_sys::{error_code_to_str, Error, Result};
 pub mod studio;
 
 pub mod core;
+pub use core::*;
 
 mod common;
 pub use common::*;
