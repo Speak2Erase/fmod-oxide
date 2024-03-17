@@ -37,3 +37,10 @@ pub use core::*;
 
 mod common;
 pub use common::*;
+
+mod userdata;
+pub use userdata::UserdataTypes;
+
+// relatively common bound
+pub trait Shareable: Send + Sync + 'static {}
+impl<T> Shareable for T where T: Send + Sync + 'static {}

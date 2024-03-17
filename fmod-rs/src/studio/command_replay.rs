@@ -16,16 +16,15 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    any::Any,
     ffi::{c_char, c_float, c_int, CStr},
+    marker::PhantomData,
     mem::MaybeUninit,
     os::raw::c_void,
-    sync::Arc,
 };
 
 use fmod_sys::*;
 
-use crate::Guid;
+use crate::{Guid, Shareable, UserdataTypes};
 
 use super::{
     Bank, CommandInfo, EventDescription, EventInstance, LoadBankFlags, PlaybackState, System,
@@ -33,49 +32,70 @@ use super::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)] // so we can transmute between types
-pub struct CommandReplay {
+pub struct CommandReplay<U: UserdataTypes = ()> {
     pub(crate) inner: *mut FMOD_STUDIO_COMMANDREPLAY,
+    _phantom: PhantomData<U>,
 }
 
-pub(crate) struct InternalUserdata {
+pub(crate) struct InternalUserdata<U: UserdataTypes> {
     // we don't expose the callbacks at all so it's fine to just use a box
-    create_instance_callback: Option<Box<CreateInstanceCallback>>,
-    frame_callback: Option<Box<FrameCallback>>,
-    load_bank_callback: Option<Box<LoadBankCallback>>,
-    // this is an arc in case someone releases the commandreplay while holding onto a reference to the userdata
-    userdata: Option<Userdata>,
+    create_instance_callback: Option<Box<dyn CreateInstanceCallback<U>>>,
+    frame_callback: Option<Box<dyn FrameCallback<U>>>,
+    load_bank_callback: Option<Box<dyn LoadBankCallback<U>>>,
+    userdata: Option<U::CommandReplay>,
 }
 
-pub struct CreateInstanceData {
-    pub replay: CommandReplay,
+pub struct CreateInstanceData<'u, U: UserdataTypes> {
+    pub replay: CommandReplay<U>,
     pub command_index: c_int,
     pub event_description: EventDescription,
-    pub userdata: Option<Userdata>,
+    pub userdata: Option<&'u U::CommandReplay>,
 }
-type CreateInstanceCallback =
-    dyn Fn(CreateInstanceData) -> Result<Option<EventInstance>> + Send + Sync;
+pub trait CreateInstanceCallback<U: UserdataTypes>:
+    Fn(CreateInstanceData<'_, U>) -> Result<Option<EventInstance>> + Shareable
+{
+}
+impl<T, U> CreateInstanceCallback<U> for T
+where
+    T: Fn(CreateInstanceData<'_, U>) -> Result<Option<EventInstance>> + Shareable,
+    U: UserdataTypes,
+{
+}
 
-pub struct FrameData {
-    pub replay: CommandReplay,
+pub struct FrameData<'u, U: UserdataTypes> {
+    pub replay: CommandReplay<U>,
     pub command_index: c_int,
     pub current_time: c_float,
-    pub userdata: Option<Userdata>,
+    pub userdata: Option<&'u U::CommandReplay>,
 }
-type FrameCallback = dyn Fn(FrameData) -> Result<()> + Send + Sync;
+pub trait FrameCallback<U: UserdataTypes>: Fn(FrameData<'_, U>) -> Result<()> + Shareable {}
+impl<T, U> FrameCallback<U> for T
+where
+    T: Fn(FrameData<'_, U>) -> Result<()> + Shareable,
+    U: UserdataTypes,
+{
+}
 
-pub struct LoadBankData {
-    pub replay: CommandReplay,
+pub struct LoadBankData<'u, U: UserdataTypes> {
+    pub replay: CommandReplay<U>,
     pub command_index: c_int,
     pub bank_guid: Option<Guid>,
     pub bank_filename: Option<&'static CStr>, // FIXME 'static wrong
     pub load_flags: LoadBankFlags,
-    pub userdata: Option<Userdata>,
+    pub userdata: Option<&'u U::CommandReplay>,
 }
-type LoadBankCallback = dyn Fn(LoadBankData) -> Result<Option<Bank>> + Send + Sync;
+pub trait LoadBankCallback<U: UserdataTypes>:
+    Fn(LoadBankData<'_, U>) -> Result<Option<Bank>> + Shareable
+{
+}
+impl<T, U> LoadBankCallback<U> for T
+where
+    T: Fn(LoadBankData<'_, U>) -> Result<Option<Bank>> + Shareable,
+    U: UserdataTypes,
+{
+}
 
-type Userdata = Arc<dyn Any + Send + Sync>;
-
-unsafe extern "C" fn internal_create_instance_callback(
+unsafe extern "C" fn internal_create_instance_callback<U: UserdataTypes>(
     replay: *mut FMOD_STUDIO_COMMANDREPLAY,
     command_index: c_int,
     event_description: *mut FMOD_STUDIO_EVENTDESCRIPTION,
@@ -92,17 +112,17 @@ unsafe extern "C" fn internal_create_instance_callback(
 
     // FIXME: handle unwinding panics
     unsafe {
-        let internal_userdata = &mut *userdata.cast::<InternalUserdata>();
+        let internal_userdata = &mut *userdata.cast::<InternalUserdata<U>>();
         // the callback should ALWAYS be set if this callback is set
         let callback = internal_userdata
             .create_instance_callback
             .as_ref()
             .unwrap_unchecked();
         let data = CreateInstanceData {
-            replay: replay.into(),
+            replay: CommandReplay::from_ffi(replay),
             command_index,
             event_description: event_description.into(),
-            userdata: internal_userdata.userdata.clone(),
+            userdata: internal_userdata.userdata.as_ref(),
         };
 
         let result = callback(data);
@@ -118,7 +138,7 @@ unsafe extern "C" fn internal_create_instance_callback(
     }
 }
 
-unsafe extern "C" fn internal_frame_callback(
+unsafe extern "C" fn internal_frame_callback<U: UserdataTypes>(
     replay: *mut FMOD_STUDIO_COMMANDREPLAY,
     command_index: c_int,
     current_time: c_float,
@@ -134,21 +154,21 @@ unsafe extern "C" fn internal_frame_callback(
 
     // FIXME: handle unwinding panics
     unsafe {
-        let internal_userdata = &mut *userdata.cast::<InternalUserdata>();
+        let internal_userdata = &mut *userdata.cast::<InternalUserdata<U>>();
         // the callback should ALWAYS be set if this callback is set
         let callback = internal_userdata.frame_callback.as_ref().unwrap_unchecked();
         let data = FrameData {
-            replay: replay.into(),
+            replay: CommandReplay::from_ffi(replay),
             command_index,
             current_time,
-            userdata: internal_userdata.userdata.clone(),
+            userdata: internal_userdata.userdata.as_ref(),
         };
 
         callback(data).into()
     }
 }
 
-unsafe extern "C" fn internal_load_bank_callback(
+unsafe extern "C" fn internal_load_bank_callback<U: UserdataTypes>(
     replay: *mut FMOD_STUDIO_COMMANDREPLAY,
     command_index: c_int,
     bank_guid: *const FMOD_GUID,
@@ -167,7 +187,7 @@ unsafe extern "C" fn internal_load_bank_callback(
 
     // FIXME: handle unwinding panics
     unsafe {
-        let internal_userdata = &mut *userdata.cast::<InternalUserdata>();
+        let internal_userdata = &mut *userdata.cast::<InternalUserdata<U>>();
         // the callback should ALWAYS be set if this callback is set
         let callback = internal_userdata
             .load_bank_callback
@@ -175,7 +195,7 @@ unsafe extern "C" fn internal_load_bank_callback(
             .unwrap_unchecked();
 
         let data = LoadBankData {
-            replay: replay.into(),
+            replay: CommandReplay::from_ffi(replay),
             command_index,
             bank_guid: if bank_guid.is_null() {
                 None
@@ -188,7 +208,7 @@ unsafe extern "C" fn internal_load_bank_callback(
                 Some(CStr::from_ptr(bank_filename))
             },
             load_flags: load_flags.into(),
-            userdata: internal_userdata.userdata.clone(),
+            userdata: internal_userdata.userdata.as_ref(),
         };
 
         let result = callback(data);
@@ -204,22 +224,29 @@ unsafe extern "C" fn internal_load_bank_callback(
     }
 }
 
-unsafe impl Send for CommandReplay {}
-unsafe impl Sync for CommandReplay {}
+unsafe impl<U: UserdataTypes> Send for CommandReplay<U> {}
+unsafe impl<U: UserdataTypes> Sync for CommandReplay<U> {}
 
-impl From<*mut FMOD_STUDIO_COMMANDREPLAY> for CommandReplay {
-    fn from(value: *mut FMOD_STUDIO_COMMANDREPLAY) -> Self {
-        CommandReplay { inner: value }
+impl<U: UserdataTypes> CommandReplay<U> {
+    /// Create a System instance from its FFI equivalent.
+    ///
+    /// # Safety
+    /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_COMMANDREPLAY`] will not have the right userdata type.
+    pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_COMMANDREPLAY) -> Self {
+        CommandReplay {
+            inner: value,
+            _phantom: PhantomData,
+        }
     }
 }
 
-impl From<CommandReplay> for *mut FMOD_STUDIO_COMMANDREPLAY {
-    fn from(value: CommandReplay) -> Self {
+impl<U: UserdataTypes> From<CommandReplay<U>> for *mut FMOD_STUDIO_COMMANDREPLAY {
+    fn from(value: CommandReplay<U>) -> Self {
         value.inner
     }
 }
 
-impl CommandReplay {
+impl<U: UserdataTypes> CommandReplay<U> {
     /// Sets a path substition that will be used when loading banks with this replay.
     ///
     /// [`System::load_bank_file`] commands in the replay are redirected to load banks from the specified directory, instead of using the directory recorded in the captured commands.
@@ -235,7 +262,7 @@ impl CommandReplay {
     /// If this callback is not set then the system will always create an event instance.
     pub fn set_create_instance_callback<F>(&self, callback: F) -> Result<()>
     where
-        F: Fn(CreateInstanceData) -> Result<Option<EventInstance>> + Send + Sync + 'static,
+        F: CreateInstanceCallback<U>,
     {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
@@ -243,7 +270,7 @@ impl CommandReplay {
 
             FMOD_Studio_CommandReplay_SetCreateInstanceCallback(
                 self.inner,
-                Some(internal_create_instance_callback),
+                Some(internal_create_instance_callback::<U>),
             )
             .to_result()
         }
@@ -252,14 +279,17 @@ impl CommandReplay {
     /// Sets a callback that is issued each time the replay reaches a new frame.
     pub fn set_frame_callback<F>(&self, callback: F) -> Result<()>
     where
-        F: Fn(FrameData) -> Result<()> + Send + Sync + 'static,
+        F: FrameCallback<U>,
     {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
             userdata.frame_callback = Some(Box::new(callback));
 
-            FMOD_Studio_CommandReplay_SetFrameCallback(self.inner, Some(internal_frame_callback))
-                .to_result()
+            FMOD_Studio_CommandReplay_SetFrameCallback(
+                self.inner,
+                Some(internal_frame_callback::<U>),
+            )
+            .to_result()
         }
     }
 
@@ -273,7 +303,7 @@ impl CommandReplay {
     /// If this callback is not set then the system will attempt to load banks from file according to recorded [`System::load_bank_file`] commands and skip other load commands.
     pub fn set_load_bank_callback<F>(&self, callback: F) -> Result<()>
     where
-        F: Fn(LoadBankData) -> Result<Option<Bank>> + Send + Sync + 'static,
+        F: LoadBankCallback<U>,
     {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
@@ -281,7 +311,7 @@ impl CommandReplay {
 
             FMOD_Studio_CommandReplay_SetLoadBankCallback(
                 self.inner,
-                Some(internal_load_bank_callback),
+                Some(internal_load_bank_callback::<U>),
             )
             .to_result()
         }
@@ -291,19 +321,16 @@ impl CommandReplay {
     ///
     /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data<T>(&self, data: Option<T>) -> Result<()>
-    where
-        T: Any + Send + Sync + 'static,
-    {
+    pub fn set_user_data<T>(&self, data: Option<U::CommandReplay>) -> Result<()> {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.userdata = data.map(|d| Arc::new(d) as _); // closure is necessary to unsize type
+            userdata.userdata = data;
         }
 
         Ok(())
     }
 
-    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata> {
+    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata<U>> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
             FMOD_Studio_CommandReplay_GetUserData(self.inner, &mut userdata).to_result()?;
@@ -311,7 +338,7 @@ impl CommandReplay {
             // FIXME extract this common behavior into a macro or something
             // create and set the userdata if we haven't already
             if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata {
+                let boxed_userdata = Box::new(InternalUserdata::<U> {
                     create_instance_callback: None,
                     frame_callback: None,
                     load_bank_callback: None,
@@ -322,12 +349,10 @@ impl CommandReplay {
                 FMOD_Studio_CommandReplay_SetUserData(self.inner, userdata).to_result()?;
             }
 
-            Ok(userdata.cast::<InternalUserdata>())
+            Ok(userdata.cast::<InternalUserdata<U>>())
         }
     }
-}
 
-impl CommandReplay {
     /// Begins playback.
     ///
     /// If the replay is already running then calling this function will restart replay from the beginning.
@@ -396,9 +421,7 @@ impl CommandReplay {
     pub fn seek_to_time(&self, time: c_float) -> Result<()> {
         unsafe { FMOD_Studio_CommandReplay_SeekToTime(self.inner, time).to_result() }
     }
-}
 
-impl CommandReplay {
     /// Retrieves the command index corresponding to the given playback time.
     ///
     /// This function will return an index for the first command at or after `time`.
@@ -479,21 +502,18 @@ impl CommandReplay {
     }
 
     /// Retrieves the Studio System object associated with this replay object.
-    pub fn get_system(&self) -> Result<System> {
+    pub fn get_system(&self) -> Result<System<U>> {
         let mut system = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_CommandReplay_GetSystem(self.inner, &mut system).to_result()?;
+            Ok(System::from_ffi(system))
         }
-        Ok(system.into())
     }
 
     ///Retrieves user data.
     ///
     /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data<T>(&self) -> Result<Option<Arc<T>>>
-    where
-        T: Send + Sync + 'static,
-    {
+    pub fn get_user_data<T>(&self) -> Result<Option<&U::CommandReplay>> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
             FMOD_Studio_CommandReplay_GetUserData(self.inner, &mut userdata).to_result()?;
@@ -503,12 +523,8 @@ impl CommandReplay {
             }
 
             // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata.cast::<InternalUserdata>();
-            let userdata = userdata
-                .userdata
-                .clone()
-                .map(Arc::downcast::<T>)
-                .and_then(std::result::Result::ok);
+            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            let userdata = userdata.userdata.as_ref();
             Ok(userdata)
         }
     }
@@ -517,9 +533,7 @@ impl CommandReplay {
     pub fn is_valid(&self) -> bool {
         unsafe { FMOD_Studio_CommandReplay_IsValid(self.inner).into() }
     }
-}
 
-impl CommandReplay {
     /// Releases the command replay.
     pub fn release(self) -> Result<()> {
         unsafe {
@@ -528,7 +542,7 @@ impl CommandReplay {
 
             // deallocate the userdata
             if !userdata.is_null() {
-                let userdata = Box::from_raw(userdata.cast::<InternalUserdata>());
+                let userdata = Box::from_raw(userdata.cast::<InternalUserdata<U>>());
                 drop(userdata);
                 FMOD_Studio_CommandReplay_SetUserData(self.inner, std::ptr::null_mut())
                     .to_result()?;
