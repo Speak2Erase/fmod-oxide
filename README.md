@@ -19,3 +19,6 @@
 
 ### NOTE:
 Tests expect fmod to be placed in the `fmod/` folder. This is not included in the repository, and must be downloaded from [FMOD's website](https://www.fmod.com/download). 
+
+### NOTE 2:
+This isn't actually licensed under GPL. I'm not sure what to license things under right now and my editor defaults to assuming my project is GPL and autoinserts the GPL header. I never exepcted to really share this with anyone yet, so I haven't gotten around to fixing it!
