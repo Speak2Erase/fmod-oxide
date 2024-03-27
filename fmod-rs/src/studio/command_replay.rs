@@ -20,6 +20,7 @@ use std::{
     marker::PhantomData,
     mem::MaybeUninit,
     os::raw::c_void,
+    sync::Arc,
 };
 
 use fmod_sys::*;
@@ -30,7 +31,7 @@ use super::{
     Bank, CommandInfo, EventDescription, EventInstance, LoadBankFlags, PlaybackState, System,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 #[repr(transparent)] // so we can transmute between types
 pub struct CommandReplay<U: UserdataTypes = ()> {
     pub(crate) inner: *mut FMOD_STUDIO_COMMANDREPLAY,
@@ -42,55 +43,55 @@ pub(crate) struct InternalUserdata<U: UserdataTypes> {
     create_instance_callback: Option<Box<dyn CreateInstanceCallback<U>>>,
     frame_callback: Option<Box<dyn FrameCallback<U>>>,
     load_bank_callback: Option<Box<dyn LoadBankCallback<U>>>,
-    userdata: Option<U::CommandReplay>,
+    userdata: Option<Arc<U::CommandReplay>>,
 }
 
-pub struct CreateInstanceData<'u, U: UserdataTypes> {
+pub struct CreateInstanceData<U: UserdataTypes> {
     pub replay: CommandReplay<U>,
     pub command_index: c_int,
-    pub event_description: EventDescription,
-    pub userdata: Option<&'u U::CommandReplay>,
+    pub event_description: EventDescription<U>,
+    pub userdata: Option<Arc<U::CommandReplay>>,
 }
 pub trait CreateInstanceCallback<U: UserdataTypes>:
-    Fn(CreateInstanceData<'_, U>) -> Result<Option<EventInstance>> + Shareable
+    Fn(CreateInstanceData<U>) -> Result<Option<EventInstance<U>>> + Shareable
 {
 }
 impl<T, U> CreateInstanceCallback<U> for T
 where
-    T: Fn(CreateInstanceData<'_, U>) -> Result<Option<EventInstance>> + Shareable,
+    T: Fn(CreateInstanceData<U>) -> Result<Option<EventInstance<U>>> + Shareable,
     U: UserdataTypes,
 {
 }
 
-pub struct FrameData<'u, U: UserdataTypes> {
+pub struct FrameData<U: UserdataTypes> {
     pub replay: CommandReplay<U>,
     pub command_index: c_int,
     pub current_time: c_float,
-    pub userdata: Option<&'u U::CommandReplay>,
+    pub userdata: Option<Arc<U::CommandReplay>>,
 }
-pub trait FrameCallback<U: UserdataTypes>: Fn(FrameData<'_, U>) -> Result<()> + Shareable {}
+pub trait FrameCallback<U: UserdataTypes>: Fn(FrameData<U>) -> Result<()> + Shareable {}
 impl<T, U> FrameCallback<U> for T
 where
-    T: Fn(FrameData<'_, U>) -> Result<()> + Shareable,
+    T: Fn(FrameData<U>) -> Result<()> + Shareable,
     U: UserdataTypes,
 {
 }
 
-pub struct LoadBankData<'u, U: UserdataTypes> {
+pub struct LoadBankData<U: UserdataTypes> {
     pub replay: CommandReplay<U>,
     pub command_index: c_int,
     pub bank_guid: Option<Guid>,
     pub bank_filename: Option<&'static CStr>, // FIXME 'static wrong
     pub load_flags: LoadBankFlags,
-    pub userdata: Option<&'u U::CommandReplay>,
+    pub userdata: Option<Arc<U::CommandReplay>>,
 }
 pub trait LoadBankCallback<U: UserdataTypes>:
-    Fn(LoadBankData<'_, U>) -> Result<Option<Bank>> + Shareable
+    Fn(LoadBankData<U>) -> Result<Option<Bank<U>>> + Shareable
 {
 }
 impl<T, U> LoadBankCallback<U> for T
 where
-    T: Fn(LoadBankData<'_, U>) -> Result<Option<Bank>> + Shareable,
+    T: Fn(LoadBankData<U>) -> Result<Option<Bank<U>>> + Shareable,
     U: UserdataTypes,
 {
 }
@@ -121,8 +122,8 @@ unsafe extern "C" fn internal_create_instance_callback<U: UserdataTypes>(
         let data = CreateInstanceData {
             replay: CommandReplay::from_ffi(replay),
             command_index,
-            event_description: event_description.into(),
-            userdata: internal_userdata.userdata.as_ref(),
+            event_description: EventDescription::from_ffi(event_description),
+            userdata: internal_userdata.userdata.clone(),
         };
 
         let result = callback(data);
@@ -161,7 +162,7 @@ unsafe extern "C" fn internal_frame_callback<U: UserdataTypes>(
             replay: CommandReplay::from_ffi(replay),
             command_index,
             current_time,
-            userdata: internal_userdata.userdata.as_ref(),
+            userdata: internal_userdata.userdata.clone(),
         };
 
         callback(data).into()
@@ -208,7 +209,7 @@ unsafe extern "C" fn internal_load_bank_callback<U: UserdataTypes>(
                 Some(CStr::from_ptr(bank_filename))
             },
             load_flags: load_flags.into(),
-            userdata: internal_userdata.userdata.as_ref(),
+            userdata: internal_userdata.userdata.clone(),
         };
 
         let result = callback(data);
@@ -226,6 +227,12 @@ unsafe extern "C" fn internal_load_bank_callback<U: UserdataTypes>(
 
 unsafe impl<U: UserdataTypes> Send for CommandReplay<U> {}
 unsafe impl<U: UserdataTypes> Sync for CommandReplay<U> {}
+impl<U: UserdataTypes> Clone for CommandReplay<U> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<U: UserdataTypes> Copy for CommandReplay<U> {}
 
 impl<U: UserdataTypes> CommandReplay<U> {
     /// Create a System instance from its FFI equivalent.
@@ -321,10 +328,10 @@ impl<U: UserdataTypes> CommandReplay<U> {
     ///
     /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data<T>(&self, data: Option<U::CommandReplay>) -> Result<()> {
+    pub fn set_user_data(&self, data: Option<U::CommandReplay>) -> Result<()> {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.userdata = data;
+            userdata.userdata = data.map(Arc::new);
         }
 
         Ok(())
@@ -513,7 +520,7 @@ impl<U: UserdataTypes> CommandReplay<U> {
     ///Retrieves user data.
     ///
     /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data<T>(&self) -> Result<Option<&U::CommandReplay>> {
+    pub fn get_user_data(&self) -> Result<Option<Arc<U::CommandReplay>>> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
             FMOD_Studio_CommandReplay_GetUserData(self.inner, &mut userdata).to_result()?;
@@ -524,7 +531,7 @@ impl<U: UserdataTypes> CommandReplay<U> {
 
             // userdata should ALWAYS be InternalUserdata
             let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
-            let userdata = userdata.userdata.as_ref();
+            let userdata = userdata.userdata.clone();
             Ok(userdata)
         }
     }

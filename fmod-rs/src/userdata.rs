@@ -21,19 +21,13 @@ pub trait UserdataTypes {
     // Studio
     type StudioSystem: Shareable;
     type Bank: Shareable;
-    type Bus: Shareable;
     type CommandReplay: Shareable;
-    type EventDescription: Shareable;
-    type EventInstance: Shareable;
-    type VCA: Shareable;
+    type Event: Shareable;
 }
 
 impl UserdataTypes for () {
     type StudioSystem = ();
     type Bank = ();
-    type Bus = ();
     type CommandReplay = ();
-    type EventDescription = ();
-    type EventInstance = ();
-    type VCA = ();
+    type Event = ();
 }

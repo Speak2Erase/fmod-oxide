@@ -30,18 +30,15 @@ pub use system::*;
 mod command_replay;
 pub use command_replay::*;
 
-mod event_description;
-pub use event_description::*;
-
-mod event_instance;
-pub use event_instance::*;
+mod event;
+pub use event::*;
 
 mod vca;
 pub use vca::*;
 
 use crate::{
     core::{Dsp, Sound},
-    Guid,
+    Guid, UserdataTypes,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -739,10 +736,10 @@ impl From<SystemCallbackMask> for FMOD_STUDIO_SYSTEM_CALLBACK_TYPE {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SystemCallbackKind {
+pub enum SystemCallbackKind<U: UserdataTypes> {
     Preupdate,
     Postupdate,
-    BankUnload(Bank),
+    BankUnload(Bank<U>),
     LiveupdateConnected,
     LiveupdateDisconnected,
 }
@@ -897,7 +894,7 @@ impl From<EventCallbackMask> for FMOD_STUDIO_EVENT_CALLBACK_TYPE {
     }
 }
 
-pub enum EventCallbackKind {
+pub enum EventCallbackKind<U: UserdataTypes> {
     Created,
     Destroyed,
     Starting,
@@ -915,7 +912,7 @@ pub enum EventCallbackKind {
     SoundStopped(Sound),
     RealToVirtual,
     VirtualToReal,
-    StartEventCommand(EventInstance),
+    StartEventCommand(EventInstance<U>),
     NestedTimelineBeat(TimelineNestedBeatProperties),
 }
 

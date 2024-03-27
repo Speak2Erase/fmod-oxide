@@ -24,10 +24,19 @@ impl Drop for PrintOnDrop {
     }
 }
 
+struct Userdata;
+
+impl fmod::UserdataTypes for Userdata {
+    type StudioSystem = ();
+    type Bank = ();
+    type CommandReplay = ();
+    type Event = PrintOnDrop;
+}
+
 fn main() -> fmod::Result<()> {
     // # Safety: we are only calling this from the main fn and the main thread.
     // No other thread or api call will overlap this.
-    let system = unsafe { fmod::studio::System::new()? };
+    let system = unsafe { fmod::studio::System::<Userdata>::with_userdata()? };
 
     system.load_bank_file(
         c"fmod/api/studio/examples/media/Master.bank",

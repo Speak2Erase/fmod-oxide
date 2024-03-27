@@ -148,7 +148,7 @@ impl System {
     ///
     /// # Safety
     ///
-    /// [`System::release`] are not thread-safe. Do not call this function simultaneously from multiple threads at once.
+    /// [`System::release`] is not thread-safe. Do not call this function simultaneously from multiple threads at once.
     pub unsafe fn release(&self) -> Result<()> {
         unsafe { FMOD_System_Release(self.inner).to_result() }
     }

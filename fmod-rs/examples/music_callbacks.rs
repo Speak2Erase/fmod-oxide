@@ -30,10 +30,19 @@ struct CallbackInfo {
     entries: Mutex<Vec<String>>,
 }
 
+struct Userdata;
+
+impl fmod::UserdataTypes for Userdata {
+    type StudioSystem = ();
+    type Bank = ();
+    type CommandReplay = ();
+    type Event = CallbackInfo;
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let builder = unsafe {
         // Safety: we call this before calling any other functions and only in main, so this is safe
-        fmod::studio::SystemBuilder::new()?
+        fmod::studio::SystemBuilder::<Userdata>::with_userdata()?
     };
 
     // The example Studio project is authored for 5.1 sound, so set up the system output mode to match
@@ -77,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     event_instance.start()?;
 
-    let callback_info = event_instance.get_user_data::<CallbackInfo>()?.unwrap();
+    let callback_info = event_instance.get_user_data()?.unwrap();
 
     let parameter_description =
         event_description.get_parameter_description_by_name(c"Progression")?;
@@ -169,10 +178,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn marker_callback(
-    kind: EventCallbackKind,
-    instance: fmod::studio::EventInstance,
+    kind: EventCallbackKind<Userdata>,
+    instance: fmod::studio::EventInstance<Userdata>,
 ) -> fmod::Result<()> {
-    let callback_info = instance.get_user_data::<CallbackInfo>()?.unwrap();
+    let callback_info = instance.get_user_data()?.unwrap();
     let mut entries = callback_info.entries.lock().unwrap();
 
     match kind {

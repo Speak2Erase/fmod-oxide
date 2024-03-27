@@ -21,6 +21,7 @@ use std::{
     marker::PhantomData,
     mem::MaybeUninit,
     os::raw::c_void,
+    sync::Arc,
 };
 
 use crate::{core, Attributes3D, Guid, Shareable, UserdataTypes, Vector};
@@ -36,7 +37,7 @@ use super::{
 /// Initializing the FMOD Studio System object will also initialize the core System object.
 ///
 /// Created with [`SystemBuilder`], which handles initialization for you.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)] // TODO: should this logically be copy?
+#[derive(Debug, PartialEq, Eq)] // TODO: should this logically be copy?
 #[repr(transparent)] // so we can transmute between types
 pub struct System<U: UserdataTypes = ()> {
     pub(crate) inner: *mut FMOD_STUDIO_SYSTEM,
@@ -56,18 +57,18 @@ pub(crate) struct InternalUserdata<U: UserdataTypes> {
     // we don't expose the callback at all so it's fine to just use a box
     callback: Option<Box<dyn SystemCallback<U>>>,
     // this is an arc in case someone releases the system while holding onto a reference to the userdata
-    userdata: Option<U::StudioSystem>,
+    userdata: Option<Arc<U::StudioSystem>>,
     // used to ensure we don't misfire callbacks (we always subscribe to unloading banks to ensure userdata is freed)
     enabled_callbacks: SystemCallbackMask,
 }
 
 pub trait SystemCallback<U: UserdataTypes>:
-    Fn(System<U>, SystemCallbackKind, Option<&U::StudioSystem>) -> Result<()> + Shareable
+    Fn(System<U>, SystemCallbackKind<U>, Option<Arc<U::StudioSystem>>) -> Result<()> + Shareable
 {
 }
 impl<T, U> SystemCallback<U> for T
 where
-    T: Fn(System<U>, SystemCallbackKind, Option<&U::StudioSystem>) -> Result<()> + Shareable,
+    T: Fn(System<U>, SystemCallbackKind<U>, Option<Arc<U::StudioSystem>>) -> Result<()> + Shareable,
     U: UserdataTypes,
 {
 }
@@ -93,7 +94,8 @@ unsafe extern "C" fn internal_callback<U: UserdataTypes>(
                     FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE => SystemCallbackKind::Preupdate,
                     FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE => SystemCallbackKind::Postupdate,
                     FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD => {
-                        let bank = command_data.cast::<FMOD_STUDIO_BANK>().into();
+                        let bank =
+                            unsafe { Bank::from_ffi(command_data.cast::<FMOD_STUDIO_BANK>()) };
                         SystemCallbackKind::BankUnload(bank)
                     }
                     FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_CONNECTED => {
@@ -108,16 +110,14 @@ unsafe extern "C" fn internal_callback<U: UserdataTypes>(
                     }
                 };
 
-                let userdata = internal_userdata.userdata.as_ref();
+                let userdata = internal_userdata.userdata.clone();
                 result = callback(system, kind, userdata).into();
             }
         }
     }
 
     if kind == FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD {
-        let bank = Bank {
-            inner: command_data.cast(),
-        };
+        let bank = unsafe { Bank::<U>::from_ffi(command_data.cast()) };
         if let Err(error) = deallocate_bank(bank) {
             eprintln!("error deallocating bank: {error}");
         }
@@ -126,40 +126,18 @@ unsafe extern "C" fn internal_callback<U: UserdataTypes>(
     result
 }
 
-fn deallocate_bank(bank: Bank) -> Result<()> {
+fn deallocate_bank<U: UserdataTypes>(bank: Bank<U>) -> Result<()> {
     let mut userdata = std::ptr::null_mut();
     unsafe { FMOD_Studio_Bank_GetUserData(bank.inner, &mut userdata).to_result()? };
 
     // deallocate the userdata if it is not null
     if !userdata.is_null() {
         unsafe {
-            let userdata = userdata.cast::<super::bank::InternalUserdata>();
+            let userdata = userdata.cast::<super::bank::InternalUserdata<U>>();
 
             drop(Box::from_raw(userdata));
 
             FMOD_Studio_Bank_SetUserData(bank.inner, std::ptr::null_mut()).to_result()?;
-        }
-    }
-
-    bank.load_sample_data()?;
-
-    let list = bank.get_event_list()?;
-    for event in list {
-        let mut userdata = std::ptr::null_mut();
-        unsafe {
-            FMOD_Studio_EventDescription_GetUserData(event.inner, &mut userdata).to_result()?;
-        };
-
-        // deallocate the userdata if it is not null
-        if !userdata.is_null() {
-            unsafe {
-                let userdata = userdata.cast::<super::event_description::InternalUserdata>();
-
-                drop(Box::from_raw(userdata));
-
-                FMOD_Studio_EventDescription_SetUserData(event.inner, std::ptr::null_mut())
-                    .to_result()?;
-            }
         }
     }
 
@@ -317,6 +295,13 @@ impl<U: UserdataTypes> From<System<U>> for *mut FMOD_STUDIO_SYSTEM {
 unsafe impl<U: UserdataTypes> Send for System<U> {}
 unsafe impl<U: UserdataTypes> Sync for System<U> {}
 
+impl<U: UserdataTypes> Clone for System<U> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<U: UserdataTypes> Copy for System<U> {}
+
 impl System<()> {
     /// A convenience function over [`SystemBuilder`] with sane defaults.
     ///
@@ -401,7 +386,7 @@ impl<U: UserdataTypes> System<U> {
     }
 
     // TODO: load bank with callbacks
-    pub fn load_bank_custom(&self) -> Result<Bank> {
+    pub fn load_bank_custom(&self) -> Result<Bank<U>> {
         todo!()
     }
 
@@ -416,7 +401,7 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// If a bank has been split, separating out assets and optionally streams from the metadata bank, all parts must be loaded before any APIs that use the data are called.
     /// It is recommended you load each part one after another (order is not important), then proceed with dependent API calls such as [`Bank::load_sample_data`] or [`System::get_event`].
-    pub fn load_bank_file(&self, filename: &CStr, load_flags: LoadBankFlags) -> Result<Bank> {
+    pub fn load_bank_file(&self, filename: &CStr, load_flags: LoadBankFlags) -> Result<Bank<U>> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_LoadBankFile(
@@ -426,8 +411,8 @@ impl<U: UserdataTypes> System<U> {
                 &mut bank,
             )
             .to_result()?;
+            Ok(Bank::from_ffi(bank))
         }
-        Ok(bank.into())
     }
 
     /// Sample data must be loaded separately.
@@ -447,7 +432,7 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// If a bank has been split, separating out assets and optionally streams from the metadata bank, all parts must be loaded before any APIs that use the data are called.
     /// It is recommended you load each part one after another (order is not important), then proceed with dependent API calls such as [`Bank::load_sample_data`] or [`System::get_event`].
-    pub fn load_bank_memory(&self, buffer: &[u8], flags: LoadBankFlags) -> Result<Bank> {
+    pub fn load_bank_memory(&self, buffer: &[u8], flags: LoadBankFlags) -> Result<Bank<U>> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_LoadBankMemory(
@@ -459,8 +444,8 @@ impl<U: UserdataTypes> System<U> {
                 &mut bank,
             )
             .to_result()?;
+            Ok(Bank::from_ffi(bank))
         }
-        Ok(bank.into())
     }
 
     /// Sample data must be loaded separately.
@@ -488,7 +473,7 @@ impl<U: UserdataTypes> System<U> {
         &self,
         buffer: *const [u8],
         flags: LoadBankFlags,
-    ) -> Result<Bank> {
+    ) -> Result<Bank<U>> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_LoadBankMemory(
@@ -500,8 +485,8 @@ impl<U: UserdataTypes> System<U> {
                 &mut bank,
             )
             .to_result()?;
+            Ok(Bank::from_ffi(bank))
         }
-        Ok(bank.into())
     }
 
     /// Unloads all currently loaded banks.
@@ -514,21 +499,21 @@ impl<U: UserdataTypes> System<U> {
     /// `path_or_id` may be a path, such as `bank:/Weapons` or an ID string such as `{793cddb6-7fa1-4e06-b805-4c74c0fd625b}`.
     ///
     /// Note that path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_bank(&self, path_or_id: &CStr) -> Result<Bank> {
+    pub fn get_bank(&self, path_or_id: &CStr) -> Result<Bank<U>> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetBank(self.inner, path_or_id.as_ptr(), &mut bank).to_result()?;
+            Ok(Bank::from_ffi(bank))
         }
-        Ok(bank.into())
     }
 
     /// Retrieves a loaded bank.
-    pub fn get_bank_by_id(&self, id: Guid) -> Result<Bank> {
+    pub fn get_bank_by_id(&self, id: Guid) -> Result<Bank<U>> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetBankByID(self.inner, &id.into(), &mut bank).to_result()?;
+            Ok(Bank::from_ffi(bank))
         }
-        Ok(bank.into())
     }
 
     /// Retrieves the number of loaded banks.
@@ -540,21 +525,16 @@ impl<U: UserdataTypes> System<U> {
         Ok(count)
     }
 
-    pub fn get_bank_list(&self) -> Result<Vec<Bank>> {
+    pub fn get_bank_list(&self) -> Result<Vec<Bank<U>>> {
         let expected_count = self.bank_count()?;
         let mut count = 0;
-        let mut list = vec![
-            Bank {
-                inner: std::ptr::null_mut()
-            };
-            expected_count as usize
-        ];
+        let mut list = vec![std::ptr::null_mut(); expected_count as usize];
 
         unsafe {
             FMOD_Studio_System_GetBankList(
                 self.inner,
                 // bank is repr transparent and has the same layout as *mut FMOD_STUDIO_BANK, so this cast is ok
-                list.as_mut_ptr().cast::<*mut FMOD_STUDIO_BANK>(),
+                list.as_mut_ptr(),
                 list.capacity() as c_int,
                 &mut count,
             )
@@ -562,7 +542,7 @@ impl<U: UserdataTypes> System<U> {
 
             debug_assert_eq!(count, expected_count);
 
-            Ok(list)
+            Ok(std::mem::transmute(list))
         }
     }
 
@@ -684,23 +664,23 @@ impl<U: UserdataTypes> System<U> {
     /// `path+or_id` may be a path, such as `event:/UI/Cancel` or `snapshot:/IngamePause`, or an ID string, such as `{2a3e48e6-94fc-4363-9468-33d2dd4d7b00}`.
     ///
     /// Note that path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_event(&self, path_or_id: &CStr) -> Result<EventDescription> {
+    pub fn get_event(&self, path_or_id: &CStr) -> Result<EventDescription<U>> {
         let mut event = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetEvent(self.inner, path_or_id.as_ptr(), &mut event).to_result()?;
+            Ok(EventDescription::from_ffi(event))
         }
-        Ok(event.into())
     }
 
     /// Retrieves an [`EventDescription`].
     ///
     /// This function allows you to retrieve a handle to any loaded event description.
-    pub fn get_event_by_id(&self, id: Guid) -> Result<EventDescription> {
+    pub fn get_event_by_id(&self, id: Guid) -> Result<EventDescription<U>> {
         let mut event = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetEventByID(self.inner, &id.into(), &mut event).to_result()?;
+            Ok(EventDescription::from_ffi(event))
         }
-        Ok(event.into())
     }
 
     /// Retrieves a global parameter value by unique identifier.
@@ -1222,7 +1202,7 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// This function allows arbitrary user data to be attached to this object, which wll be passed through the userdata parameter in any [`FMOD_STUDIO_SYSTEM_CALLBACK`]s.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data<T>(&self, data: Option<U::StudioSystem>) -> Result<()> {
+    pub fn set_user_data(&self, data: Option<U::StudioSystem>) -> Result<()> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
 
@@ -1242,7 +1222,7 @@ impl<U: UserdataTypes> System<U> {
 
             // userdata should ALWAYS be InternalUserdata
             let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
-            userdata.userdata = data; // closure is necessary to unsize type
+            userdata.userdata = data.map(Arc::new);
         }
 
         Ok(())
@@ -1252,7 +1232,7 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// This function allows arbitrary user data to be retrieved from this object.
     // TODO should we just return the dyn Userdata directly?
-    pub fn get_user_data<T>(&self) -> Result<Option<&U::StudioSystem>> {
+    pub fn get_user_data(&self) -> Result<Option<Arc<U::StudioSystem>>> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
             FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
@@ -1263,7 +1243,7 @@ impl<U: UserdataTypes> System<U> {
 
             // userdata should ALWAYS be InternalUserdata
             let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
-            Ok(userdata.userdata.as_ref())
+            Ok(userdata.userdata.clone())
         }
     }
 

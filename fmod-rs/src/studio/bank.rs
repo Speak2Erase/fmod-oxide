@@ -15,44 +15,56 @@
 // You should have received a copy of the GNU General Public License
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::{any::Any, ffi::c_int, mem::MaybeUninit, sync::Arc};
+use std::{ffi::c_int, marker::PhantomData, mem::MaybeUninit, sync::Arc};
 
-use crate::Guid;
+use crate::{Guid, UserdataTypes};
 
 use super::{Bus, EventDescription, LoadingState, Vca};
 use fmod_sys::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 #[repr(transparent)] // so we can transmute between types
-pub struct Bank {
+pub struct Bank<U: UserdataTypes = ()> {
     pub(crate) inner: *mut FMOD_STUDIO_BANK,
+    _phantom: PhantomData<U>,
 }
 
-pub(crate) struct InternalUserdata {
+pub(crate) struct InternalUserdata<U: UserdataTypes> {
     // this is an arc in case someone unloads the bank while holding onto a reference to the userdata
     // we don't convert the Arc<T> to a raw pointer because that would be a dyn pointer which is not ffi safe
     // ideally we should be doing C++ style polymorphism, but the cost of dereferencing the userdata twice is... fine
-    userdata: Option<Userdata>,
+    userdata: Option<Arc<U::Bank>>,
 }
 
-type Userdata = Arc<dyn Any + Send + Sync>;
+unsafe impl<U: UserdataTypes> Send for Bank<U> {}
+unsafe impl<U: UserdataTypes> Sync for Bank<U> {}
+impl<U: UserdataTypes> Clone for Bank<U> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<U: UserdataTypes> Copy for Bank<U> {}
 
-unsafe impl Send for Bank {}
-unsafe impl Sync for Bank {}
-
-impl From<*mut FMOD_STUDIO_BANK> for Bank {
-    fn from(value: *mut FMOD_STUDIO_BANK) -> Self {
-        Bank { inner: value }
+impl<U: UserdataTypes> Bank<U> {
+    /// Create a System instance from its FFI equivalent.
+    ///
+    /// # Safety
+    /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_BANK`] will not have the right userdata type.
+    pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_BANK) -> Self {
+        Bank {
+            inner: value,
+            _phantom: PhantomData,
+        }
     }
 }
 
-impl From<Bank> for *mut FMOD_STUDIO_BANK {
-    fn from(value: Bank) -> Self {
+impl<U: UserdataTypes> From<Bank<U>> for *mut FMOD_STUDIO_BANK {
+    fn from(value: Bank<U>) -> Self {
         value.inner
     }
 }
 
-impl Bank {
+impl<U: UserdataTypes> Bank<U> {
     /// This function may be used to check the loading state of a bank which has been loaded asynchronously using the [`super::LoadBankFlags::NONBLOCKING`] flag,
     /// or is pending unload following a call to [`Bank::unload`].
     ///
@@ -103,9 +115,7 @@ impl Bank {
         // we don't deallocate userdata here because the system callback will take care of that for us
         unsafe { FMOD_Studio_Bank_Unload(self.inner).to_result() }
     }
-}
 
-impl Bank {
     /// Retrieves the number of buses in the bank.
     pub fn bus_count(&self) -> Result<c_int> {
         let mut count = 0;
@@ -141,9 +151,7 @@ impl Bank {
             Ok(list)
         }
     }
-}
 
-impl Bank {
     /// Retrives the number of event descriptions in the bank.
     ///
     /// This function counts the events which were added to the bank by the sound designer.
@@ -160,22 +168,16 @@ impl Bank {
     ///
     /// This function counts the events which were added to the bank by the sound designer.
     /// The bank may contain additional events which are referenced by event instruments but were not added to the bank, and those referenced events are not counted.
-    pub fn get_event_list(&self) -> Result<Vec<EventDescription>> {
+    pub fn get_event_list(&self) -> Result<Vec<EventDescription<U>>> {
         let expected_count = self.event_count()?;
         let mut count = 0;
-        let mut list = vec![
-            EventDescription {
-                inner: std::ptr::null_mut()
-            };
-            expected_count as usize
-        ];
+        let mut list = vec![std::ptr::null_mut(); expected_count as usize];
 
         unsafe {
             FMOD_Studio_Bank_GetEventList(
                 self.inner,
                 // bus is repr transparent and has the same layout as *mut FMOD_STUDIO_BUS, so this cast is ok
-                list.as_mut_ptr()
-                    .cast::<*mut FMOD_STUDIO_EVENTDESCRIPTION>(),
+                list.as_mut_ptr(),
                 list.capacity() as c_int,
                 &mut count,
             )
@@ -183,12 +185,10 @@ impl Bank {
 
             debug_assert_eq!(count, expected_count);
 
-            Ok(list)
+            Ok(std::mem::transmute(list))
         }
     }
-}
 
-impl Bank {
     /// Retrieves the number of string table entries in the bank.
     pub fn string_count(&self) -> Result<c_int> {
         let mut count = 0;
@@ -254,9 +254,7 @@ impl Bank {
             Ok((guid, path))
         }
     }
-}
 
-impl Bank {
     /// Retrieves the number of VCAs in the bank.
     pub fn vca_count(&self) -> Result<c_int> {
         let mut count = 0;
@@ -292,9 +290,7 @@ impl Bank {
             Ok(list)
         }
     }
-}
 
-impl Bank {
     /// Retrieves the GUID.
     pub fn get_id(&self) -> Result<Guid> {
         let mut guid = MaybeUninit::zeroed();
@@ -353,24 +349,21 @@ impl Bank {
     ///
     /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data<T>(&self, data: Option<T>) -> Result<()>
-    where
-        T: Any + Send + Sync + 'static,
-    {
+    pub fn set_user_data(&self, data: Option<U::Bank>) -> Result<()> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
             FMOD_Studio_Bank_GetUserData(self.inner, &mut userdata).to_result()?;
 
             // create and set the userdata if we haven't already
             if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata { userdata: None });
+                let boxed_userdata = Box::new(InternalUserdata::<U> { userdata: None });
                 userdata = Box::into_raw(boxed_userdata).cast();
 
                 FMOD_Studio_Bank_SetUserData(self.inner, userdata).to_result()?;
             }
 
-            let userdata = &mut *userdata.cast::<InternalUserdata>();
-            userdata.userdata = data.map(|d| Arc::new(d) as _); // closure is necessary to unsize type
+            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            userdata.userdata = data.map(Arc::new);
         }
 
         Ok(())
@@ -379,10 +372,7 @@ impl Bank {
     /// Retrieves the bank user data.
     ///
     /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data<T>(&self) -> Result<Option<Arc<T>>>
-    where
-        T: Send + Sync + 'static,
-    {
+    pub fn get_user_data(&self) -> Result<Option<Arc<U::Bank>>> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
 
@@ -393,12 +383,8 @@ impl Bank {
             }
 
             // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata.cast::<InternalUserdata>();
-            let userdata = userdata
-                .userdata
-                .clone()
-                .map(Arc::downcast::<T>)
-                .and_then(std::result::Result::ok);
+            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            let userdata = userdata.userdata.clone();
             Ok(userdata)
         }
     }

@@ -16,177 +16,56 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    any::Any,
     ffi::{c_float, c_int, CStr},
+    marker::PhantomData,
     mem::MaybeUninit,
-    os::raw::c_void,
     sync::Arc,
 };
 
 use fmod_sys::*;
 
-use crate::{core::Sound, Guid};
-
-use super::{
-    EventCallbackKind, EventCallbackMask, EventInstance, LoadingState, ParameterDescription,
-    ParameterID, PluginInstanceProperties, ProgrammerSoundProperties, TimelineMarkerProperties,
-    UserProperty,
+use super::{internal_event_callback, EventCallback, InternalUserdata};
+use crate::studio::{
+    EventCallbackMask, EventInstance, LoadingState, ParameterDescription, ParameterID, UserProperty,
 };
+use crate::{Guid, UserdataTypes};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 #[repr(transparent)] // so we can transmute between types
-pub struct EventDescription {
+pub struct EventDescription<U: UserdataTypes = ()> {
     pub(crate) inner: *mut FMOD_STUDIO_EVENTDESCRIPTION,
+    _phantom: PhantomData<U>,
 }
 
-pub(crate) struct InternalUserdata {
-    // this is an arc in case someone releases the event instance or description while holding onto a reference to the userdata
-    // also this is logically and actually shared because event instances inherit their description's userdata and callbacks unless modified
-    pub(crate) userdata: Option<Userdata>,
-    pub(crate) callback: Option<CallbackFn>,
-    // used to ensure we don't misfire callbacks (we always subscribe to releasing events to ensure userdata is freed)
-    pub(crate) callback_mask: EventCallbackMask,
-    // used to prevent use after frees so events don't accidentally free their description's userdata
-    pub(crate) is_from_event_instance: bool,
+unsafe impl<U: UserdataTypes> Send for EventDescription<U> {}
+unsafe impl<U: UserdataTypes> Sync for EventDescription<U> {}
+impl<U: UserdataTypes> Clone for EventDescription<U> {
+    fn clone(&self) -> Self {
+        *self
+    }
 }
+impl<U: UserdataTypes> Copy for EventDescription<U> {}
 
-// hilariously long type signature because clippy
-pub(crate) type CallbackFn =
-    Arc<dyn Fn(EventCallbackKind, EventInstance) -> Result<()> + Send + Sync>;
-pub(crate) type Userdata = Arc<dyn Any + Send + Sync>;
-
-pub(crate) unsafe extern "C" fn internal_event_callback(
-    kind: FMOD_STUDIO_EVENT_CALLBACK_TYPE,
-    event: *mut FMOD_STUDIO_EVENTINSTANCE,
-    parameters: *mut c_void,
-) -> FMOD_RESULT {
-    // FIXME: handle unwinding panics
-
-    let mut userdata = std::ptr::null_mut();
-    let error = unsafe { FMOD_Studio_EventInstance_GetUserData(event, &mut userdata).to_error() };
-
-    if let Some(error) = error {
-        eprintln!("error grabbing the event userdata: {error}");
-    }
-
-    #[cfg(debug_assertions)]
-    if userdata.is_null() {
-        eprintln!("event instance userdata is null. aborting");
-        std::process::abort();
-    }
-
-    // userdata should always be not null if this function is called, and it should be a valid reference to InternalUserdata
-    let userdata = unsafe { &mut *userdata.cast::<InternalUserdata>() };
-
-    let mut result = FMOD_RESULT::FMOD_OK;
-    if let Some(callback) = &userdata.callback {
-        if userdata.callback_mask.contains(kind.into()) {
-            let event_instance = event.into();
-
-            let kind = match kind {
-                FMOD_STUDIO_EVENT_CALLBACK_CREATED => EventCallbackKind::Created,
-                FMOD_STUDIO_EVENT_CALLBACK_DESTROYED => EventCallbackKind::Destroyed,
-                FMOD_STUDIO_EVENT_CALLBACK_STARTING => EventCallbackKind::Starting,
-                FMOD_STUDIO_EVENT_CALLBACK_STARTED => EventCallbackKind::Started,
-                FMOD_STUDIO_EVENT_CALLBACK_RESTARTED => EventCallbackKind::Restarted,
-                FMOD_STUDIO_EVENT_CALLBACK_STOPPED => EventCallbackKind::Stopped,
-                FMOD_STUDIO_EVENT_CALLBACK_START_FAILED => EventCallbackKind::StartFailed,
-                FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND => unsafe {
-                    let props = &mut *parameters.cast::<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES>();
-                    EventCallbackKind::CreateProgrammerSound(ProgrammerSoundProperties {
-                        name: CStr::from_ptr(props.name),
-                        // the casts are safe because sound and *mut FMOD_SOUND are identical
-                        sound: &mut *std::ptr::addr_of_mut!(props.sound).cast::<Sound>(),
-                        subsound_index: &mut props.subsoundIndex,
-                    })
-                },
-                FMOD_STUDIO_EVENT_CALLBACK_DESTROY_PROGRAMMER_SOUND => {
-                    unsafe {
-                        let props =
-                            &mut *parameters.cast::<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES>();
-                        EventCallbackKind::DestroyProgrammerSound(ProgrammerSoundProperties {
-                            name: CStr::from_ptr(props.name),
-                            // the casts are safe because sound and *mut FMOD_SOUND are identical
-                            sound: &mut *std::ptr::addr_of_mut!(props.sound).cast::<Sound>(),
-                            subsound_index: &mut props.subsoundIndex,
-                        })
-                    }
-                }
-                FMOD_STUDIO_EVENT_CALLBACK_PLUGIN_CREATED => unsafe {
-                    let props = *parameters.cast::<FMOD_STUDIO_PLUGIN_INSTANCE_PROPERTIES>();
-                    EventCallbackKind::PluginCreated(PluginInstanceProperties::from_ffi(props))
-                },
-                FMOD_STUDIO_EVENT_CALLBACK_PLUGIN_DESTROYED => unsafe {
-                    let props = *parameters.cast::<FMOD_STUDIO_PLUGIN_INSTANCE_PROPERTIES>();
-                    EventCallbackKind::PluginDestroyed(PluginInstanceProperties::from_ffi(props))
-                },
-                FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_MARKER => unsafe {
-                    let marker = *parameters.cast::<FMOD_STUDIO_TIMELINE_MARKER_PROPERTIES>();
-                    EventCallbackKind::TimelineMarker(TimelineMarkerProperties::from_ffi(marker))
-                },
-                FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_BEAT => unsafe {
-                    let beat = *parameters.cast::<FMOD_STUDIO_TIMELINE_BEAT_PROPERTIES>();
-                    EventCallbackKind::TimelineBeat(beat.into())
-                },
-                FMOD_STUDIO_EVENT_CALLBACK_SOUND_PLAYED => {
-                    EventCallbackKind::SoundPlayed(parameters.cast::<FMOD_SOUND>().into())
-                }
-                FMOD_STUDIO_EVENT_CALLBACK_SOUND_STOPPED => {
-                    EventCallbackKind::SoundStopped(parameters.cast::<FMOD_SOUND>().into())
-                }
-                FMOD_STUDIO_EVENT_CALLBACK_REAL_TO_VIRTUAL => EventCallbackKind::RealToVirtual,
-                FMOD_STUDIO_EVENT_CALLBACK_VIRTUAL_TO_REAL => EventCallbackKind::VirtualToReal,
-                FMOD_STUDIO_EVENT_CALLBACK_START_EVENT_COMMAND => {
-                    EventCallbackKind::StartEventCommand(
-                        parameters.cast::<FMOD_STUDIO_EVENTINSTANCE>().into(),
-                    )
-                }
-                FMOD_STUDIO_EVENT_CALLBACK_NESTED_TIMELINE_BEAT => unsafe {
-                    let beat = *parameters.cast::<FMOD_STUDIO_TIMELINE_NESTED_BEAT_PROPERTIES>();
-                    EventCallbackKind::NestedTimelineBeat(beat.into())
-                },
-                _ => {
-                    eprintln!("wrong event callback type {kind}, aborting");
-                    std::process::abort()
-                }
-            };
-
-            result = callback(kind, event_instance).into();
+impl<U: UserdataTypes> EventDescription<U> {
+    /// Create a System instance from its FFI equivalent.
+    ///
+    /// # Safety
+    /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_EVENTDESCRIPTION`] will not have the right userdata type.
+    pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_EVENTDESCRIPTION) -> Self {
+        EventDescription {
+            inner: value,
+            _phantom: PhantomData,
         }
     }
-
-    if kind == FMOD_STUDIO_EVENT_CALLBACK_DESTROYED && userdata.is_from_event_instance {
-        let userdata = unsafe { Box::from_raw(userdata) };
-        drop(userdata);
-
-        // deallocate the userdata, and set it to null. this shouldn't be necessary but just in case
-        let error = unsafe {
-            FMOD_Studio_EventInstance_SetUserData(event, std::ptr::null_mut()).to_error()
-        };
-        if let Some(error) = error {
-            eprintln!("error setting the event userdata to null: {error}");
-        }
-    }
-
-    result
 }
 
-unsafe impl Send for EventDescription {}
-unsafe impl Sync for EventDescription {}
-
-impl From<*mut FMOD_STUDIO_EVENTDESCRIPTION> for EventDescription {
-    fn from(value: *mut FMOD_STUDIO_EVENTDESCRIPTION) -> Self {
-        EventDescription { inner: value }
-    }
-}
-
-impl From<EventDescription> for *mut FMOD_STUDIO_EVENTDESCRIPTION {
-    fn from(value: EventDescription) -> Self {
+impl<U: UserdataTypes> From<EventDescription<U>> for *mut FMOD_STUDIO_EVENTDESCRIPTION {
+    fn from(value: EventDescription<U>) -> Self {
         value.inner
     }
 }
 
-impl EventDescription {
+impl<U: UserdataTypes> EventDescription<U> {
     /// Creates a playable instance.
     ///
     /// When an event instance is created, any required non-streaming sample data is loaded asynchronously.
@@ -194,12 +73,12 @@ impl EventDescription {
     /// Use [`EventDescription::get_sample_loading_state`] to check the loading status.
     ///
     /// Sample data can be loaded ahead of time with [`EventDescription::load_sample_data`] or [`super::Bank::load_sample_data`]. See Sample Data Loading for more information.
-    pub fn create_instance(&self) -> Result<EventInstance> {
+    pub fn create_instance(&self) -> Result<EventInstance<U>> {
         let mut instance = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_EventDescription_CreateInstance(self.inner, &mut instance).to_result()?;
+            Ok(EventInstance::from_ffi(instance))
         }
-        Ok(instance.into())
     }
 
     /// Retrieves the number of instances.
@@ -211,21 +90,16 @@ impl EventDescription {
         Ok(count)
     }
 
-    pub fn get_instance_list(&self) -> Result<Vec<EventInstance>> {
+    pub fn get_instance_list(&self) -> Result<Vec<EventInstance<U>>> {
         let expected_count = self.instance_count()?;
         let mut count = 0;
-        let mut list = vec![
-            EventInstance {
-                inner: std::ptr::null_mut()
-            };
-            expected_count as usize
-        ];
+        let mut list = vec![std::ptr::null_mut(); expected_count as usize];
 
         unsafe {
             FMOD_Studio_EventDescription_GetInstanceList(
                 self.inner,
                 // eventinstance is repr transparent and has the same layout as *mut FMOD_STUDIO_EVENTINSTANCE, so this cast is ok
-                list.as_mut_ptr().cast::<*mut FMOD_STUDIO_EVENTINSTANCE>(),
+                list.as_mut_ptr(),
                 list.capacity() as c_int,
                 &mut count,
             )
@@ -233,7 +107,8 @@ impl EventDescription {
 
             debug_assert_eq!(count, expected_count);
 
-            Ok(list)
+            // *mut FMOD_STUDIO_EVENTINSTANCE is transmutable to EventInstance<U>
+            Ok(std::mem::transmute(list))
         }
     }
 
@@ -243,9 +118,7 @@ impl EventDescription {
     pub fn release_all_instances(&self) -> Result<()> {
         unsafe { FMOD_Studio_EventDescription_ReleaseAllInstances(self.inner).to_result() }
     }
-}
 
-impl EventDescription {
     /// Loads non-streaming sample data used by the event.
     ///
     /// This function will load all non-streaming sample data required by the event and any referenced events.
@@ -275,9 +148,7 @@ impl EventDescription {
             (state, error)
         }
     }
-}
 
-impl EventDescription {
     /// Retrieves the event's 3D status.
     ///
     /// An event is considered 3D if any of these conditions are met:
@@ -378,9 +249,7 @@ impl EventDescription {
         }
         Ok(size)
     }
-}
 
-impl EventDescription {
     /// Retrieves an event parameter description by name.
     pub fn get_parameter_description_by_name(&self, name: &CStr) -> Result<ParameterDescription> {
         let mut description = MaybeUninit::zeroed();
@@ -602,9 +471,7 @@ impl EventDescription {
             Ok(path)
         }
     }
-}
 
-impl EventDescription {
     /// Retrieves a user property by name.
     pub fn get_user_property(&self, name: &CStr) -> Result<UserProperty> {
         let mut property = MaybeUninit::uninit();
@@ -649,9 +516,7 @@ impl EventDescription {
         }
         Ok(count)
     }
-}
 
-impl EventDescription {
     /// Retrieves the GUID.
     pub fn get_id(&self) -> Result<Guid> {
         let mut guid = MaybeUninit::zeroed();
@@ -727,10 +592,7 @@ impl EventDescription {
     /// Retrieves the event user data.
     ///
     /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data<T>(&self) -> Result<Option<Arc<T>>>
-    where
-        T: Send + Sync + 'static,
-    {
+    pub fn get_user_data(&self) -> Result<Option<Arc<U::Event>>> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
             FMOD_Studio_EventDescription_GetUserData(self.inner, &mut userdata).to_result()?;
@@ -740,12 +602,8 @@ impl EventDescription {
             }
 
             // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata.cast::<InternalUserdata>();
-            let userdata = userdata
-                .userdata
-                .clone()
-                .map(Arc::downcast::<T>)
-                .and_then(std::result::Result::ok);
+            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            let userdata = userdata.userdata.clone();
             Ok(userdata)
         }
     }
@@ -758,7 +616,7 @@ impl EventDescription {
     /// The provided callback may be shared/accessed from multiple threads, and so must implement Send + Sync 'static
     pub fn set_callback<F>(&self, callback: F, mask: EventCallbackMask) -> Result<()>
     where
-        F: Fn(EventCallbackKind, EventInstance) -> Result<()> + Send + Sync + 'static,
+        F: EventCallback<U>,
     {
         // Always enable destroyed to deallocate any userdata attached to events
         let raw_mask = (mask | EventCallbackMask::DESTROYED).into();
@@ -771,7 +629,7 @@ impl EventDescription {
             // is this allowed to be null?
             FMOD_Studio_EventDescription_SetCallback(
                 self.inner,
-                Some(internal_event_callback),
+                Some(internal_event_callback::<U>),
                 raw_mask,
             )
             .to_result()
@@ -782,19 +640,16 @@ impl EventDescription {
     ///
     /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data<T>(&self, data: Option<T>) -> Result<()>
-    where
-        T: Any + Send + Sync + 'static,
-    {
+    pub fn set_user_data(&self, data: Option<U::Event>) -> Result<()> {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.userdata = data.map(|d| Arc::new(d) as _); // closure is necessary to unsize type
+            userdata.userdata = data.map(Arc::new);
         }
 
         Ok(())
     }
 
-    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata> {
+    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata<U>> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
             FMOD_Studio_EventDescription_GetUserData(self.inner, &mut userdata).to_result()?;
@@ -802,7 +657,7 @@ impl EventDescription {
             // FIXME extract this common behavior into a macro or something
             // create and set the userdata if we haven't already
             if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata {
+                let boxed_userdata = Box::new(InternalUserdata::<U> {
                     callback: None,
                     callback_mask: EventCallbackMask::empty(),
                     userdata: None,
@@ -816,13 +671,13 @@ impl EventDescription {
                 // since we always keep the FMOD_STUDIO_EVENT_CALLBACK_DESTROYED bit set when modifying callbacks, this is ok.
                 FMOD_Studio_EventDescription_SetCallback(
                     self.inner,
-                    Some(internal_event_callback),
+                    Some(internal_event_callback::<U>),
                     FMOD_STUDIO_EVENT_CALLBACK_DESTROYED,
                 )
                 .to_result()?;
             }
 
-            Ok(userdata.cast::<InternalUserdata>())
+            Ok(userdata.cast::<InternalUserdata<U>>())
         }
     }
 
