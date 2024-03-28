@@ -493,7 +493,7 @@ impl<U: UserdataTypes> EventInstance<U> {
     /// Sets the user callback.
     ///
     /// See the event callbacks section in the FMOD docs for more information about when callbacks occur.
-    pub fn set_callback<F>(&self, callback: F, mask: EventCallbackMask) -> Result<()>
+    pub fn set_callback<F>(&self, callback: Option<F>, mask: EventCallbackMask) -> Result<()>
     where
         F: EventCallback<U>,
     {
@@ -502,16 +502,15 @@ impl<U: UserdataTypes> EventInstance<U> {
 
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.callback = Some(Arc::new(callback));
             userdata.callback_mask = mask;
 
-            // is this allowed to be null?
-            FMOD_Studio_EventInstance_SetCallback(
-                self.inner,
-                Some(internal_event_callback::<U>),
-                raw_mask,
-            )
-            .to_result()
+            if let Some(f) = callback {
+                userdata.callback = Some(Arc::new(f));
+                self.set_callback_raw(Some(internal_event_callback::<U>), raw_mask)
+            } else {
+                userdata.callback = None;
+                self.set_callback_raw(None, raw_mask)
+            }
         }
     }
 
@@ -533,55 +532,74 @@ impl<U: UserdataTypes> EventInstance<U> {
     /// This function allows arbitrary user data to be retrieved from this object.
     pub fn get_user_data(&self) -> Result<Option<Arc<U::Event>>> {
         unsafe {
-            let mut userdata = std::ptr::null_mut();
-            FMOD_Studio_EventInstance_GetUserData(self.inner, &mut userdata).to_result()?;
+            let userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
 
             if userdata.is_null() {
                 return Ok(None);
             }
 
             // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            let userdata = &mut *userdata;
             let userdata = userdata.userdata.clone();
             Ok(userdata)
         }
     }
 
-    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata<U>> {
+    /// Retrieves the event instance raw userdata.
+    ///
+    /// This function is safe because accessing the pointer is unsafe.
+    pub fn get_raw_user_data(&self) -> Result<*mut std::ffi::c_void> {
         unsafe {
             let mut userdata = std::ptr::null_mut();
             FMOD_Studio_EventInstance_GetUserData(self.inner, &mut userdata).to_result()?;
+            Ok(userdata)
+        }
+    }
+
+    /// Sets the event instance raw userdata.
+    ///
+    /// This function is UNSAFE (more unsafe than most in this crate!) because this crate makes assumptions about the type of userdata.
+    ///
+    /// # Safety
+    /// When calling this function with *any* pointer not recieved from a prior call to [`Self::get_raw_user_data`] you must call [`Self::set_callback_raw`]!
+    /// Calbacks in this crate always assume that the userdata pointer always points to an internal struct.
+    pub unsafe fn set_raw_userdata(&self, userdata: *mut std::ffi::c_void) -> Result<()> {
+        unsafe { FMOD_Studio_EventInstance_SetUserData(self.inner, userdata).to_result() }
+    }
+
+    /// Sets the raw callback.
+    ///
+    /// Unlike [`Self::set_raw_userdata`], this crate makes no assumptions about callbacks.
+    /// It expects them to be set (for memory management reasons) but setting it to a raw callback is ok.
+    ///
+    /// It's worth noting that this crate sets userdata to an internal structure by default. You will generally want to use [`Self::set_callback_raw`].
+    pub fn set_callback_raw(&self, callback: FMOD_STUDIO_EVENT_CALLBACK, mask: u32) -> Result<()> {
+        unsafe { FMOD_Studio_EventInstance_SetCallback(self.inner, callback, mask).to_result() }
+    }
+
+    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata<U>> {
+        unsafe {
+            let mut userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
 
             // create and set the userdata if we haven't already
             if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata::<U> {
-                    callback: None,
-                    callback_mask: EventCallbackMask::empty(),
-                    userdata: None,
-                    // mark this as true because we have created the instance
-                    is_from_event_instance: true,
-                });
-                userdata = Box::into_raw(boxed_userdata).cast();
+                let boxed_userdata = Box::new(InternalUserdata::instance());
+                userdata = Box::into_raw(boxed_userdata);
 
-                FMOD_Studio_EventInstance_SetUserData(self.inner, userdata).to_result()?;
+                self.set_raw_userdata(userdata.cast())?;
             } else {
                 // if it is set, check that it's not from an event instance
-                let desc_userdata = &*userdata.cast::<InternalUserdata<U>>();
+                let desc_userdata = &*userdata;
                 if !desc_userdata.is_from_event_instance {
                     // create new userdata and copy over anything set from the original userdata
-                    let boxed_userdata = Box::new(InternalUserdata {
-                        callback: desc_userdata.callback.clone(),
-                        userdata: desc_userdata.userdata.clone(),
-                        callback_mask: desc_userdata.callback_mask,
-                        is_from_event_instance: true,
-                    });
-                    userdata = Box::into_raw(boxed_userdata).cast();
+                    let boxed_userdata = Box::new(desc_userdata.as_instance());
+                    userdata = Box::into_raw(boxed_userdata);
 
-                    FMOD_Studio_EventInstance_SetUserData(self.inner, userdata).to_result()?;
+                    self.set_raw_userdata(userdata.cast())?;
                 }
             }
 
-            Ok(userdata.cast::<InternalUserdata<U>>())
+            Ok(userdata)
         }
     }
 

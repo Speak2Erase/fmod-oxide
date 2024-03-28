@@ -170,3 +170,33 @@ pub(crate) unsafe extern "C" fn internal_event_callback<U: UserdataTypes>(
 
     result
 }
+
+impl<U: UserdataTypes> InternalUserdata<U> {
+    fn description() -> Self {
+        Self {
+            userdata: None,
+            callback: None,
+            callback_mask: EventCallbackMask::empty(),
+            is_from_event_instance: false,
+        }
+    }
+
+    fn instance() -> Self {
+        Self {
+            userdata: None,
+            callback: None,
+            callback_mask: EventCallbackMask::empty(),
+            is_from_event_instance: true,
+        }
+    }
+
+    fn as_instance(&self) -> Self {
+        debug_assert!(!self.is_from_event_instance);
+        Self {
+            userdata: self.userdata.clone(),
+            callback: self.callback.clone(),
+            callback_mask: self.callback_mask,
+            is_from_event_instance: true,
+        }
+    }
+}

@@ -79,36 +79,38 @@ impl<U: UserdataTypes> CommandReplay<U> {
     /// If the instance is not created then subsequent commands for the event instance will be ignored in the replay.
     ///
     /// If this callback is not set then the system will always create an event instance.
-    pub fn set_create_instance_callback<F>(&self, callback: F) -> Result<()>
+    pub fn set_create_instance_callback<F>(&self, callback: Option<F>) -> Result<()>
     where
         F: CreateInstanceCallback<U>,
     {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.create_instance_callback = Some(Box::new(callback));
 
-            FMOD_Studio_CommandReplay_SetCreateInstanceCallback(
-                self.inner,
-                Some(internal_create_instance_callback::<U>),
-            )
-            .to_result()
+            if let Some(f) = callback {
+                userdata.create_instance_callback = Some(Box::new(f));
+                self.set_create_instance_callback_raw(Some(internal_create_instance_callback::<U>))
+            } else {
+                userdata.create_instance_callback = None;
+                self.set_create_instance_callback_raw(None)
+            }
         }
     }
 
     /// Sets a callback that is issued each time the replay reaches a new frame.
-    pub fn set_frame_callback<F>(&self, callback: F) -> Result<()>
+    pub fn set_frame_callback<F>(&self, callback: Option<F>) -> Result<()>
     where
         F: FrameCallback<U>,
     {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.frame_callback = Some(Box::new(callback));
 
-            FMOD_Studio_CommandReplay_SetFrameCallback(
-                self.inner,
-                Some(internal_frame_callback::<U>),
-            )
-            .to_result()
+            if let Some(f) = callback {
+                userdata.frame_callback = Some(Box::new(f));
+                self.set_frame_callback_raw(Some(internal_frame_callback::<U>))
+            } else {
+                userdata.frame_callback = None;
+                self.set_frame_callback_raw(None)
+            }
         }
     }
 
@@ -120,19 +122,20 @@ impl<U: UserdataTypes> CommandReplay<U> {
     /// If the bank is not loaded subsequent commands which reference objects in the bank will fail.
     ///
     /// If this callback is not set then the system will attempt to load banks from file according to recorded [`System::load_bank_file`] commands and skip other load commands.
-    pub fn set_load_bank_callback<F>(&self, callback: F) -> Result<()>
+    pub fn set_load_bank_callback<F>(&self, callback: Option<F>) -> Result<()>
     where
         F: LoadBankCallback<U>,
     {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.load_bank_callback = Some(Box::new(callback));
 
-            FMOD_Studio_CommandReplay_SetLoadBankCallback(
-                self.inner,
-                Some(internal_load_bank_callback::<U>),
-            )
-            .to_result()
+            if let Some(f) = callback {
+                userdata.load_bank_callback = Some(Box::new(f));
+                self.set_load_bank_callback_raw(Some(internal_load_bank_callback::<U>))
+            } else {
+                userdata.load_bank_callback = None;
+                self.set_load_bank_callback_raw(None)
+            }
         }
     }
 
@@ -334,18 +337,80 @@ impl<U: UserdataTypes> CommandReplay<U> {
     /// This function allows arbitrary user data to be retrieved from this object.
     pub fn get_user_data(&self) -> Result<Option<Arc<U::CommandReplay>>> {
         unsafe {
-            let mut userdata = std::ptr::null_mut();
-            FMOD_Studio_CommandReplay_GetUserData(self.inner, &mut userdata).to_result()?;
+            let userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
 
             if userdata.is_null() {
                 return Ok(None);
             }
 
             // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            let userdata = &mut *userdata;
             let userdata = userdata.userdata.clone();
             Ok(userdata)
         }
+    }
+
+    /// Retrieves the event instance raw userdata.
+    ///
+    /// This function is safe because accessing the pointer is unsafe.
+    pub fn get_raw_user_data(&self) -> Result<*mut std::ffi::c_void> {
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_CommandReplay_GetUserData(self.inner, &mut userdata).to_result()?;
+            Ok(userdata)
+        }
+    }
+
+    /// Sets the event instance raw userdata.
+    ///
+    /// This function is UNSAFE (more unsafe than most in this crate!) because this crate makes assumptions about the type of userdata.
+    ///
+    /// # Safety
+    /// When calling this function with *any* pointer not recieved from a prior call to [`Self::get_raw_user_data`] you must call [`Self::set_callback_raw`]!
+    /// Calbacks in this crate always assume that the userdata pointer always points to an internal struct.
+    pub unsafe fn set_raw_userdata(&self, userdata: *mut std::ffi::c_void) -> Result<()> {
+        unsafe { FMOD_Studio_CommandReplay_SetUserData(self.inner, userdata).to_result() }
+    }
+
+    /// Sets the raw callback.
+    ///
+    /// Unlike [`Self::set_raw_userdata`], this crate makes no assumptions about callbacks.
+    /// It expects them to be set (for memory management reasons) but setting it to a raw callback is ok.
+    ///
+    /// It's worth noting that this crate sets userdata to an internal structure by default. You will generally want to use [`Self::set_callback_raw`].
+    pub fn set_create_instance_callback_raw(
+        &self,
+        callback: FMOD_STUDIO_COMMANDREPLAY_CREATE_INSTANCE_CALLBACK,
+    ) -> Result<()> {
+        unsafe {
+            FMOD_Studio_CommandReplay_SetCreateInstanceCallback(self.inner, callback).to_result()
+        }
+    }
+
+    /// Sets the raw callback.
+    ///
+    /// Unlike [`Self::set_raw_userdata`], this crate makes no assumptions about callbacks.
+    /// It expects them to be set (for memory management reasons) but setting it to a raw callback is ok.
+    ///
+    /// It's worth noting that this crate sets userdata to an internal structure by default. You will generally want to use [`Self::set_callback_raw`].
+    pub fn set_frame_callback_raw(
+        &self,
+        callback: FMOD_STUDIO_COMMANDREPLAY_FRAME_CALLBACK,
+    ) -> Result<()> {
+        unsafe { FMOD_Studio_CommandReplay_SetFrameCallback(self.inner, callback).to_result() }
+    }
+
+    /// Sets the raw callback.
+    ///
+    /// Unlike [`Self::set_raw_userdata`], this crate makes no assumptions about callbacks.
+    /// It expects them to be set (for memory management reasons) but setting it to a raw callback is ok.
+    ///
+    /// It's worth noting that this crate sets userdata to an internal structure by default. You will generally want to use [`Self::set_callback_raw`].
+    pub fn set_load_bank_callback_raw(
+        &self,
+        callback: FMOD_STUDIO_COMMANDREPLAY_LOAD_BANK_CALLBACK,
+    ) -> Result<()> {
+        unsafe { FMOD_Studio_CommandReplay_SetLoadBankCallback(self.inner, callback).to_result() }
     }
 
     /// Checks that the [`CommandReplay`] reference is valid.

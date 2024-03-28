@@ -127,17 +127,15 @@ unsafe extern "C" fn internal_callback<U: UserdataTypes>(
 }
 
 fn deallocate_bank<U: UserdataTypes>(bank: Bank<U>) -> Result<()> {
-    let mut userdata = std::ptr::null_mut();
-    unsafe { FMOD_Studio_Bank_GetUserData(bank.inner, &mut userdata).to_result()? };
+    let userdata = bank.get_raw_user_data()?;
 
     // deallocate the userdata if it is not null
     if !userdata.is_null() {
         unsafe {
             let userdata = userdata.cast::<super::bank::InternalUserdata<U>>();
-
             drop(Box::from_raw(userdata));
 
-            FMOD_Studio_Bank_SetUserData(bank.inner, std::ptr::null_mut()).to_result()?;
+            bank.set_raw_userdata(std::ptr::null_mut())?;
         }
     }
 
@@ -343,8 +341,7 @@ impl<U: UserdataTypes> System<U> {
     pub unsafe fn release(self) -> Result<()> {
         unsafe {
             // fetch userdata before release is called
-            let mut userdata = std::ptr::null_mut();
-            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
+            let userdata = self.get_raw_user_data()?;
 
             FMOD_Studio_System_Release(self.inner).to_result()?;
 
@@ -1163,7 +1160,7 @@ impl<U: UserdataTypes> System<U> {
     /// The system callback function is called for a variety of reasons, use the callbackmask to choose which callbacks you are interested in.
     ///
     /// Callbacks are called from the Studio Update Thread in default / async mode and the main (calling) thread in synchronous mode. See the [`FMOD_STUDIO_SYSTEM_CALLBACK_TYPE`] for details.
-    pub fn set_callback<F>(&self, callback: F, mask: SystemCallbackMask) -> Result<()>
+    pub fn set_callback<F>(&self, callback: Option<F>, mask: SystemCallbackMask) -> Result<()>
     where
         F: SystemCallback<U>,
     {
@@ -1171,30 +1168,17 @@ impl<U: UserdataTypes> System<U> {
         let raw_mask = (mask | SystemCallbackMask::BANK_UNLOAD).into();
 
         unsafe {
-            let mut userdata = std::ptr::null_mut();
-
-            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
-
-            // create & set the userdata if we haven't already
-            if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata::<U> {
-                    callback: None,
-                    enabled_callbacks: SystemCallbackMask::empty(),
-                    userdata: None,
-                });
-                userdata = Box::into_raw(boxed_userdata).cast();
-
-                FMOD_Studio_System_SetUserData(self.inner, userdata).to_result()?;
-            }
-
             // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
-            userdata.callback = Some(Box::new(callback));
+            let userdata = &mut *self.get_or_insert_userdata()?;
             userdata.enabled_callbacks = mask;
 
-            // is this allowed to be null?
-            FMOD_Studio_System_SetCallback(self.inner, Some(internal_callback::<U>), raw_mask)
-                .to_result()
+            if let Some(f) = callback {
+                userdata.callback = Some(Box::new(f));
+                self.set_callback_raw(Some(internal_callback::<U>), raw_mask)
+            } else {
+                userdata.callback = None;
+                self.set_callback_raw(None, raw_mask)
+            }
         }
     }
 
@@ -1204,24 +1188,8 @@ impl<U: UserdataTypes> System<U> {
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
     pub fn set_user_data(&self, data: Option<U::StudioSystem>) -> Result<()> {
         unsafe {
-            let mut userdata = std::ptr::null_mut();
-
-            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
-
-            // create & set the userdata if we haven't already
-            if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata::<U> {
-                    callback: None,
-                    enabled_callbacks: SystemCallbackMask::empty(),
-                    userdata: None,
-                });
-                userdata = Box::into_raw(boxed_userdata).cast();
-
-                FMOD_Studio_System_SetUserData(self.inner, userdata).to_result()?;
-            }
-
             // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            let userdata = &mut *self.get_or_insert_userdata()?;
             userdata.userdata = data.map(Arc::new);
         }
 
@@ -1231,19 +1199,69 @@ impl<U: UserdataTypes> System<U> {
     /// Retrieves the user data.
     ///
     /// This function allows arbitrary user data to be retrieved from this object.
-    // TODO should we just return the dyn Userdata directly?
     pub fn get_user_data(&self) -> Result<Option<Arc<U::StudioSystem>>> {
         unsafe {
-            let mut userdata = std::ptr::null_mut();
-            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
+            let userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
 
             if userdata.is_null() {
                 return Ok(None);
             }
 
             // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            let userdata = &mut *userdata;
             Ok(userdata.userdata.clone())
+        }
+    }
+
+    /// Retrieves the event instance raw userdata.
+    ///
+    /// This function is safe because accessing the pointer is unsafe.
+    pub fn get_raw_user_data(&self) -> Result<*mut std::ffi::c_void> {
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
+            Ok(userdata)
+        }
+    }
+
+    /// Sets the event instance raw userdata.
+    ///
+    /// This function is UNSAFE (more unsafe than most in this crate!) because this crate makes assumptions about the type of userdata.
+    ///
+    /// # Safety
+    /// When calling this function with *any* pointer not recieved from a prior call to [`Self::get_raw_user_data`] you must call [`Self::set_callback_raw`]!
+    /// Calbacks in this crate always assume that the userdata pointer always points to an internal struct.
+    pub unsafe fn set_raw_userdata(&self, userdata: *mut std::ffi::c_void) -> Result<()> {
+        unsafe { FMOD_Studio_System_SetUserData(self.inner, userdata).to_result() }
+    }
+
+    /// Sets the raw callback.
+    ///
+    /// Unlike [`Self::set_raw_userdata`], this crate makes no assumptions about callbacks.
+    /// It expects them to be set (for memory management reasons) but setting it to a raw callback is ok.
+    ///
+    /// It's worth noting that this crate sets userdata to an internal structure by default. You will generally want to use [`Self::set_callback_raw`].
+    pub fn set_callback_raw(&self, callback: FMOD_STUDIO_SYSTEM_CALLBACK, mask: u32) -> Result<()> {
+        unsafe { FMOD_Studio_System_SetCallback(self.inner, callback, mask).to_result() }
+    }
+
+    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata<U>> {
+        unsafe {
+            let mut userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
+
+            // FIXME extract this common behavior into a macro or something
+            // create and set the userdata if we haven't already
+            if userdata.is_null() {
+                let boxed_userdata = Box::new(InternalUserdata {
+                    callback: None,
+                    userdata: None,
+                    enabled_callbacks: SystemCallbackMask::empty(),
+                });
+                userdata = Box::into_raw(boxed_userdata);
+                self.set_raw_userdata(userdata.cast())?;
+            }
+
+            Ok(userdata)
         }
     }
 

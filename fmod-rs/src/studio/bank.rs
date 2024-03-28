@@ -351,18 +351,17 @@ impl<U: UserdataTypes> Bank<U> {
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
     pub fn set_user_data(&self, data: Option<U::Bank>) -> Result<()> {
         unsafe {
-            let mut userdata = std::ptr::null_mut();
-            FMOD_Studio_Bank_GetUserData(self.inner, &mut userdata).to_result()?;
+            let mut userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
 
             // create and set the userdata if we haven't already
             if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata::<U> { userdata: None });
-                userdata = Box::into_raw(boxed_userdata).cast();
+                let boxed_userdata = Box::new(InternalUserdata { userdata: None });
+                userdata = Box::into_raw(boxed_userdata);
 
-                FMOD_Studio_Bank_SetUserData(self.inner, userdata).to_result()?;
+                self.set_raw_userdata(userdata.cast())?;
             }
 
-            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            let userdata = &mut *userdata;
             userdata.userdata = data.map(Arc::new);
         }
 
@@ -374,19 +373,39 @@ impl<U: UserdataTypes> Bank<U> {
     /// This function allows arbitrary user data to be retrieved from this object.
     pub fn get_user_data(&self) -> Result<Option<Arc<U::Bank>>> {
         unsafe {
-            let mut userdata = std::ptr::null_mut();
-
-            FMOD_Studio_Bank_GetUserData(self.inner, &mut userdata).to_result()?;
+            let userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
 
             if userdata.is_null() {
                 return Ok(None);
             }
 
             // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata.cast::<InternalUserdata<U>>();
+            let userdata = &mut *userdata;
             let userdata = userdata.userdata.clone();
             Ok(userdata)
         }
+    }
+
+    /// Retrieves the event instance raw userdata.
+    ///
+    /// This function is safe because accessing the pointer is unsafe.
+    pub fn get_raw_user_data(&self) -> Result<*mut std::ffi::c_void> {
+        unsafe {
+            let mut userdata = std::ptr::null_mut();
+            FMOD_Studio_Bank_GetUserData(self.inner, &mut userdata).to_result()?;
+            Ok(userdata)
+        }
+    }
+
+    /// Sets the event instance raw userdata.
+    ///
+    /// This function is UNSAFE (more unsafe than most in this crate!) because this crate makes assumptions about the type of userdata.
+    ///
+    /// # Safety
+    /// When calling this function with *any* pointer not recieved from a prior call to [`Self::get_raw_user_data`] you must call [`System::set_callback_raw`]!
+    /// Calbacks in this crate always assume that the userdata pointer always points to an internal struct.
+    pub unsafe fn set_raw_userdata(&self, userdata: *mut std::ffi::c_void) -> Result<()> {
+        unsafe { FMOD_Studio_Bank_SetUserData(self.inner, userdata).to_result() }
     }
 
     /// Checks that the Bank reference is valid.

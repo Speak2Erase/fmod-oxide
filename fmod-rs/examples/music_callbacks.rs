@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     event_instance.set_user_data(Some(CallbackInfo::default()))?;
     event_instance.set_callback(
-        marker_callback,
+        Some(marker_callback),
         EventCallbackMask::TIMELINE_MARKER
             | EventCallbackMask::TIMELINE_BEAT
             | EventCallbackMask::SOUND_PLAYED
