@@ -39,19 +39,19 @@ fn main() -> fmod::Result<()> {
     let system = unsafe { fmod::studio::System::<Userdata>::with_userdata()? };
 
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Master.bank",
+        "fmod/api/studio/examples/media/Master.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Master.strings.bank",
+        "fmod/api/studio/examples/media/Master.strings.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Vehicles.bank",
+        "fmod/api/studio/examples/media/Vehicles.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
 
-    let event_description = system.get_event(c"event:/Vehicles/Ride-on Mower")?;
+    let event_description = system.get_event("event:/Vehicles/Ride-on Mower")?;
     let print_on_drop = PrintOnDrop("event desc userdata has been dropped :3").into();
     event_description.set_user_data(Some(print_on_drop))?;
 

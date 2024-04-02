@@ -16,7 +16,7 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    ffi::{c_float, c_int, CStr},
+    ffi::{c_float, c_int, CString},
     marker::PhantomData,
     mem::MaybeUninit,
     sync::Arc,
@@ -251,7 +251,8 @@ impl<U: UserdataTypes> EventDescription<U> {
     }
 
     /// Retrieves an event parameter description by name.
-    pub fn get_parameter_description_by_name(&self, name: &CStr) -> Result<ParameterDescription> {
+    pub fn get_parameter_description_by_name(&self, name: &str) -> Result<ParameterDescription> {
+        let name = CString::new(name)?;
         let mut description = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_EventDescription_GetParameterDescriptionByName(
@@ -321,8 +322,9 @@ impl<U: UserdataTypes> EventDescription<U> {
     ///
     /// `name` can be the short name (such as `Wind`) or the full path (such as `parameter:/Ambience/Wind`).
     /// Path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_parameter_label_by_name(&self, name: &CStr, label_index: c_int) -> Result<String> {
+    pub fn get_parameter_label_by_name(&self, name: &str, label_index: c_int) -> Result<String> {
         let mut string_len = 0;
+        let name = CString::new(name)?;
 
         // retrieve the length of the string.
         // this includes the null terminator, so we don't need to account for that.
@@ -340,7 +342,7 @@ impl<U: UserdataTypes> EventDescription<U> {
             // we expect the error to be fmod_err_truncated.
             // if it isn't, we return the error.
             match error {
-                Some(error) if error.code != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
+                Some(error) if error != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
                 _ => {}
             }
         };
@@ -390,7 +392,7 @@ impl<U: UserdataTypes> EventDescription<U> {
             // we expect the error to be fmod_err_truncated.
             // if it isn't, we return the error.
             match error {
-                Some(error) if error.code != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
+                Some(error) if error != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
                 _ => {}
             }
         };
@@ -442,7 +444,7 @@ impl<U: UserdataTypes> EventDescription<U> {
             // we expect the error to be fmod_err_truncated.
             // if it isn't, we return the error.
             match error {
-                Some(error) if error.code != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
+                Some(error) if error != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
                 _ => {}
             }
         };
@@ -473,8 +475,9 @@ impl<U: UserdataTypes> EventDescription<U> {
     }
 
     /// Retrieves a user property by name.
-    pub fn get_user_property(&self, name: &CStr) -> Result<UserProperty> {
+    pub fn get_user_property(&self, name: &str) -> Result<UserProperty> {
         let mut property = MaybeUninit::uninit();
+        let name = CString::new(name)?;
         unsafe {
             FMOD_Studio_EventDescription_GetUserProperty(
                 self.inner,
@@ -561,7 +564,7 @@ impl<U: UserdataTypes> EventDescription<U> {
             // we expect the error to be fmod_err_truncated.
             // if it isn't, we return the error.
             match error {
-                Some(error) if error.code != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
+                Some(error) if error != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
                 _ => {}
             }
         };

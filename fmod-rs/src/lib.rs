@@ -47,7 +47,7 @@ pub trait Shareable: Send + Sync + 'static {}
 impl<T> Shareable for T where T: Send + Sync + 'static {}
 
 use ffi::*;
-use std::ffi::{c_char, c_uint, c_void, CStr};
+use std::ffi::{c_char, c_uint, c_void, CString};
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum MemoryType {
@@ -151,7 +151,7 @@ pub fn memory_get_stats(blocking: bool) -> Result<(c_int, c_int)> {
 #[derive(PartialEq, Eq, Debug)]
 pub enum DebugMode {
     TTY,
-    File(&'static CStr),
+    File(String),
     Callback(
         unsafe extern "C" fn(
             FMOD_DEBUG_FLAGS,
@@ -216,11 +216,12 @@ pub fn debug_initialize(flags: DebugFlags, mode: DebugMode) -> Result<()> {
             .to_result()
         },
         DebugMode::File(c) => unsafe {
+            let file = CString::new(c)?;
             FMOD_Debug_Initialize(
                 flags.into(),
                 FMOD_DEBUG_MODE_FMOD_DEBUG_MODE_FILE,
                 None,
-                c.as_ptr(),
+                file.as_ptr(),
             )
             .to_result()
         },

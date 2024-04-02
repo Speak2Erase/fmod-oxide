@@ -122,7 +122,7 @@ pub(crate) unsafe extern "C" fn internal_create_instance_callback<U: UserdataTyp
                 FMOD_RESULT::FMOD_OK
             }
             Ok(None) => FMOD_RESULT::FMOD_OK,
-            Err(e) => e.code,
+            Err(e) => e.into(),
         }
     }
 }
@@ -208,7 +208,7 @@ pub(crate) unsafe extern "C" fn internal_load_bank_callback<U: UserdataTypes>(
                 FMOD_RESULT::FMOD_OK
             }
             Ok(None) => FMOD_RESULT::FMOD_OK,
-            Err(e) => e.code,
+            Err(e) => e.into(),
         }
     }
 }

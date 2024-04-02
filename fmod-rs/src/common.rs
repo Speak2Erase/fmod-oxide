@@ -16,7 +16,7 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    ffi::{c_float, c_uchar, c_uint, c_ushort, CStr},
+    ffi::{c_float, c_uchar, c_uint, c_ushort, CString},
     mem::MaybeUninit,
 };
 
@@ -33,8 +33,9 @@ pub struct Guid {
 }
 
 impl Guid {
-    pub fn parse(string: &CStr) -> Result<Self> {
+    pub fn parse(string: &str) -> Result<Self> {
         let mut guid = MaybeUninit::uninit();
+        let string = CString::new(string)?;
         unsafe {
             FMOD_Studio_ParseID(string.as_ptr(), guid.as_mut_ptr()).to_result()?;
             Ok(guid.assume_init().into())

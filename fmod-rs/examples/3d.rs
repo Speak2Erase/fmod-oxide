@@ -39,22 +39,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
 
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Master.bank",
+        "fmod/api/studio/examples/media/Master.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Master.strings.bank",
+        "fmod/api/studio/examples/media/Master.strings.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Vehicles.bank",
+        "fmod/api/studio/examples/media/Vehicles.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
 
-    let event_description = system.get_event(c"event:/Vehicles/Ride-on Mower")?;
+    let event_description = system.get_event("event:/Vehicles/Ride-on Mower")?;
     let event_instance = event_description.create_instance()?;
 
-    event_instance.set_parameter_by_name(c"RPM", 650.0, false)?;
+    event_instance.set_parameter_by_name("RPM", 650.0, false)?;
     event_instance.start()?;
 
     // Position the listener at the origin

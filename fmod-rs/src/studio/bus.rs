@@ -237,7 +237,7 @@ impl Bus {
             // we expect the error to be fmod_err_truncated.
             // if it isn't, we return the error.
             match error {
-                Some(error) if error.code != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
+                Some(error) if error != FMOD_RESULT::FMOD_ERR_TRUNCATED => return Err(error),
                 _ => {}
             }
         };

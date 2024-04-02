@@ -4,23 +4,31 @@
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Error {
-    pub code: FMOD_RESULT,
+#[derive(Clone, PartialEq, Eq)]
+pub enum Error {
+    Fmod(FMOD_RESULT),
+    NulError(std::ffi::NulError),
 }
 
 impl std::fmt::Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Error")
-            .field("code", &self.code)
-            .field("message", &error_code_to_str(self.code))
-            .finish()
+        let mut debug_struct = f.debug_struct("Error");
+        match self {
+            Self::Fmod(code) => debug_struct
+                .field("code", code)
+                .field("message", &error_code_to_str(*code))
+                .finish(),
+            Self::NulError(e) => debug_struct.field("nul error", e).finish(),
+        }
     }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(error_code_to_str(self.code))
+        match self {
+            Self::Fmod(code) => f.write_str(error_code_to_str(*code)),
+            Self::NulError(error) => error.fmt(f),
+        }
     }
 }
 
@@ -30,13 +38,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 impl From<FMOD_RESULT> for Error {
     fn from(value: FMOD_RESULT) -> Self {
-        Self { code: value }
+        Self::Fmod(value)
     }
 }
 
-impl From<Error> for FMOD_RESULT {
-    fn from(value: Error) -> Self {
-        value.code
+impl From<std::ffi::NulError> for Error {
+    fn from(value: std::ffi::NulError) -> Self {
+        Self::NulError(value)
     }
 }
 
@@ -45,17 +53,34 @@ impl From<FMOD_RESULT> for Result<()> {
         if matches!(value, FMOD_RESULT::FMOD_OK) {
             Ok(())
         } else {
-            Err(Error { code: value })
+            Err(Error::Fmod(value))
         }
     }
 }
 
 impl<T> From<Result<T>> for FMOD_RESULT {
     fn from(value: Result<T>) -> Self {
-        if let Some(error) = value.err() {
-            error.code
-        } else {
-            FMOD_RESULT::FMOD_OK
+        match value {
+            Ok(_) => FMOD_RESULT::FMOD_OK,
+            Err(e) => e.into(),
+        }
+    }
+}
+
+impl PartialEq<FMOD_RESULT> for Error {
+    fn eq(&self, other: &FMOD_RESULT) -> bool {
+        match self {
+            Self::Fmod(code) => code == other,
+            _ => false,
+        }
+    }
+}
+
+impl From<Error> for FMOD_RESULT {
+    fn from(val: Error) -> Self {
+        match val {
+            Error::Fmod(code) => code,
+            Error::NulError(_) => FMOD_RESULT::FMOD_ERR_INVALID_PARAM,
         }
     }
 }

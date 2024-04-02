@@ -39,28 +39,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
 
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Master.bank",
+        "fmod/api/studio/examples/media/Master.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Master.strings.bank",
+        "fmod/api/studio/examples/media/Master.strings.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/SFX.bank",
+        "fmod/api/studio/examples/media/SFX.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
 
     // Get the Looping Ambience event
-    let looping_ambience_description = system.get_event(c"event:/Ambience/Country")?;
+    let looping_ambience_description = system.get_event("event:/Ambience/Country")?;
     let looping_ambiance_instance = looping_ambience_description.create_instance()?;
 
     // Get the 4 Second Surge event
-    let cancel_description = system.get_event(c"event:/Ui/Cancel")?;
+    let cancel_description = system.get_event("event:/Ui/Cancel")?;
     let cancel_instance = cancel_description.create_instance()?;
 
     // Get the Single Explosion event
-    let explosion_description = system.get_event(c"event:/Weapons/Explosion")?;
+    let explosion_description = system.get_event("event:/Weapons/Explosion")?;
     // Start loading explosion sample data and keep it in memory
     explosion_description.load_sample_data()?;
 

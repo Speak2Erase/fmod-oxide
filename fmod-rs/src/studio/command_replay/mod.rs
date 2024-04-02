@@ -16,7 +16,7 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    ffi::{c_float, c_int, CStr},
+    ffi::{c_float, c_int, CString},
     marker::PhantomData,
     mem::MaybeUninit,
     sync::Arc,
@@ -69,7 +69,8 @@ impl<U: UserdataTypes> CommandReplay<U> {
     /// Sets a path substition that will be used when loading banks with this replay.
     ///
     /// [`System::load_bank_file`] commands in the replay are redirected to load banks from the specified directory, instead of using the directory recorded in the captured commands.
-    pub fn set_bank_path(&self, path: &CStr) -> Result<()> {
+    pub fn set_bank_path(&self, path: &str) -> Result<()> {
+        let path = CString::new(path)?;
         unsafe { FMOD_Studio_CommandReplay_SetBankPath(self.inner, path.as_ptr()).to_result() }
     }
 

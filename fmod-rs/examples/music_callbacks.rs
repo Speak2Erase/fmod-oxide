@@ -58,15 +58,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
 
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Master.bank",
+        "fmod/api/studio/examples/media/Master.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        c"fmod/api/studio/examples/media/Master.strings.bank",
+        "fmod/api/studio/examples/media/Master.strings.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     let result = system.load_bank_file(
-        c"fmod/api/studio/examples/media/Music.bank",
+        "fmod/api/studio/examples/media/Music.bank",
         fmod::studio::LoadBankFlags::NORMAL,
     );
     if let Err(e) = result {
@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let event_description = system.get_event(c"event:/Music/Level 01")?;
+    let event_description = system.get_event("event:/Music/Level 01")?;
     let event_instance = event_description.create_instance()?;
 
     let callback_info = Arc::new(CallbackInfo::default());
@@ -92,7 +92,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     event_instance.start()?;
 
     let parameter_description =
-        event_description.get_parameter_description_by_name(c"Progression")?;
+        event_description.get_parameter_description_by_name("Progression")?;
     let progresssion_id = parameter_description.id;
 
     let mut progression = 0.0;

@@ -16,7 +16,7 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    ffi::{c_float, c_int, c_uint, CStr},
+    ffi::{c_float, c_int, c_uint, CString},
     marker::PhantomData,
     mem::MaybeUninit,
     sync::Arc,
@@ -278,10 +278,11 @@ impl<U: UserdataTypes> EventInstance<U> {
     /// If the event has no parameter matching name then [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned.
     pub fn set_parameter_by_name(
         &self,
-        name: &CStr,
+        name: &str,
         value: c_float,
         ignore_seek_speed: bool,
     ) -> Result<()> {
+        let name = CString::new(name)?;
         unsafe {
             FMOD_Studio_EventInstance_SetParameterByName(
                 self.inner,
@@ -304,10 +305,12 @@ impl<U: UserdataTypes> EventInstance<U> {
     /// If the specified label is not found, [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned. This lookup is case sensitive.
     pub fn set_parameter_by_name_with_label(
         &self,
-        name: &CStr,
-        label: &CStr,
+        name: &str,
+        label: &str,
         ignore_seek_speed: bool,
     ) -> Result<()> {
+        let name = CString::new(name)?;
+        let label = CString::new(label)?;
         unsafe {
             FMOD_Studio_EventInstance_SetParameterByNameWithLabel(
                 self.inner,
@@ -325,7 +328,8 @@ impl<U: UserdataTypes> EventInstance<U> {
     ///
     /// The second returned tuple field is the final value of the parameter after applying adjustments due to automation, modulation, seek speed, and parameter velocity to value.
     /// This is calculated asynchronously when the Studio system updates.
-    pub fn get_parameter_by_name(&self, name: &CStr) -> Result<(c_float, c_float)> {
+    pub fn get_parameter_by_name(&self, name: &str) -> Result<(c_float, c_float)> {
+        let name = CString::new(name)?;
         let mut value = 0.0;
         let mut final_value = 0.0;
         unsafe {
@@ -372,9 +376,10 @@ impl<U: UserdataTypes> EventInstance<U> {
     pub fn set_parameter_by_id_with_label(
         &self,
         id: ParameterID,
-        label: &CStr,
+        label: &str,
         ignore_seek_speed: bool,
     ) -> Result<()> {
+        let label = CString::new(label)?;
         unsafe {
             FMOD_Studio_EventInstance_SetParameterByIDWithLabel(
                 self.inner,
