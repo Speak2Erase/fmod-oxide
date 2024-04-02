@@ -1159,11 +1159,12 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// The system callback function is called for a variety of reasons, use the callbackmask to choose which callbacks you are interested in.
     ///
-    /// Callbacks are called from the Studio Update Thread in default / async mode and the main (calling) thread in synchronous mode. See the [`FMOD_STUDIO_SYSTEM_CALLBACK_TYPE`] for details.
-    pub fn set_callback<F>(&self, callback: Option<F>, mask: SystemCallbackMask) -> Result<()>
-    where
-        F: SystemCallback<U>,
-    {
+    /// Callbacks are called from the Studio Update Thread in default / async mode and the main (calling) thread in synchronous mode. See the [`SystemCallbackKind`] for details.
+    pub fn set_callback(
+        &self,
+        callback: Option<Box<dyn SystemCallback<U>>>,
+        mask: SystemCallbackMask,
+    ) -> Result<()> {
         // Always enable BankUnload to deallocate any userdata attached to banks
         let raw_mask = (mask | SystemCallbackMask::BANK_UNLOAD).into();
 
@@ -1173,7 +1174,7 @@ impl<U: UserdataTypes> System<U> {
             userdata.enabled_callbacks = mask;
 
             if let Some(f) = callback {
-                userdata.callback = Some(Box::new(f));
+                userdata.callback = Some(f);
                 self.set_callback_raw(Some(internal_callback::<U>), raw_mask)
             } else {
                 userdata.callback = None;
@@ -1186,11 +1187,11 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// This function allows arbitrary user data to be attached to this object, which wll be passed through the userdata parameter in any [`FMOD_STUDIO_SYSTEM_CALLBACK`]s.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data(&self, data: Option<U::StudioSystem>) -> Result<()> {
+    pub fn set_user_data(&self, data: Option<Arc<U::StudioSystem>>) -> Result<()> {
         unsafe {
             // userdata should ALWAYS be InternalUserdata
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.userdata = data.map(Arc::new);
+            userdata.userdata = data;
         }
 
         Ok(())

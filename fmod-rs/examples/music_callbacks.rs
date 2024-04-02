@@ -23,7 +23,10 @@ use crossterm::{
 };
 use fmod::studio::{EventCallbackKind, EventCallbackMask};
 use fmod_sys::{FMOD_Sound_GetLength, FMOD_Sound_GetName};
-use std::{io::Write, sync::Mutex};
+use std::{
+    io::Write,
+    sync::{Arc, Mutex},
+};
 
 #[derive(Default)]
 struct CallbackInfo {
@@ -76,17 +79,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let event_description = system.get_event(c"event:/Music/Level 01")?;
     let event_instance = event_description.create_instance()?;
 
-    event_instance.set_user_data(Some(CallbackInfo::default()))?;
+    let callback_info = Arc::new(CallbackInfo::default());
+
+    event_instance.set_user_data(Some(callback_info.clone()))?;
     event_instance.set_callback(
-        Some(marker_callback),
+        Some(Arc::new(marker_callback)),
         EventCallbackMask::TIMELINE_MARKER
             | EventCallbackMask::TIMELINE_BEAT
             | EventCallbackMask::SOUND_PLAYED
             | EventCallbackMask::SOUND_STOPPED,
     )?;
     event_instance.start()?;
-
-    let callback_info = event_instance.get_user_data()?.unwrap();
 
     let parameter_description =
         event_description.get_parameter_description_by_name(c"Progression")?;

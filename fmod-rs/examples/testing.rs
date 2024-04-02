@@ -52,14 +52,13 @@ fn main() -> fmod::Result<()> {
     )?;
 
     let event_description = system.get_event(c"event:/Vehicles/Ride-on Mower")?;
-    event_description
-        .set_user_data(Some(PrintOnDrop("event desc userdata has been dropped :3")))?;
+    let print_on_drop = PrintOnDrop("event desc userdata has been dropped :3").into();
+    event_description.set_user_data(Some(print_on_drop))?;
 
     let instance = event_description.create_instance()?;
 
-    instance.set_user_data(Some(PrintOnDrop(
-        "event instance userdata has been dropped :3",
-    )))?;
+    let print_on_drop = PrintOnDrop("event instance userdata has been dropped :3").into();
+    instance.set_user_data(Some(print_on_drop))?;
 
     println!("updating system");
 

@@ -349,7 +349,7 @@ impl<U: UserdataTypes> Bank<U> {
     ///
     /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data(&self, data: Option<U::Bank>) -> Result<()> {
+    pub fn set_user_data(&self, data: Option<Arc<U::Bank>>) -> Result<()> {
         unsafe {
             let mut userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
 
@@ -362,7 +362,7 @@ impl<U: UserdataTypes> Bank<U> {
             }
 
             let userdata = &mut *userdata;
-            userdata.userdata = data.map(Arc::new);
+            userdata.userdata = data;
         }
 
         Ok(())

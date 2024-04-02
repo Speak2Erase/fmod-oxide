@@ -79,15 +79,15 @@ impl<U: UserdataTypes> CommandReplay<U> {
     /// If the instance is not created then subsequent commands for the event instance will be ignored in the replay.
     ///
     /// If this callback is not set then the system will always create an event instance.
-    pub fn set_create_instance_callback<F>(&self, callback: Option<F>) -> Result<()>
-    where
-        F: CreateInstanceCallback<U>,
-    {
+    pub fn set_create_instance_callback(
+        &self,
+        callback: Option<Box<dyn CreateInstanceCallback<U>>>,
+    ) -> Result<()> {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
 
             if let Some(f) = callback {
-                userdata.create_instance_callback = Some(Box::new(f));
+                userdata.create_instance_callback = Some(f);
                 self.set_create_instance_callback_raw(Some(internal_create_instance_callback::<U>))
             } else {
                 userdata.create_instance_callback = None;
@@ -97,15 +97,12 @@ impl<U: UserdataTypes> CommandReplay<U> {
     }
 
     /// Sets a callback that is issued each time the replay reaches a new frame.
-    pub fn set_frame_callback<F>(&self, callback: Option<F>) -> Result<()>
-    where
-        F: FrameCallback<U>,
-    {
+    pub fn set_frame_callback(&self, callback: Option<Box<dyn FrameCallback<U>>>) -> Result<()> {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
 
             if let Some(f) = callback {
-                userdata.frame_callback = Some(Box::new(f));
+                userdata.frame_callback = Some(f);
                 self.set_frame_callback_raw(Some(internal_frame_callback::<U>))
             } else {
                 userdata.frame_callback = None;
@@ -122,15 +119,15 @@ impl<U: UserdataTypes> CommandReplay<U> {
     /// If the bank is not loaded subsequent commands which reference objects in the bank will fail.
     ///
     /// If this callback is not set then the system will attempt to load banks from file according to recorded [`System::load_bank_file`] commands and skip other load commands.
-    pub fn set_load_bank_callback<F>(&self, callback: Option<F>) -> Result<()>
-    where
-        F: LoadBankCallback<U>,
-    {
+    pub fn set_load_bank_callback(
+        &self,
+        callback: Option<Box<dyn LoadBankCallback<U>>>,
+    ) -> Result<()> {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
 
             if let Some(f) = callback {
-                userdata.load_bank_callback = Some(Box::new(f));
+                userdata.load_bank_callback = Some(f);
                 self.set_load_bank_callback_raw(Some(internal_load_bank_callback::<U>))
             } else {
                 userdata.load_bank_callback = None;
@@ -143,10 +140,10 @@ impl<U: UserdataTypes> CommandReplay<U> {
     ///
     /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data(&self, data: Option<U::CommandReplay>) -> Result<()> {
+    pub fn set_user_data(&self, data: Option<Arc<U::CommandReplay>>) -> Result<()> {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.userdata = data.map(Arc::new);
+            userdata.userdata = data;
         }
 
         Ok(())

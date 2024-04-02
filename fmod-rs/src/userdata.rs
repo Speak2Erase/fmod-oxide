@@ -19,10 +19,10 @@ use crate::Shareable;
 
 pub trait UserdataTypes {
     // Studio
-    type StudioSystem: Shareable;
-    type Bank: Shareable;
-    type CommandReplay: Shareable;
-    type Event: Shareable;
+    type StudioSystem: Shareable + ?Sized;
+    type Bank: Shareable + ?Sized;
+    type CommandReplay: Shareable + ?Sized;
+    type Event: Shareable + ?Sized;
 }
 
 impl UserdataTypes for () {

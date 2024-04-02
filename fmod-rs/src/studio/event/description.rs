@@ -613,10 +613,11 @@ impl<U: UserdataTypes> EventDescription<U> {
     /// The callback for individual instances can be set with [`EventInstance::set_callback`].
     ///
     /// The provided callback may be shared/accessed from multiple threads, and so must implement Send + Sync 'static
-    pub fn set_callback<F>(&self, callback: Option<F>, mask: EventCallbackMask) -> Result<()>
-    where
-        F: EventCallback<U>,
-    {
+    pub fn set_callback(
+        &self,
+        callback: Option<Arc<dyn EventCallback<U>>>,
+        mask: EventCallbackMask,
+    ) -> Result<()> {
         // Always enable destroyed to deallocate any userdata attached to events
         let raw_mask = (mask | EventCallbackMask::DESTROYED).into();
 
@@ -625,7 +626,7 @@ impl<U: UserdataTypes> EventDescription<U> {
             userdata.callback_mask = mask;
 
             if let Some(f) = callback {
-                userdata.callback = Some(Arc::new(f));
+                userdata.callback = Some(f);
                 self.set_callback_raw(Some(internal_event_callback::<U>), raw_mask)
             } else {
                 userdata.callback = None;
@@ -638,10 +639,10 @@ impl<U: UserdataTypes> EventDescription<U> {
     ///
     /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data(&self, data: Option<U::Event>) -> Result<()> {
+    pub fn set_user_data(&self, data: Option<Arc<U::Event>>) -> Result<()> {
         unsafe {
             let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.userdata = data.map(Arc::new);
+            userdata.userdata = data;
         }
 
         Ok(())

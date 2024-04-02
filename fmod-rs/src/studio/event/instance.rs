@@ -493,10 +493,11 @@ impl<U: UserdataTypes> EventInstance<U> {
     /// Sets the user callback.
     ///
     /// See the event callbacks section in the FMOD docs for more information about when callbacks occur.
-    pub fn set_callback<F>(&self, callback: Option<F>, mask: EventCallbackMask) -> Result<()>
-    where
-        F: EventCallback<U>,
-    {
+    pub fn set_callback(
+        &self,
+        callback: Option<Arc<dyn EventCallback<U>>>,
+        mask: EventCallbackMask,
+    ) -> Result<()> {
         // Always enable destroyed to deallocate any userdata attached to events
         let raw_mask = (mask | EventCallbackMask::DESTROYED).into();
 
@@ -505,7 +506,7 @@ impl<U: UserdataTypes> EventInstance<U> {
             userdata.callback_mask = mask;
 
             if let Some(f) = callback {
-                userdata.callback = Some(Arc::new(f));
+                userdata.callback = Some(f);
                 self.set_callback_raw(Some(internal_event_callback::<U>), raw_mask)
             } else {
                 userdata.callback = None;
@@ -518,10 +519,10 @@ impl<U: UserdataTypes> EventInstance<U> {
     ///
     /// This function allows arbitrary user data to be attached to this object.
     /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data(&self, data: Option<U::Event>) -> Result<()> {
+    pub fn set_user_data(&self, data: Option<Arc<U::Event>>) -> Result<()> {
         unsafe {
             let userdata: &mut InternalUserdata<U> = &mut *self.get_or_insert_userdata()?;
-            userdata.userdata = data.map(Arc::new);
+            userdata.userdata = data;
         }
 
         Ok(())
