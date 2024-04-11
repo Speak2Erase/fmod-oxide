@@ -30,9 +30,6 @@
 pub use fmod_sys as ffi;
 pub use fmod_sys::{error_code_to_str, Error, Result};
 
-pub mod utf8_cstr;
-pub mod utf8_cstring;
-
 pub mod studio;
 
 pub mod core;

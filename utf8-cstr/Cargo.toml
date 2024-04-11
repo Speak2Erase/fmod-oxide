@@ -1,0 +1,12 @@
+[package]
+name = "utf8-cstr"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[features]
+alloc = []
+std = ["alloc"]
+
+default = ["alloc"]

@@ -1,0 +1,250 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'fmod'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--lib",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "fmod",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example '3d_multi'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=3d_multi",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "3d_multi",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example '3d_multi'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=3d_multi",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "3d_multi",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'music_callbacks'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=music_callbacks",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "music_callbacks",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'music_callbacks'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=music_callbacks",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "music_callbacks",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example '3d'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=3d",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "3d",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example '3d'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=3d",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "3d",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'testing'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=testing",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "testing",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'testing'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=testing",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "testing",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'simple_event'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=simple_event",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "simple_event",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'simple_event'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=simple_event",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "simple_event",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'fmod-sys'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--lib",
+          "--package=fmod-sys"
+        ],
+        "filter": {
+          "name": "fmod-sys",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'utf8-cstr'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--lib",
+          "--package=utf8-cstr"
+        ],
+        "filter": {
+          "name": "utf8-cstr",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
