@@ -1,3 +1,4 @@
+#![warn(rust_2018_idioms, clippy::pedantic)]
 #![cfg_attr(not(feature = "alloc"), no_std)]
 
 //! UTF-8 equivalents of `std`'s C string types.

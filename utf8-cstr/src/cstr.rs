@@ -46,7 +46,7 @@ use alloc::{borrow::Cow, borrow::ToOwned, ffi::CString, rc::Rc, string::String, 
 ///
 /// # Caveats
 ///
-/// ### Most conversions ([`AsRef`], [`Deref`], etc) exclude the nul terminator.
+/// **Most conversions ([`AsRef`], [`Deref`], etc) exclude the nul terminator.**
 ///
 /// If you want to get a string *with* the nul terminator, you will need to use the `as_*_with_nul` methods.
 #[repr(transparent)]
@@ -113,7 +113,7 @@ impl Utf8CStr {
     /// This function will wrap the provided `ptr` with a `Utf8CStr` wrapper, which
     /// allows inspection and interoperation of non-owned C strings. The total
     /// size of the terminated buffer must be smaller than [`isize::MAX`] **bytes**
-    /// in memory (a restriction from [`slice::from_raw_parts`]).
+    /// in memory (a restriction from [`core::slice::from_raw_parts`]).
     ///
     /// # Safety
     ///

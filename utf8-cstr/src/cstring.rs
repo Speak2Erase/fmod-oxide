@@ -38,6 +38,7 @@ use alloc::{
 
 /// A type representing an owned, C-compatible, UTF-8, nul-terminated string with no nul bytes in the
 /// middle.
+/// This type is `#[repr(transparent)]` and can be transmuted to a <code>&[CString]</code> safely.
 ///
 /// This type serves the purpose of being able to safely generate a
 /// C-compatible string from a Rust string. An instance of this
@@ -101,7 +102,7 @@ use alloc::{
 ///
 /// # Caveats
 ///
-/// ### Most conversions ([`AsRef`], [`Deref`], etc) exclude the nul terminator.
+/// **Most conversions ([`AsRef`], [`Deref`], etc) exclude the nul terminator.**
 ///
 /// If you want to get a string *with* the nul terminator, you will need to use the `as_*_with_nul` methods.
 #[repr(transparent)]
