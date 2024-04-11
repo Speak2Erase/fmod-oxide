@@ -4,7 +4,7 @@
 
 //! UTF-8 equivalents of `std`'s C string types.
 //!
-//! `utf8-cstr` is an extension of the `std::ffi` module that adds new [`Utf8CStr`] and [`Utf8CString`] types.
+//! `lanyard` is an extension of the `std::ffi` module that adds new [`Utf8CStr`] and [`Utf8CString`] types.
 //! They are like the standard library's [`CStr`] and [`CString`] types, except they are guaranteed to be valid UTF-8.
 //!
 //! Therefore they allow the ability to losslessly convert into strings, they implement `Display`, etc, etc.
@@ -31,7 +31,7 @@ pub use cstring::*;
 /// # Example
 ///
 /// ```rust
-/// use utf8_cstr::{Utf8CStr, c};
+/// use lanyard::{Utf8CStr, c};
 ///
 /// const HELLO: &Utf8CStr = c!("Hello, world!");
 /// assert_eq!(HELLO, "Hello, world!");
@@ -41,7 +41,7 @@ pub use cstring::*;
 /// Internal nul bytes will cause a compilation error:
 ///
 /// ```rust,compile_fail
-/// # use utf8_cstr::{Utf8CStr, c};
+/// # use lanyard::{Utf8CStr, c};
 /// const ERROR: &CStr8 = c!("Hello\0, world!");
 /// ```
 #[macro_export]

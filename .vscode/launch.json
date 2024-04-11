@@ -230,16 +230,16 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in library 'utf8-cstr'",
+      "name": "Debug unit tests in library 'lanyard'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
           "--lib",
-          "--package=utf8-cstr"
+          "--package=lanyard"
         ],
         "filter": {
-          "name": "utf8-cstr",
+          "name": "lanyard",
           "kind": "lib"
         }
       },
