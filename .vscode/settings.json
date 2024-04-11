@@ -2,5 +2,6 @@
   "clangd.fallbackFlags": [
     "-I${workspaceFolder}/fmod/api/studio/inc",
     "-I${workspaceFolder}/fmod/api/core/inc"
-  ]
+  ],
+  "licenser.license": "MPLv2"
 }

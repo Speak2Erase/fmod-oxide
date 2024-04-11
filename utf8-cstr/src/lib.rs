@@ -1,7 +1,19 @@
-#![warn(rust_2018_idioms, clippy::pedantic)]
+#![warn(rust_2018_idioms, clippy::pedantic, missing_docs)]
+#![allow(clippy::missing_errors_doc)]
 #![cfg_attr(not(feature = "alloc"), no_std)]
 
 //! UTF-8 equivalents of `std`'s C string types.
+//!
+//! `utf8-cstr` is an extension of the `std::ffi` module that adds new [`Utf8CStr`] and [`Utf8CString`] types.
+//! They are like the standard library's [`CStr`] and [`CString`] types, except they are guaranteed to be valid UTF-8.
+//!
+//! Therefore they allow the ability to losslessly convert into strings, they implement `Display`, etc, etc.
+//! The `std::ffi` types are not guaranteed to be valid UTF-8, which is the right decision for the standard library.
+//!
+//! However, in FFI, it's not uncommon to encounter APIs which expect all strings to be UTF-8. This generally requires
+//! crate authors to convert between `&str` and `CStr` via `CString` between the Rust-C boundary (which allocates every time).
+//!
+//! With UTF-8 C strings, the conversion between a `&str` and [`Utf8CStr`] are made explicit, and allocations can be minimized.
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -14,6 +26,24 @@ pub use cstr::*;
 #[cfg(feature = "alloc")]
 pub use cstring::*;
 
+/// Create a const <code>&'static [`CStr8`]</code> from a string literal.
+///
+/// # Example
+///
+/// ```rust
+/// use utf8_cstr::{Utf8CStr, c};
+///
+/// const HELLO: &Utf8CStr = c!("Hello, world!");
+/// assert_eq!(HELLO, "Hello, world!");
+/// assert_eq!(HELLO.as_str_with_nul(), "Hello, world!\0");
+/// ```
+///
+/// Internal nul bytes will cause a compilation error:
+///
+/// ```rust,compile_fail
+/// # use utf8_cstr::{Utf8CStr, c};
+/// const ERROR: &CStr8 = c!("Hello\0, world!");
+/// ```
 #[macro_export]
 macro_rules! c {
     ($s:literal) => {{

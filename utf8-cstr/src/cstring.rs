@@ -38,14 +38,14 @@ use alloc::{
 
 /// A type representing an owned, C-compatible, UTF-8, nul-terminated string with no nul bytes in the
 /// middle.
-/// This type is `#[repr(transparent)]` and can be transmuted to a <code>&[CString]</code> safely.
+/// This type is `#[repr(transparent)]` and can be transmuted to a <code>&[`CString`]</code> safely.
 ///
 /// This type serves the purpose of being able to safely generate a
 /// C-compatible string from a Rust string. An instance of this
 /// type is a static guarantee that the underlying bytes contain no interior 0
 /// bytes ("nul characters") and that the final byte is 0 ("nul terminator").
 ///
-/// `Utf8CString` is to <code>&[Utf8CStr]</code> as [`String`] is to <code>&[str]</code>: the former
+/// `Utf8CString` is to <code>&[`Utf8CStr`]</code> as [`String`] is to <code>&[str]</code>: the former
 /// in each pair are owned strings; the latter are borrowed
 /// references.
 ///
@@ -109,18 +109,41 @@ use alloc::{
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Utf8CString(CString);
 
+/// An error indicating that a nul byte was not in the expected position, or that there was invalid UTF-8.
+///
+/// The vector used to create a [`Utf8CString`] must have one and only one nul byte, positioned at the end.
+///
+/// This error is created by the [`Utf8CString::from_utf8_with_nul`] method. See its documentation for more.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum FromOwnedUtf8WithNul {
+    /// The vec was not valid UTF-8.
     Utf8(FromUtf8Error),
+    /// The vec was not a valid C string.
     CString(FromVecWithNulError),
 }
 
 impl Utf8CString {
+    /// Creates a new C-compatible string from a string.
+    ///
+    /// This function will consume the provided data and use the underlying bytes to construct a new string, ensuring that there is a trailing 0 byte.
+    /// This trailing 0 byte will be appended by this function; the provided data should not contain any 0 bytes in it.
     pub fn new(string: impl Into<String>) -> Result<Self, NulError> {
         let cstring = CString::new(string.into())?;
         Ok(unsafe { Self::from_cstring_unchecked(cstring) })
     }
 
+    /// Creates a new C-compatible string from a container of bytes.
+    ///
+    /// Runtime checks are present to ensure there is only one nul byte in the String, its last element.
+    pub fn from_string_with_nul(string: impl Into<String>) -> Result<Self, NulError> {
+        let cstring = CString::new(string.into())?;
+        Ok(unsafe { Self::from_cstring_unchecked(cstring) })
+    }
+
+    /// Attempts to converts a <code>[Vec]<[u8]></code> to a [`Utf8CString`].
+    ///
+    /// Runtime checks are present to ensure there is only one nul byte in the
+    /// [`Vec`], its last element, and that it is valid UTF-8.
     pub fn from_utf8_with_nul(v: Vec<u8>) -> Result<Self, FromOwnedUtf8WithNul> {
         let string = String::from_utf8(v)?;
         let cstring = CString::from_vec_with_nul(string.into_bytes())?;
@@ -139,6 +162,7 @@ impl Utf8CString {
     /// # Safety
     ///
     /// The provided vector must be valid UTF-8 and contain no interior nul-bytes.
+    #[must_use]
     pub unsafe fn from_utf8_unchecked(v: Vec<u8>) -> Self {
         unsafe {
             let cstring = CString::from_vec_unchecked(v); // this does append a nul byte
@@ -153,6 +177,7 @@ impl Utf8CString {
     ///
     /// The given [`Vec`] **must** have one nul byte as its last element, and be valid UTF-8.
     /// This means it cannot be empty nor have any other nul byte anywhere else.
+    #[must_use]
     pub unsafe fn from_utf8_with_nul_unchecked(v: Vec<u8>) -> Self {
         unsafe {
             let cstring = CString::from_vec_with_nul_unchecked(v); // this doesn't append a nul byte
@@ -165,10 +190,16 @@ impl Utf8CString {
     /// # Safety
     ///
     /// The provided C string must be UTF-8.
+    #[must_use]
     pub unsafe fn from_cstring_unchecked(cstring: CString) -> Self {
         Utf8CString(cstring)
     }
 
+    /// Yields a <code>&[`Utf8CString`]</code> slice if the `CString` contains valid UTF-8.
+    ///
+    /// If the contents of the `CString` are valid UTF-8 data, this
+    /// function will return the corresponding <code>&[`Utf8CString`]</code> slice. Otherwise,
+    /// it will return an error with details of where UTF-8 validation failed.
     pub fn from_cstring(cstring: CString) -> Result<Self, IntoStringError> {
         // we end up doing a bunch of converting back and forth but the unsafe string -> cstring conversion is a cast, essentially
         // might be better to use as_str() instead
@@ -176,6 +207,8 @@ impl Utf8CString {
         Ok(unsafe { Self::from_utf8_unchecked(string.into_bytes()) })
     }
 
+    /// Converts a `Utf8CString` into a <code>&[`Utf8CStr`]</code>.
+    #[must_use]
     pub fn as_utf8_cstr(&self) -> &Utf8CStr {
         unsafe { Utf8CStr::from_cstr_unchecked(self.0.as_c_str()) }
     }
@@ -223,26 +256,46 @@ impl Utf8CString {
     /// nul byte somewhere inside the string or removing the final one) before
     /// it makes it back into Rust using [`Utf8CString::from_raw`]. See the safety section
     /// in [`Utf8CString::from_raw`].
+    #[must_use]
     pub fn into_raw(self) -> *mut c_char {
         self.0.into_raw()
     }
 
+    /// Consumes a `Utf8CString` and converts it into a [`String`].
+    ///
+    /// The resulting string does not contain a nul byte.
+    #[must_use]
     pub fn into_string(self) -> String {
         unsafe { String::from_utf8_unchecked(self.0.into_bytes()) }
     }
 
+    /// Consumes a `Utf8CString` and converts it into a [`String`].
+    ///
+    /// The resulting string contains a nul byte.
+    #[must_use]
     pub fn into_string_with_nul(self) -> String {
         unsafe { String::from_utf8_unchecked(self.0.into_bytes_with_nul()) }
     }
 
+    /// Consumes the `Utf8CString` and returns the underlying byte buffer.
+    ///
+    /// The returned buffer does **not** contain the trailing nul
+    /// terminator, and it is guaranteed to not have any interior nul
+    /// bytes.
+    #[must_use]
     pub fn into_bytes(self) -> Vec<u8> {
         self.0.into_bytes()
     }
 
+    /// Equivalent to [`Utf8CString::into_bytes()`] except that the
+    /// returned vector includes the trailing nul terminator.
+    #[must_use]
     pub fn into_bytes_with_nul(self) -> Vec<u8> {
         self.0.into_bytes_with_nul()
     }
 
+    /// Converts this `Utf8CString` into a boxed [`Utf8CStr`].
+    #[must_use]
     pub fn into_boxed_utf8_cstr(self) -> Box<Utf8CStr> {
         unsafe { Box::from_raw(Box::into_raw(self.0.into_boxed_c_str()) as *mut Utf8CStr) }
     }

@@ -7,3 +7,5 @@
 -->
 
 # TODO
+
+Crate is mostly finished, but is going to be fully released alongside another crate when I finish it

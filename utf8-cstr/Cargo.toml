@@ -2,6 +2,11 @@
 name = "utf8-cstr"
 version = "0.1.0"
 edition = "2021"
+authors = ["Melody Madeline Lyons <melody@nowaffles.com>"]
+license = "MPLv2"
+keywords = ["ffi", "cstr", "cstring", "string"]
+categories = ["data-structures"]
+readme = "README.md"
 
 [dependencies]
 
