@@ -69,7 +69,7 @@ pub struct LoadBankData<U: UserdataTypes> {
     pub replay: CommandReplay<U>,
     pub command_index: c_int,
     pub bank_guid: Option<Guid>,
-    pub bank_filename: Option<&'static CStr>, // FIXME 'static wrong
+    pub bank_filename: Option<String>,
     pub load_flags: LoadBankFlags,
     pub userdata: Option<Arc<U::CommandReplay>>,
 }
@@ -194,7 +194,7 @@ pub(crate) unsafe extern "C" fn internal_load_bank_callback<U: UserdataTypes>(
             bank_filename: if bank_filename.is_null() {
                 None
             } else {
-                Some(CStr::from_ptr(bank_filename))
+                Some(CStr::from_ptr(bank_filename).to_string_lossy().into_owned())
             },
             load_flags: load_flags.into(),
             userdata: internal_userdata.userdata.clone(),
