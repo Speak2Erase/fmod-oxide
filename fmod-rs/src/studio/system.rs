@@ -16,8 +16,9 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use fmod_sys::*;
+use lanyard::Utf8CStr;
 use std::{
-    ffi::{c_float, c_int, c_uint, CString},
+    ffi::{c_float, c_int, c_uint},
     marker::PhantomData,
     mem::MaybeUninit,
     os::raw::c_void,
@@ -398,9 +399,12 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// If a bank has been split, separating out assets and optionally streams from the metadata bank, all parts must be loaded before any APIs that use the data are called.
     /// It is recommended you load each part one after another (order is not important), then proceed with dependent API calls such as [`Bank::load_sample_data`] or [`System::get_event`].
-    pub fn load_bank_file(&self, filename: &str, load_flags: LoadBankFlags) -> Result<Bank<U>> {
+    pub fn load_bank_file(
+        &self,
+        filename: &Utf8CStr,
+        load_flags: LoadBankFlags,
+    ) -> Result<Bank<U>> {
         let mut bank = std::ptr::null_mut();
-        let filename = CString::new(filename)?;
         unsafe {
             FMOD_Studio_System_LoadBankFile(
                 self.inner,
@@ -497,9 +501,8 @@ impl<U: UserdataTypes> System<U> {
     /// `path_or_id` may be a path, such as `bank:/Weapons` or an ID string such as `{793cddb6-7fa1-4e06-b805-4c74c0fd625b}`.
     ///
     /// Note that path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_bank(&self, path_or_id: &str) -> Result<Bank<U>> {
+    pub fn get_bank(&self, path_or_id: &Utf8CStr) -> Result<Bank<U>> {
         let mut bank = std::ptr::null_mut();
-        let path_or_id = CString::new(path_or_id)?;
         unsafe {
             FMOD_Studio_System_GetBank(self.inner, path_or_id.as_ptr(), &mut bank).to_result()?;
             Ok(Bank::from_ffi(bank))
@@ -637,9 +640,8 @@ impl<U: UserdataTypes> System<U> {
     /// `path_or_id` may be a path, such as `bus:/SFX/Ambience`, or an ID string, such as `{d9982c58-a056-4e6c-b8e3-883854b4bffb}`.
     ///
     /// Note that path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_bus(&self, path_or_id: &str) -> Result<Bus> {
+    pub fn get_bus(&self, path_or_id: &Utf8CStr) -> Result<Bus> {
         let mut bus = std::ptr::null_mut();
-        let path_or_id = CString::new(path_or_id)?;
         unsafe {
             FMOD_Studio_System_GetBus(self.inner, path_or_id.as_ptr(), &mut bus).to_result()?;
         }
@@ -664,9 +666,8 @@ impl<U: UserdataTypes> System<U> {
     /// `path+or_id` may be a path, such as `event:/UI/Cancel` or `snapshot:/IngamePause`, or an ID string, such as `{2a3e48e6-94fc-4363-9468-33d2dd4d7b00}`.
     ///
     /// Note that path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_event(&self, path_or_id: &str) -> Result<EventDescription<U>> {
+    pub fn get_event(&self, path_or_id: &Utf8CStr) -> Result<EventDescription<U>> {
         let mut event = std::ptr::null_mut();
-        let path_or_id = CString::new(path_or_id)?;
         unsafe {
             FMOD_Studio_System_GetEvent(self.inner, path_or_id.as_ptr(), &mut event).to_result()?;
             Ok(EventDescription::from_ffi(event))
@@ -730,10 +731,9 @@ impl<U: UserdataTypes> System<U> {
     pub fn set_parameter_by_id_with_label(
         &self,
         id: ParameterID,
-        label: &str,
+        label: &Utf8CStr,
         ignore_seek_speed: bool,
     ) -> Result<()> {
-        let label = CString::new(label)?;
         unsafe {
             FMOD_Studio_System_SetParameterByIDWithLabel(
                 self.inner,
@@ -774,8 +774,7 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// The second tuple field is the final value of the parameter after applying adjustments due to automation, modulation, seek speed, and parameter velocity to value.
     /// This is calculated asynchronously when the Studio system updates.
-    pub fn get_parameter_by_name(&self, name: &str) -> Result<(c_float, c_float)> {
-        let name = CString::new(name)?;
+    pub fn get_parameter_by_name(&self, name: &Utf8CStr) -> Result<(c_float, c_float)> {
         let mut value = 0.0;
         let mut final_value = 0.0;
 
@@ -795,11 +794,10 @@ impl<U: UserdataTypes> System<U> {
     /// Sets a global parameter value by name.
     pub fn set_parameter_by_name(
         &self,
-        name: &str,
+        name: &Utf8CStr,
         value: c_float,
         ignore_seek_speed: bool,
     ) -> Result<()> {
-        let name = CString::new(name)?;
         unsafe {
             FMOD_Studio_System_SetParameterByName(
                 self.inner,
@@ -816,12 +814,10 @@ impl<U: UserdataTypes> System<U> {
     /// If the specified label is not found, [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned. This lookup is case sensitive.
     pub fn set_parameter_by_name_with_label(
         &self,
-        name: &str,
-        label: &str,
+        name: &Utf8CStr,
+        label: &Utf8CStr,
         ignore_seek_speed: bool,
     ) -> Result<()> {
-        let name = CString::new(name)?;
-        let label = CString::new(label)?;
         unsafe {
             FMOD_Studio_System_SetParameterByNameWithLabel(
                 self.inner,
@@ -837,8 +833,10 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// `name` can be the short name (such as `Wind`) or the full path (such as `parameter:/Ambience/Wind`).
     /// Path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_parameter_description_by_name(&self, name: &str) -> Result<ParameterDescription> {
-        let name = CString::new(name)?;
+    pub fn get_parameter_description_by_name(
+        &self,
+        name: &Utf8CStr,
+    ) -> Result<ParameterDescription> {
         let mut description = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_System_GetParameterDescriptionByName(
@@ -918,8 +916,11 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// `name` can be the short name (such as `Wind`) or the full path (such as `parameter:/Ambience/Wind`).
     /// Path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_parameter_label_by_name(&self, name: &str, label_index: c_int) -> Result<String> {
-        let name = CString::new(name)?;
+    pub fn get_parameter_label_by_name(
+        &self,
+        name: &Utf8CStr,
+        label_index: c_int,
+    ) -> Result<String> {
         let mut string_len = 0;
 
         // retrieve the length of the string.
@@ -1025,8 +1026,7 @@ impl<U: UserdataTypes> System<U> {
     /// `path_or_id` may be a path, such as `vca:/MyVCA`, or an ID string, such as `{d9982c58-a056-4e6c-b8e3-883854b4bffb`}.
     ///
     /// Note that path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_vca(&self, path_or_id: &str) -> Result<Vca> {
-        let path_or_id = CString::new(path_or_id)?;
+    pub fn get_vca(&self, path_or_id: &Utf8CStr) -> Result<Vca> {
         let mut vca = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetVCA(self.inner, path_or_id.as_ptr(), &mut vca).to_result()?;
@@ -1065,8 +1065,11 @@ impl<U: UserdataTypes> System<U> {
     /// The commands generated by the FMOD Studio API can be captured and later replayed for debug and profiling purposes.
     ///
     /// Unless the [`CommandCaptureFlags::SKIP_INITIAL_STATE`] flag is specified, the command capture will first record the set of all banks and event instances that currently exist.
-    pub fn start_command_capture(&self, filename: &str, flags: CommandCaptureFlags) -> Result<()> {
-        let filename = CString::new(filename)?;
+    pub fn start_command_capture(
+        &self,
+        filename: &Utf8CStr,
+        flags: CommandCaptureFlags,
+    ) -> Result<()> {
         unsafe {
             FMOD_Studio_System_StartCommandCapture(self.inner, filename.as_ptr(), flags.into())
                 .to_result()
@@ -1081,10 +1084,9 @@ impl<U: UserdataTypes> System<U> {
     /// Load a command replay.
     pub fn load_command_replay(
         &self,
-        filename: &str,
+        filename: &Utf8CStr,
         flags: CommandReplayFlags,
     ) -> Result<CommandReplay<U>> {
-        let filename = CString::new(filename)?;
         let mut replay = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_LoadCommandReplay(
@@ -1292,8 +1294,7 @@ impl<U: UserdataTypes> System<U> {
     /// This won't work with the default [`FMOD_CREATESAMPLE`] mode.
     /// For memory banks, you should add in the [`FMOD_CREATECOMPRESSEDSAMPLE`] or [`FMOD_CREATESTREAM`] flag, or remove [`FMOD_OPENMEMORY_POINT`] and add [`FMOD_OPENMEMORY`] to decompress the sample into a new allocation.
     // TODO flags
-    pub fn get_sound_info(&self, key: &str) -> Result<SoundInfo> {
-        let key = CString::new(key)?;
+    pub fn get_sound_info(&self, key: &Utf8CStr) -> Result<SoundInfo> {
         let mut sound_info = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_System_GetSoundInfo(self.inner, key.as_ptr(), sound_info.as_mut_ptr())
@@ -1318,9 +1319,8 @@ impl<U: UserdataTypes> System<U> {
     /// The strings bank must be loaded prior to calling this function, otherwise [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned.
     ///
     /// The path can be copied to the system clipboard from FMOD Studio using the "Copy Path" context menu command.
-    pub fn lookup_id(&self, path: &str) -> Result<Guid> {
+    pub fn lookup_id(&self, path: &Utf8CStr) -> Result<Guid> {
         let mut guid = MaybeUninit::zeroed();
-        let path = CString::new(path)?;
         unsafe {
             FMOD_Studio_System_LookupID(self.inner, path.as_ptr(), guid.as_mut_ptr())
                 .to_result()?;

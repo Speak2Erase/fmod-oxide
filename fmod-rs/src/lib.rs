@@ -27,6 +27,8 @@
 )]
 #![forbid(unsafe_op_in_unsafe_fn)]
 
+pub use lanyard::*;
+
 pub use fmod_sys as ffi;
 pub use fmod_sys::{error_code_to_str, Error, Result};
 
@@ -47,7 +49,7 @@ pub trait Shareable: Send + Sync + 'static {}
 impl<T> Shareable for T where T: Send + Sync + 'static {}
 
 use ffi::*;
-use std::ffi::{c_char, c_uint, c_void, CString};
+use std::ffi::{c_char, c_uint, c_void};
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum MemoryType {
@@ -151,7 +153,7 @@ pub fn memory_get_stats(blocking: bool) -> Result<(c_int, c_int)> {
 #[derive(PartialEq, Eq, Debug)]
 pub enum DebugMode {
     TTY,
-    File(String),
+    File(Utf8CString),
     Callback(
         unsafe extern "C" fn(
             FMOD_DEBUG_FLAGS,
@@ -215,8 +217,7 @@ pub fn debug_initialize(flags: DebugFlags, mode: DebugMode) -> Result<()> {
             )
             .to_result()
         },
-        DebugMode::File(c) => unsafe {
-            let file = CString::new(c)?;
+        DebugMode::File(file) => unsafe {
             FMOD_Debug_Initialize(
                 flags.into(),
                 FMOD_DEBUG_MODE_FMOD_DEBUG_MODE_FILE,

@@ -23,6 +23,7 @@ use crossterm::{
 };
 use fmod::studio::{EventCallbackKind, EventCallbackMask};
 use fmod_sys::{FMOD_Sound_GetLength, FMOD_Sound_GetName};
+use lanyard::c;
 use std::{
     io::Write,
     sync::{Arc, Mutex},
@@ -58,15 +59,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
 
     system.load_bank_file(
-        "fmod/api/studio/examples/media/Master.bank",
+        c!("fmod/api/studio/examples/media/Master.bank"),
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        "fmod/api/studio/examples/media/Master.strings.bank",
+        c!("fmod/api/studio/examples/media/Master.strings.bank"),
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     let result = system.load_bank_file(
-        "fmod/api/studio/examples/media/Music.bank",
+        c!("fmod/api/studio/examples/media/Music.bank"),
         fmod::studio::LoadBankFlags::NORMAL,
     );
     if let Err(e) = result {
@@ -76,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let event_description = system.get_event("event:/Music/Level 01")?;
+    let event_description = system.get_event(c!("event:/Music/Level 01"))?;
     let event_instance = event_description.create_instance()?;
 
     let callback_info = Arc::new(CallbackInfo::default());
@@ -92,7 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     event_instance.start()?;
 
     let parameter_description =
-        event_description.get_parameter_description_by_name("Progression")?;
+        event_description.get_parameter_description_by_name(c!("Progression"))?;
     let progresssion_id = parameter_description.id;
 
     let mut progression = 0.0;

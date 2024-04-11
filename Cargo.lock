@@ -126,6 +126,7 @@ dependencies = [
  "bitflags 2.4.2",
  "crossterm",
  "fmod-sys",
+ "lanyard",
  "once_cell",
 ]
 

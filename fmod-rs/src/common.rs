@@ -16,11 +16,12 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    ffi::{c_float, c_uchar, c_uint, c_ushort, CString},
+    ffi::{c_float, c_uchar, c_uint, c_ushort},
     mem::MaybeUninit,
 };
 
 use fmod_sys::*;
+use lanyard::Utf8CStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
 // force this type to have the exact same layout as FMOD_STUDIO_PARAMETER_ID so we can safely transmute between them.
@@ -33,9 +34,8 @@ pub struct Guid {
 }
 
 impl Guid {
-    pub fn parse(string: &str) -> Result<Self> {
+    pub fn parse(string: &Utf8CStr) -> Result<Self> {
         let mut guid = MaybeUninit::uninit();
-        let string = CString::new(string)?;
         unsafe {
             FMOD_Studio_ParseID(string.as_ptr(), guid.as_mut_ptr()).to_result()?;
             Ok(guid.assume_init().into())

@@ -21,6 +21,7 @@ use crossterm::{
     execute,
     terminal::*,
 };
+use lanyard::c;
 use std::io::Write;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -39,22 +40,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
 
     system.load_bank_file(
-        "fmod/api/studio/examples/media/Master.bank",
+        c!("fmod/api/studio/examples/media/Master.bank"),
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        "fmod/api/studio/examples/media/Master.strings.bank",
+        c!("fmod/api/studio/examples/media/Master.strings.bank"),
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
     system.load_bank_file(
-        "fmod/api/studio/examples/media/Vehicles.bank",
+        c!("fmod/api/studio/examples/media/Vehicles.bank"),
         fmod::studio::LoadBankFlags::NORMAL,
     )?;
 
-    let event_description = system.get_event("event:/Vehicles/Ride-on Mower")?;
+    let event_description = system.get_event(c!("event:/Vehicles/Ride-on Mower"))?;
     let event_instance = event_description.create_instance()?;
 
-    event_instance.set_parameter_by_name("RPM", 650.0, false)?;
+    event_instance.set_parameter_by_name(c!("RPM"), 650.0, false)?;
     event_instance.start()?;
 
     // Position two listeners
@@ -105,15 +106,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             match character {
                 'w' => {
                     car_attributes.position.z += 1.0;
+                    event_instance.set_3d_attributes(car_attributes)?;
                 }
                 'a' => {
                     car_attributes.position.x -= 1.0;
+                    event_instance.set_3d_attributes(car_attributes)?;
                 }
                 's' => {
                     car_attributes.position.z -= 1.0;
+                    event_instance.set_3d_attributes(car_attributes)?;
                 }
                 'd' => {
                     car_attributes.position.x += 1.0;
+                    event_instance.set_3d_attributes(car_attributes)?;
                 }
                 '1' => {
                     active_listener += 1;

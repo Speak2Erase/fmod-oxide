@@ -16,13 +16,14 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    ffi::{c_float, c_int, c_uint, CString},
+    ffi::{c_float, c_int, c_uint},
     marker::PhantomData,
     mem::MaybeUninit,
     sync::Arc,
 };
 
 use fmod_sys::*;
+use lanyard::Utf8CStr;
 
 use super::{internal_event_callback, EventCallback, InternalUserdata};
 use crate::{core::ChannelGroup, Attributes3D};
@@ -278,11 +279,10 @@ impl<U: UserdataTypes> EventInstance<U> {
     /// If the event has no parameter matching name then [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned.
     pub fn set_parameter_by_name(
         &self,
-        name: &str,
+        name: &Utf8CStr,
         value: c_float,
         ignore_seek_speed: bool,
     ) -> Result<()> {
-        let name = CString::new(name)?;
         unsafe {
             FMOD_Studio_EventInstance_SetParameterByName(
                 self.inner,
@@ -305,12 +305,10 @@ impl<U: UserdataTypes> EventInstance<U> {
     /// If the specified label is not found, [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned. This lookup is case sensitive.
     pub fn set_parameter_by_name_with_label(
         &self,
-        name: &str,
-        label: &str,
+        name: &Utf8CStr,
+        label: &Utf8CStr,
         ignore_seek_speed: bool,
     ) -> Result<()> {
-        let name = CString::new(name)?;
-        let label = CString::new(label)?;
         unsafe {
             FMOD_Studio_EventInstance_SetParameterByNameWithLabel(
                 self.inner,
@@ -328,8 +326,7 @@ impl<U: UserdataTypes> EventInstance<U> {
     ///
     /// The second returned tuple field is the final value of the parameter after applying adjustments due to automation, modulation, seek speed, and parameter velocity to value.
     /// This is calculated asynchronously when the Studio system updates.
-    pub fn get_parameter_by_name(&self, name: &str) -> Result<(c_float, c_float)> {
-        let name = CString::new(name)?;
+    pub fn get_parameter_by_name(&self, name: &Utf8CStr) -> Result<(c_float, c_float)> {
         let mut value = 0.0;
         let mut final_value = 0.0;
         unsafe {
@@ -376,10 +373,9 @@ impl<U: UserdataTypes> EventInstance<U> {
     pub fn set_parameter_by_id_with_label(
         &self,
         id: ParameterID,
-        label: &str,
+        label: &Utf8CStr,
         ignore_seek_speed: bool,
     ) -> Result<()> {
-        let label = CString::new(label)?;
         unsafe {
             FMOD_Studio_EventInstance_SetParameterByIDWithLabel(
                 self.inner,

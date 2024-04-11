@@ -16,13 +16,14 @@
 // along with fmod-rs.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::{
-    ffi::{c_float, c_int, CString},
+    ffi::{c_float, c_int},
     marker::PhantomData,
     mem::MaybeUninit,
     sync::Arc,
 };
 
 use fmod_sys::*;
+use lanyard::Utf8CStr;
 
 use super::{internal_event_callback, EventCallback, InternalUserdata};
 use crate::studio::{
@@ -251,8 +252,10 @@ impl<U: UserdataTypes> EventDescription<U> {
     }
 
     /// Retrieves an event parameter description by name.
-    pub fn get_parameter_description_by_name(&self, name: &str) -> Result<ParameterDescription> {
-        let name = CString::new(name)?;
+    pub fn get_parameter_description_by_name(
+        &self,
+        name: &Utf8CStr,
+    ) -> Result<ParameterDescription> {
         let mut description = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_EventDescription_GetParameterDescriptionByName(
@@ -322,9 +325,12 @@ impl<U: UserdataTypes> EventDescription<U> {
     ///
     /// `name` can be the short name (such as `Wind`) or the full path (such as `parameter:/Ambience/Wind`).
     /// Path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_parameter_label_by_name(&self, name: &str, label_index: c_int) -> Result<String> {
+    pub fn get_parameter_label_by_name(
+        &self,
+        name: &Utf8CStr,
+        label_index: c_int,
+    ) -> Result<String> {
         let mut string_len = 0;
-        let name = CString::new(name)?;
 
         // retrieve the length of the string.
         // this includes the null terminator, so we don't need to account for that.
@@ -475,9 +481,8 @@ impl<U: UserdataTypes> EventDescription<U> {
     }
 
     /// Retrieves a user property by name.
-    pub fn get_user_property(&self, name: &str) -> Result<UserProperty> {
+    pub fn get_user_property(&self, name: &Utf8CStr) -> Result<UserProperty> {
         let mut property = MaybeUninit::uninit();
-        let name = CString::new(name)?;
         unsafe {
             FMOD_Studio_EventDescription_GetUserProperty(
                 self.inner,
