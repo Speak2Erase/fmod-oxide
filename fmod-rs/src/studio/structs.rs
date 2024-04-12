@@ -418,7 +418,7 @@ impl CommandInfo {
 }
 
 pub struct ProgrammerSoundProperties<'prop> {
-    // FIXME enforce that writes MUST happen to this somehow also use option too
+    // FIXME use option
     pub name: Utf8CString,
     pub sound: &'prop mut Sound,
     pub subsound_index: &'prop mut c_int,

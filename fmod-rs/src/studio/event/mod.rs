@@ -46,12 +46,12 @@ pub(crate) struct InternalUserdata<U: UserdataTypes> {
 
 // hilariously long type signature because clippy
 pub trait EventCallback<U: UserdataTypes>:
-    Fn(EventCallbackKind<'_, U>, EventInstance<U>) -> Result<()> + Shareable
+    for<'a> Fn(EventCallbackKind<'a, U>, EventInstance<U>) -> Result<()> + Shareable
 {
 }
 impl<T, U> EventCallback<U> for T
 where
-    T: Fn(EventCallbackKind<'_, U>, EventInstance<U>) -> Result<()> + Shareable,
+    T: for<'a> Fn(EventCallbackKind<'a, U>, EventInstance<U>) -> Result<()> + Shareable,
     U: UserdataTypes,
 {
 }
