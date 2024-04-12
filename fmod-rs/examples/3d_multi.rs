@@ -131,19 +131,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        for i in 0..2 {
+        for (i, weight) in listener_weight.iter_mut().enumerate() {
             // 0 = left, 1 = right, 2 = both
             let target = (active_listener == i || active_listener == 2) as i32 as f32;
-            let distance = target - listener_weight[i];
+            let distance = target - *weight;
             // very rough estimate of 50ms per update, not properly timed
             let step = 50.0 / 1000.0;
 
             if (-step..step).contains(&distance) {
-                listener_weight[i] = target;
+                *weight = target;
             } else if distance > 0.0 {
-                listener_weight[i] += step;
+                *weight += step;
             } else {
-                listener_weight[i] -= step;
+                *weight -= step;
             }
         }
 

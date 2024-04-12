@@ -100,6 +100,120 @@
     {
       "type": "lldb",
       "request": "launch",
+      "name": "Debug example 'event_parameter'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=event_parameter",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "event_parameter",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'event_parameter'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=event_parameter",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "event_parameter",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'programmer_sound'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=programmer_sound",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "programmer_sound",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'programmer_sound'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=programmer_sound",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "programmer_sound",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'recording_playback'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=recording_playback",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "recording_playback",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "LD_LIBRARY_PATH": "/mnt/hdd/Git/fmod-rs/target/debug/deps"
+      }
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'recording_playback'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=recording_playback",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "recording_playback",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
       "name": "Debug example '3d'",
       "cargo": {
         "args": [
@@ -165,6 +279,43 @@
         ],
         "filter": {
           "name": "testing",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug example 'objectpan'",
+      "cargo": {
+        "args": [
+          "build",
+          "--example=objectpan",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "objectpan",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in example 'objectpan'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--example=objectpan",
+          "--package=fmod-rs"
+        ],
+        "filter": {
+          "name": "objectpan",
           "kind": "example"
         }
       },

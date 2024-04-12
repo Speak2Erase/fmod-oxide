@@ -166,7 +166,7 @@ impl<U: UserdataTypes> CommandReplay<U> {
     ///
     /// If the replay is already running then calling this function will restart replay from the beginning.
     pub fn start(&self) -> Result<()> {
-        unsafe { FMOD_Studio_CommandReplay_Stop(self.inner).to_result() }
+        unsafe { FMOD_Studio_CommandReplay_Start(self.inner).to_result() }
     }
 
     /// Stops playback.

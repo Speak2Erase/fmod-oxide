@@ -40,7 +40,7 @@ impl SystemBuilder {
     ///
     /// # Safety
     ///
-    /// This must be called first to create an FMOD System object before any other API calls (except for Memory_Initialize and Debug_Initialize).
+    /// This must be called first to create an FMOD System object before any other API calls (except for [`memory_initialize`](crate::memory_initialize) and [`debug_initialize`](crate::debug_initialize)).
     /// Use this function to create 1 or multiple instances of FMOD System objects.
     ///
     /// Calls to [`SystemBuilder::new`] and [`System::release`] are not thread-safe.
