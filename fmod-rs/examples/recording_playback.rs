@@ -305,19 +305,23 @@ fn execute_playback(system: fmod::studio::System) -> Result<State, Box<dyn std::
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let builder = unsafe {
+    let mut builder = unsafe {
         // Safety: we call this before calling any other functions and only in main, so this is safe
         fmod::studio::SystemBuilder::new()?
     };
 
     // The example Studio project is authored for 5.1 sound, so set up the system output mode to match
-    let system = builder
-        .software_format(0, fmod_sys::FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_5POINT1, 0)?
-        .build(
-            1024,
-            fmod::studio::InitFlags::NORMAL,
-            fmod::InitFlags::NORMAL,
-        )?;
+    builder.core_builder().software_format(
+        0,
+        fmod_sys::FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_5POINT1,
+        0,
+    )?;
+
+    let system = builder.build(
+        1024,
+        fmod::studio::InitFlags::NORMAL,
+        fmod::InitFlags::NORMAL,
+    )?;
 
     // use alternate screen
     let mut stdout = std::io::stdout();

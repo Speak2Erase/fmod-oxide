@@ -15,23 +15,23 @@ use lanyard::c;
 use std::io::Write;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let builder = unsafe {
+    let mut builder = unsafe {
         // Safety: we call this before calling any other functions and only in main, so this is safe
         fmod::studio::SystemBuilder::new()?
     };
 
     // The example Studio project is authored for 5.1 sound, so set up the system output mode to match
-    let system = builder
-        .software_format(0, fmod_sys::FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_5POINT1, 0)?
-        // FIXME core system builder
-        // Due to a bug in WinSonic on Windows, FMOD initialization may fail on some machines.
-        // If you get the error "FMOD error 51 - Error initializing output device", try using
-        // a different output type such as FMOD_OUTPUTTYPE_AUTODETECT
-        .build(
-            1024,
-            fmod::studio::InitFlags::NORMAL,
-            fmod::InitFlags::NORMAL,
-        )?;
+    builder.core_builder().software_format(
+        0,
+        fmod_sys::FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_5POINT1,
+        0,
+    )?;
+
+    let system = builder.build(
+        1024,
+        fmod::studio::InitFlags::NORMAL,
+        fmod::InitFlags::NORMAL,
+    )?;
 
     system.load_bank_file(
         c!("fmod/api/studio/examples/media/Master.bank"),

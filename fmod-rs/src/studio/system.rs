@@ -7,7 +7,7 @@
 use fmod_sys::*;
 use lanyard::Utf8CStr;
 use std::{
-    ffi::{c_float, c_int, c_uint},
+    ffi::{c_float, c_int},
     marker::PhantomData,
     mem::MaybeUninit,
     os::raw::c_void,
@@ -40,6 +40,7 @@ pub struct System<U: UserdataTypes = ()> {
 #[must_use]
 pub struct SystemBuilder<U: UserdataTypes = ()> {
     system: *mut FMOD_STUDIO_SYSTEM,
+    core_builder: crate::SystemBuilder,
     _phantom: PhantomData<U>,
 }
 
@@ -157,50 +158,22 @@ impl<U: UserdataTypes> SystemBuilder<U> {
         let mut system = std::ptr::null_mut();
         unsafe { FMOD_Studio_System_Create(&mut system, FMOD_VERSION).to_result()? };
 
+        let mut core_system = std::ptr::null_mut();
+        unsafe { FMOD_Studio_System_GetCoreSystem(system, &mut core_system).to_result()? };
+
         Ok(SystemBuilder {
             system,
+            core_builder: crate::SystemBuilder {
+                system: core_system,
+            },
             _phantom: PhantomData,
         })
     }
 
-    pub fn settings(self, settings: &AdvancedSettings) -> Result<Self> {
+    pub fn settings(&mut self, settings: &AdvancedSettings) -> Result<&mut Self> {
         let mut settings = settings.into();
         // this function expects a pointer. maybe this is incorrect?
         unsafe { FMOD_Studio_System_SetAdvancedSettings(self.system, &mut settings).to_result() }?;
-        Ok(self)
-    }
-
-    // TODO: move to a core system builder
-    pub fn software_format(
-        self,
-        sample_rate: c_int,
-        speaker_mode: FMOD_SPEAKERMODE, // todo convert to enum
-        raw_speakers: c_int,
-    ) -> Result<Self> {
-        let mut core = std::ptr::null_mut();
-        unsafe {
-            FMOD_Studio_System_GetCoreSystem(self.system, &mut core).to_result()?;
-            FMOD_System_SetSoftwareFormat(core, sample_rate, speaker_mode, raw_speakers)
-                .to_result()?;
-        };
-        Ok(self)
-    }
-
-    pub fn software_channels(self, software_channels: c_int) -> Result<Self> {
-        let mut core = std::ptr::null_mut();
-        unsafe {
-            FMOD_Studio_System_GetCoreSystem(self.system, &mut core).to_result()?;
-            FMOD_System_SetSoftwareChannels(core, software_channels).to_result()?;
-        };
-        Ok(self)
-    }
-
-    pub fn dsp_buffer_size(self, buffer_size: c_uint, buffer_count: c_int) -> Result<Self> {
-        let mut core = std::ptr::null_mut();
-        unsafe {
-            FMOD_Studio_System_GetCoreSystem(self.system, &mut core).to_result()?;
-            FMOD_System_SetDSPBufferSize(core, buffer_size, buffer_count).to_result()?;
-        };
         Ok(self)
     }
 
@@ -219,6 +192,10 @@ impl<U: UserdataTypes> SystemBuilder<U> {
                 std::ptr::null_mut(),
             )
         }
+    }
+
+    pub fn core_builder(&mut self) -> &mut crate::SystemBuilder {
+        &mut self.core_builder
     }
 
     /// # Safety
@@ -344,7 +321,6 @@ impl<U: UserdataTypes> System<U> {
         Ok(())
     }
 
-    // TODO: take &self or not?
     /// Update the FMOD Studio System.
     ///
     /// When Studio is initialized in the default asynchronous processing mode this function submits all buffered commands for execution on the Studio Update thread for asynchronous processing.

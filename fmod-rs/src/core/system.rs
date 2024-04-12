@@ -17,7 +17,7 @@ pub struct System {
 }
 
 pub struct SystemBuilder {
-    system: *mut FMOD_SYSTEM,
+    pub(crate) system: *mut FMOD_SYSTEM,
 }
 
 unsafe impl Send for System {}
@@ -53,11 +53,11 @@ impl SystemBuilder {
     }
 
     pub fn software_format(
-        self,
+        &mut self,
         sample_rate: c_int,
         speaker_mode: FMOD_SPEAKERMODE, // todo convert to enum
         raw_speakers: c_int,
-    ) -> Result<Self> {
+    ) -> Result<&mut Self> {
         unsafe {
             FMOD_System_SetSoftwareFormat(self.system, sample_rate, speaker_mode, raw_speakers)
                 .to_result()?;
@@ -65,39 +65,39 @@ impl SystemBuilder {
         Ok(self)
     }
 
-    pub fn software_channels(self, software_channels: c_int) -> Result<Self> {
+    pub fn software_channels(&mut self, software_channels: c_int) -> Result<&mut Self> {
         unsafe {
             FMOD_System_SetSoftwareChannels(self.system, software_channels).to_result()?;
         };
         Ok(self)
     }
 
-    pub fn dsp_buffer_size(self, buffer_size: c_uint, buffer_count: c_int) -> Result<Self> {
+    pub fn dsp_buffer_size(
+        &mut self,
+        buffer_size: c_uint,
+        buffer_count: c_int,
+    ) -> Result<&mut Self> {
         unsafe {
             FMOD_System_SetDSPBufferSize(self.system, buffer_size, buffer_count).to_result()?;
         };
         Ok(self)
     }
 
-    pub fn output(self, kind: FMOD_OUTPUTTYPE) -> Result<Self> {
+    pub fn output(&mut self, kind: FMOD_OUTPUTTYPE) -> Result<&mut Self> {
         unsafe {
             FMOD_System_SetOutput(self.system, kind).to_result()?;
         };
         Ok(self)
     }
 
-    pub fn output_by_plugin(self, handle: c_uint) -> Result<Self> {
+    pub fn output_by_plugin(&mut self, handle: c_uint) -> Result<&mut Self> {
         unsafe {
             FMOD_System_SetOutputByPlugin(self.system, handle).to_result()?;
         };
         Ok(self)
     }
 
-    pub fn build(
-        self,
-        max_channels: c_int,
-        flags: InitFlags, // todo core init flags
-    ) -> Result<System> {
+    pub fn build(self, max_channels: c_int, flags: InitFlags) -> Result<System> {
         unsafe { self.build_with_extra_driver_data(max_channels, flags, std::ptr::null_mut()) }
     }
 
