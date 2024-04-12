@@ -179,7 +179,7 @@ fn marker_callback(
 
     match kind {
         EventCallbackKind::TimelineMarker(props) => {
-            let name = props.name.to_string_lossy();
+            let name = props.name.to_string();
             entries.push(format!("Named marker '{name}'"));
         }
         EventCallbackKind::TimelineBeat(props) => {

@@ -16,12 +16,13 @@
 // along with fmod-rs.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::{
-    ffi::{c_char, c_float, c_int, CStr},
+    ffi::{c_char, c_float, c_int},
     os::raw::c_void,
     sync::Arc,
 };
 
 use fmod_sys::*;
+use lanyard::{Utf8CStr, Utf8CString};
 
 use crate::studio::{Bank, CommandReplay, EventDescription, EventInstance, LoadBankFlags};
 use crate::{Guid, Shareable, UserdataTypes};
@@ -69,7 +70,7 @@ pub struct LoadBankData<U: UserdataTypes> {
     pub replay: CommandReplay<U>,
     pub command_index: c_int,
     pub bank_guid: Option<Guid>,
-    pub bank_filename: Option<String>,
+    pub bank_filename: Option<Utf8CString>,
     pub load_flags: LoadBankFlags,
     pub userdata: Option<Arc<U::CommandReplay>>,
 }
@@ -194,7 +195,7 @@ pub(crate) unsafe extern "C" fn internal_load_bank_callback<U: UserdataTypes>(
             bank_filename: if bank_filename.is_null() {
                 None
             } else {
-                Some(CStr::from_ptr(bank_filename).to_string_lossy().into_owned())
+                Some(Utf8CStr::from_ptr_unchecked(bank_filename).to_cstring())
             },
             load_flags: load_flags.into(),
             userdata: internal_userdata.userdata.clone(),

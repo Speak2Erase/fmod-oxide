@@ -187,11 +187,10 @@ impl<U: UserdataTypes> Bank<U> {
         Ok(count)
     }
 
-    // &CStr is a *hassle* to work with
     /// Retrieves a string table entry.
     ///
     /// May be used in conjunction with [`Bank::string_count`] to enumerate the string table in a bank.
-    // TODO: all fmod strings are supposed to be utf-8. maybe we can accept &str everywhere without relying on &CStr?
+
     pub fn get_string_info(&self, index: c_int) -> Result<(Guid, String)> {
         let mut string_len = 0;
 

@@ -163,7 +163,7 @@ impl<U: UserdataTypes> SystemBuilder<U> {
         })
     }
 
-    pub fn settings(self, settings: AdvancedSettings) -> Result<Self> {
+    pub fn settings(self, settings: &AdvancedSettings) -> Result<Self> {
         let mut settings = settings.into();
         // this function expects a pointer. maybe this is incorrect?
         unsafe { FMOD_Studio_System_SetAdvancedSettings(self.system, &mut settings).to_result() }?;

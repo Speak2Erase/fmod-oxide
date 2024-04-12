@@ -15,9 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with fmod-rs.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::{ffi::CStr, os::raw::c_void, sync::Arc};
+use std::{os::raw::c_void, sync::Arc};
 
 use fmod_sys::*;
+use lanyard::Utf8CStr;
 
 use crate::{core::Sound, Shareable, UserdataTypes};
 
@@ -94,7 +95,7 @@ pub(crate) unsafe extern "C" fn internal_event_callback<U: UserdataTypes>(
                 FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND => unsafe {
                     let props = &mut *parameters.cast::<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES>();
                     EventCallbackKind::CreateProgrammerSound(ProgrammerSoundProperties {
-                        name: CStr::from_ptr(props.name),
+                        name: Utf8CStr::from_ptr_unchecked(props.name).to_cstring(),
                         // the casts are safe because sound and *mut FMOD_SOUND are identical
                         sound: &mut *std::ptr::addr_of_mut!(props.sound).cast::<Sound>(),
                         subsound_index: &mut props.subsoundIndex,
@@ -105,7 +106,7 @@ pub(crate) unsafe extern "C" fn internal_event_callback<U: UserdataTypes>(
                         let props =
                             &mut *parameters.cast::<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES>();
                         EventCallbackKind::DestroyProgrammerSound(ProgrammerSoundProperties {
-                            name: CStr::from_ptr(props.name),
+                            name: Utf8CStr::from_ptr_unchecked(props.name).to_cstring(),
                             // the casts are safe because sound and *mut FMOD_SOUND are identical
                             sound: &mut *std::ptr::addr_of_mut!(props.sound).cast::<Sound>(),
                             subsound_index: &mut props.subsoundIndex,
