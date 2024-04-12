@@ -46,12 +46,12 @@ pub(crate) struct InternalUserdata<U: UserdataTypes> {
 
 // hilariously long type signature because clippy
 pub trait EventCallback<U: UserdataTypes>:
-    Fn(EventCallbackKind<U>, EventInstance<U>) -> Result<()> + Shareable
+    Fn(EventCallbackKind<'_, U>, EventInstance<U>) -> Result<()> + Shareable
 {
 }
 impl<T, U> EventCallback<U> for T
 where
-    T: Fn(EventCallbackKind<U>, EventInstance<U>) -> Result<()> + Shareable,
+    T: Fn(EventCallbackKind<'_, U>, EventInstance<U>) -> Result<()> + Shareable,
     U: UserdataTypes,
 {
 }
@@ -94,6 +94,7 @@ pub(crate) unsafe extern "C" fn internal_event_callback<U: UserdataTypes>(
                 FMOD_STUDIO_EVENT_CALLBACK_START_FAILED => EventCallbackKind::StartFailed,
                 FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND => unsafe {
                     let props = &mut *parameters.cast::<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES>();
+
                     EventCallbackKind::CreateProgrammerSound(ProgrammerSoundProperties {
                         name: Utf8CStr::from_ptr_unchecked(props.name).to_cstring(),
                         // the casts are safe because sound and *mut FMOD_SOUND are identical

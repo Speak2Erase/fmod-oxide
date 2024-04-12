@@ -289,7 +289,7 @@ impl From<InstanceType> for FMOD_STUDIO_INSTANCETYPE {
     }
 }
 
-pub enum EventCallbackKind<U: UserdataTypes> {
+pub enum EventCallbackKind<'prop, U: UserdataTypes> {
     Created,
     Destroyed,
     Starting,
@@ -297,8 +297,8 @@ pub enum EventCallbackKind<U: UserdataTypes> {
     Restarted,
     Stopped,
     StartFailed,
-    CreateProgrammerSound(ProgrammerSoundProperties),
-    DestroyProgrammerSound(ProgrammerSoundProperties),
+    CreateProgrammerSound(ProgrammerSoundProperties<'prop>),
+    DestroyProgrammerSound(ProgrammerSoundProperties<'prop>),
     PluginCreated(PluginInstanceProperties),
     PluginDestroyed(PluginInstanceProperties),
     TimelineMarker(TimelineMarkerProperties),

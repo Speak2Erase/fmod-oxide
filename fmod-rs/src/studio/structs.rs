@@ -137,7 +137,7 @@ pub struct ParameterDescription {
     pub guid: Guid,
 }
 
-// It's safe to go from ParameterDescription to FMOD_STUDIO_PARAMETER_DESCRIPTION because a &'static CStr meets all the safety FMOD expects. (aligned, null terminated, etc)
+// It's safe to go from ParameterDescription to FMOD_STUDIO_PARAMETER_DESCRIPTION because a &Utf8CString meets all the safety FMOD expects. (aligned, null terminated, etc)
 impl From<&ParameterDescription> for FMOD_STUDIO_PARAMETER_DESCRIPTION {
     fn from(value: &ParameterDescription) -> Self {
         FMOD_STUDIO_PARAMETER_DESCRIPTION {
@@ -417,12 +417,11 @@ impl CommandInfo {
     }
 }
 
-pub struct ProgrammerSoundProperties {
-    // FIXME lifetimes & mutability
+pub struct ProgrammerSoundProperties<'prop> {
     // FIXME enforce that writes MUST happen to this somehow also use option too
     pub name: Utf8CString,
-    pub sound: &'static mut Sound,
-    pub subsound_index: &'static mut c_int,
+    pub sound: &'prop mut Sound,
+    pub subsound_index: &'prop mut c_int,
 }
 
 pub struct PluginInstanceProperties {
