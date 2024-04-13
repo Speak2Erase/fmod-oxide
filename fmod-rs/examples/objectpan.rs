@@ -21,11 +21,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // The example Studio project is authored for 5.1 sound, so set up the system output mode to match
-    builder.core_builder().software_format(
-        0,
-        fmod_sys::FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_5POINT1,
-        0,
-    )?;
+    builder
+        .core_builder()
+        .software_format(0, fmod::SpeakerMode::FivePointOne, 0)?;
 
     let system = builder.build(
         1024,

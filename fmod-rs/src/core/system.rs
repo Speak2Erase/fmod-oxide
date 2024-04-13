@@ -8,6 +8,8 @@ use std::ffi::{c_int, c_uint, c_void};
 
 use fmod_sys::*;
 
+use crate::SpeakerMode;
+
 use super::InitFlags;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,12 +57,17 @@ impl SystemBuilder {
     pub fn software_format(
         &mut self,
         sample_rate: c_int,
-        speaker_mode: FMOD_SPEAKERMODE, // todo convert to enum
+        speaker_mode: SpeakerMode,
         raw_speakers: c_int,
     ) -> Result<&mut Self> {
         unsafe {
-            FMOD_System_SetSoftwareFormat(self.system, sample_rate, speaker_mode, raw_speakers)
-                .to_result()?;
+            FMOD_System_SetSoftwareFormat(
+                self.system,
+                sample_rate,
+                speaker_mode.into(),
+                raw_speakers,
+            )
+            .to_result()?;
         };
         Ok(self)
     }
@@ -161,5 +168,23 @@ impl System {
     /// Combining this with the non realtime output will mean smoother captured output.
     pub fn update(&self) -> Result<()> {
         unsafe { FMOD_System_Update(self.inner).to_result() }
+    }
+
+    /// Suspend mixer thread and relinquish usage of audio hardware while maintaining internal state.
+    ///
+    /// Used on mobile platforms when entering a backgrounded state to reduce CPU to 0%.
+    ///
+    /// All internal state will be maintained, i.e. created [`Sound`] and [`Channel`]s will stay available in memory.
+    pub fn suspend_mixer(&self) -> Result<()> {
+        unsafe { FMOD_System_MixerSuspend(self.inner).to_result() }
+    }
+
+    /// Resume mixer thread and reacquire access to audio hardware.
+    ///
+    /// Used on mobile platforms when entering the foreground after being suspended.
+    ///
+    /// All internal state will resume, i.e. created [`Sound`] and [`Channel`]s are still valid and playback will continue.
+    pub fn resume_mixer(&self) -> Result<()> {
+        unsafe { FMOD_System_MixerResume(self.inner).to_result() }
     }
 }

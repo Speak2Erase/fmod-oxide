@@ -44,6 +44,8 @@ pub use common::*;
 mod userdata;
 pub use userdata::UserdataTypes;
 
+pub const VERSION: u32 = FMOD_VERSION;
+
 // relatively common bound
 pub trait Shareable: Send + Sync + 'static {}
 impl<T> Shareable for T where T: Send + Sync + 'static {}
