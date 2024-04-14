@@ -4,10 +4,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::ffi::c_uint;
-
-use fmod_sys::*;
-
 mod channel_group;
 pub use channel_group::*;
 
