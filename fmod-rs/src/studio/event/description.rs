@@ -6,56 +6,41 @@
 
 use std::{
     ffi::{c_float, c_int},
-    marker::PhantomData,
     mem::MaybeUninit,
-    sync::Arc,
 };
 
 use fmod_sys::*;
 use lanyard::Utf8CStr;
 
-use super::{internal_event_callback, EventCallback, InternalUserdata};
-use crate::studio::{
-    EventCallbackMask, EventInstance, LoadingState, ParameterDescription, ParameterID, UserProperty,
-};
-use crate::{Guid, UserdataTypes};
+use crate::studio::{EventInstance, LoadingState, ParameterDescription, ParameterID, UserProperty};
+use crate::Guid;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)] // so we can transmute between types
-pub struct EventDescription<U: UserdataTypes = ()> {
+pub struct EventDescription {
     pub(crate) inner: *mut FMOD_STUDIO_EVENTDESCRIPTION,
-    _phantom: PhantomData<U>,
 }
 
-unsafe impl<U: UserdataTypes> Send for EventDescription<U> {}
-unsafe impl<U: UserdataTypes> Sync for EventDescription<U> {}
-impl<U: UserdataTypes> Clone for EventDescription<U> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl<U: UserdataTypes> Copy for EventDescription<U> {}
+unsafe impl Send for EventDescription {}
+unsafe impl Sync for EventDescription {}
 
-impl<U: UserdataTypes> EventDescription<U> {
+impl EventDescription {
     /// Create a System instance from its FFI equivalent.
     ///
     /// # Safety
     /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_EVENTDESCRIPTION`] will not have the right userdata type.
     pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_EVENTDESCRIPTION) -> Self {
-        EventDescription {
-            inner: value,
-            _phantom: PhantomData,
-        }
+        EventDescription { inner: value }
     }
 }
 
-impl<U: UserdataTypes> From<EventDescription<U>> for *mut FMOD_STUDIO_EVENTDESCRIPTION {
-    fn from(value: EventDescription<U>) -> Self {
+impl From<EventDescription> for *mut FMOD_STUDIO_EVENTDESCRIPTION {
+    fn from(value: EventDescription) -> Self {
         value.inner
     }
 }
 
-impl<U: UserdataTypes> EventDescription<U> {
+impl EventDescription {
     /// Creates a playable instance.
     ///
     /// When an event instance is created, any required non-streaming sample data is loaded asynchronously.
@@ -63,7 +48,7 @@ impl<U: UserdataTypes> EventDescription<U> {
     /// Use [`EventDescription::get_sample_loading_state`] to check the loading status.
     ///
     /// Sample data can be loaded ahead of time with [`EventDescription::load_sample_data`] or [`super::Bank::load_sample_data`]. See Sample Data Loading for more information.
-    pub fn create_instance(&self) -> Result<EventInstance<U>> {
+    pub fn create_instance(&self) -> Result<EventInstance> {
         let mut instance = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_EventDescription_CreateInstance(self.inner, &mut instance).to_result()?;
@@ -80,7 +65,7 @@ impl<U: UserdataTypes> EventDescription<U> {
         Ok(count)
     }
 
-    pub fn get_instance_list(&self) -> Result<Vec<EventInstance<U>>> {
+    pub fn get_instance_list(&self) -> Result<Vec<EventInstance>> {
         let expected_count = self.instance_count()?;
         let mut count = 0;
         let mut list = vec![std::ptr::null_mut(); expected_count as usize];
@@ -97,8 +82,11 @@ impl<U: UserdataTypes> EventDescription<U> {
 
             debug_assert_eq!(count, expected_count);
 
-            // *mut FMOD_STUDIO_EVENTINSTANCE is transmutable to EventInstance<U>
-            Ok(std::mem::transmute(list))
+            // *mut FMOD_STUDIO_EVENTINSTANCE is transmutable to EventInstance
+            Ok(std::mem::transmute::<
+                Vec<*mut fmod_sys::FMOD_STUDIO_EVENTINSTANCE>,
+                Vec<EventInstance>,
+            >(list))
         }
     }
 
@@ -583,139 +571,6 @@ impl<U: UserdataTypes> EventDescription<U> {
             let path = String::from_utf8_unchecked(path);
 
             Ok(path)
-        }
-    }
-
-    /// Retrieves the event user data.
-    ///
-    /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data(&self) -> Result<Option<Arc<U::Event>>> {
-        unsafe {
-            let userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
-
-            if userdata.is_null() {
-                return Ok(None);
-            }
-
-            // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata;
-            let userdata = userdata.userdata.clone();
-            Ok(userdata)
-        }
-    }
-
-    /// Sets the user callback.
-    ///
-    /// This function sets a user callback which will be assigned to all event instances subsequently created from the event.
-    /// The callback for individual instances can be set with [`EventInstance::set_callback`].
-    ///
-    /// The provided callback may be shared/accessed from multiple threads, and so must implement Send + Sync 'static
-    pub fn set_callback(
-        &self,
-        callback: Option<Arc<dyn EventCallback<U>>>,
-        mask: EventCallbackMask,
-    ) -> Result<()> {
-        // Always enable destroyed to deallocate any userdata attached to events
-        let raw_mask = (mask | EventCallbackMask::DESTROYED).into();
-
-        unsafe {
-            let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.callback_mask = mask;
-
-            if let Some(f) = callback {
-                userdata.callback = Some(f);
-                self.set_callback_raw(Some(internal_event_callback::<U>), raw_mask)
-            } else {
-                userdata.callback = None;
-                self.set_callback_raw(None, raw_mask)
-            }
-        }
-    }
-
-    /// Sets the event user data.
-    ///
-    /// This function allows arbitrary user data to be attached to this object.
-    /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data(&self, data: Option<Arc<U::Event>>) -> Result<()> {
-        unsafe {
-            let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.userdata = data;
-        }
-
-        Ok(())
-    }
-
-    /// Retrieves the event instance raw userdata.
-    ///
-    /// This function is safe because accessing the pointer is unsafe.
-    pub fn get_raw_user_data(&self) -> Result<*mut std::ffi::c_void> {
-        unsafe {
-            let mut userdata = std::ptr::null_mut();
-            FMOD_Studio_EventDescription_GetUserData(self.inner, &mut userdata).to_result()?;
-            Ok(userdata)
-        }
-    }
-
-    /// Sets the event instance raw userdata.
-    ///
-    /// This function is UNSAFE (more unsafe than most in this crate!) because this crate makes assumptions about the type of userdata.
-    ///
-    /// # Safety
-    /// When calling this function with *any* pointer not recieved from a prior call to [`Self::get_raw_user_data`] you must call [`Self::set_callback_raw`]!
-    /// Calbacks in this crate always assume that the userdata pointer always points to an internal struct.
-    pub unsafe fn set_raw_userdata(&self, userdata: *mut std::ffi::c_void) -> Result<()> {
-        unsafe { FMOD_Studio_EventDescription_SetUserData(self.inner, userdata).to_result() }
-    }
-
-    /// Sets the raw callback.
-    ///
-    /// Unlike [`Self::set_raw_userdata`], this crate makes no assumptions about callbacks.
-    /// It expects them to be set (for memory management reasons) but setting it to a raw callback is ok.
-    ///
-    /// It's worth noting that this crate sets userdata to an internal structure by default. You will generally want to use [`Self::set_callback_raw`].
-    pub fn set_callback_raw(&self, callback: FMOD_STUDIO_EVENT_CALLBACK, mask: u32) -> Result<()> {
-        unsafe { FMOD_Studio_EventDescription_SetCallback(self.inner, callback, mask).to_result() }
-    }
-
-    /// Deallocates the userdata internal to this description.
-    ///
-    /// This function is provided because I have no idea how to automatically deallocate event description userdata right now.
-    pub fn deallocate_internal_userdata(&self) -> Result<()> {
-        unsafe {
-            let userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
-
-            if !userdata.is_null() {
-                let b = Box::from_raw(userdata);
-                drop(b);
-
-                self.set_raw_userdata(std::ptr::null_mut())?;
-            }
-
-            Ok(())
-        }
-    }
-
-    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata<U>> {
-        unsafe {
-            let mut userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
-
-            // FIXME extract this common behavior into a macro or something
-            // create and set the userdata if we haven't already
-            if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata::description());
-                userdata = Box::into_raw(boxed_userdata);
-                self.set_raw_userdata(userdata.cast())?;
-
-                // set the callback if we haven't set the userdata.
-                // we should only need to do this here, because the callback is inherited by all event instances, unless modified.
-                // since we always keep the FMOD_STUDIO_EVENT_CALLBACK_DESTROYED bit set when modifying callbacks, this is ok.
-                self.set_callback_raw(
-                    Some(internal_event_callback::<U>),
-                    FMOD_STUDIO_EVENT_CALLBACK_DESTROYED,
-                )?;
-            }
-
-            Ok(userdata)
         }
     }
 

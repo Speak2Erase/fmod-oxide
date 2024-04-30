@@ -8,18 +8,16 @@ use fmod_sys::*;
 use lanyard::Utf8CStr;
 use std::{
     ffi::{c_float, c_int},
-    marker::PhantomData,
     mem::MaybeUninit,
     os::raw::c_void,
-    sync::Arc,
 };
 
-use crate::{core, Attributes3D, Guid, Shareable, UserdataTypes, Vector};
+use crate::{core, Attributes3D, Guid, Vector};
 
 use super::{
     AdvancedSettings, Bank, BufferUsage, Bus, CommandCaptureFlags, CommandReplay,
     CommandReplayFlags, EventDescription, InitFlags, LoadBankFlags, MemoryUsage,
-    ParameterDescription, ParameterID, SoundInfo, SystemCallbackKind, SystemCallbackMask, Vca,
+    ParameterDescription, ParameterID, SoundInfo, Vca,
 };
 
 /// The main system object for FMOD Studio.
@@ -27,114 +25,23 @@ use super::{
 /// Initializing the FMOD Studio System object will also initialize the core System object.
 ///
 /// Created with [`SystemBuilder`], which handles initialization for you.
-#[derive(Debug, PartialEq, Eq)] // TODO: should this logically be copy?
+#[derive(Debug, PartialEq, Eq, Clone, Copy)] // TODO: should this logically be copy?
 #[repr(transparent)] // so we can transmute between types
-pub struct System<U: UserdataTypes = ()> {
+pub struct System {
     pub(crate) inner: *mut FMOD_STUDIO_SYSTEM,
-    _phantom: PhantomData<U>,
 }
 
 /// A builder for creating and initializing a [`System`].
 ///
 /// Handles setting values that can only be set before initialization for you.
 #[must_use]
-pub struct SystemBuilder<U: UserdataTypes = ()> {
+pub struct SystemBuilder {
     system: *mut FMOD_STUDIO_SYSTEM,
     core_builder: crate::SystemBuilder,
-    _phantom: PhantomData<U>,
 }
 
-pub(crate) struct InternalUserdata<U: UserdataTypes> {
-    // we don't expose the callback at all so it's fine to just use a box
-    callback: Option<Box<dyn SystemCallback<U>>>,
-    // this is an arc in case someone releases the system while holding onto a reference to the userdata
-    userdata: Option<Arc<U::StudioSystem>>,
-    // used to ensure we don't misfire callbacks (we always subscribe to unloading banks to ensure userdata is freed)
-    enabled_callbacks: SystemCallbackMask,
-}
-
-pub trait SystemCallback<U: UserdataTypes>:
-    Fn(System<U>, SystemCallbackKind<U>, Option<Arc<U::StudioSystem>>) -> Result<()> + Shareable
-{
-}
-impl<T, U> SystemCallback<U> for T
-where
-    T: Fn(System<U>, SystemCallbackKind<U>, Option<Arc<U::StudioSystem>>) -> Result<()> + Shareable,
-    U: UserdataTypes,
-{
-}
-
-unsafe extern "C" fn internal_callback<U: UserdataTypes>(
-    system: *mut FMOD_STUDIO_SYSTEM,
-    kind: FMOD_STUDIO_SYSTEM_CALLBACK_TYPE,
-    command_data: *mut c_void,
-    userdata: *mut c_void,
-) -> FMOD_RESULT {
-    let mut result = FMOD_RESULT::FMOD_OK;
-
-    // FIXME: handle unwinding panics
-
-    // userdata should always be InternalUserdata, and if not null, it should be a valid reference to InternalUserdata
-    // FIXME: this as_ref() might violate rust aliasing rules, should we use UnsafeCell?
-    if let Some(internal_userdata) = unsafe { userdata.cast::<InternalUserdata<U>>().as_ref() } {
-        if let Some(callback) = &internal_userdata.callback {
-            if internal_userdata.enabled_callbacks.contains(kind.into()) {
-                let system = unsafe { System::<U>::from_ffi(system) };
-
-                let kind = match kind {
-                    FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE => SystemCallbackKind::Preupdate,
-                    FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE => SystemCallbackKind::Postupdate,
-                    FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD => {
-                        let bank =
-                            unsafe { Bank::from_ffi(command_data.cast::<FMOD_STUDIO_BANK>()) };
-                        SystemCallbackKind::BankUnload(bank)
-                    }
-                    FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_CONNECTED => {
-                        SystemCallbackKind::LiveupdateConnected
-                    }
-                    FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_DISCONNECTED => {
-                        SystemCallbackKind::LiveupdateDisconnected
-                    }
-                    _ => {
-                        eprintln!("wrong system callback type {kind}, aborting");
-                        std::process::abort()
-                    }
-                };
-
-                let userdata = internal_userdata.userdata.clone();
-                result = callback(system, kind, userdata).into();
-            }
-        }
-    }
-
-    if kind == FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD {
-        let bank = unsafe { Bank::<U>::from_ffi(command_data.cast()) };
-        if let Err(error) = deallocate_bank(bank) {
-            eprintln!("error deallocating bank: {error}");
-        }
-    }
-
-    result
-}
-
-fn deallocate_bank<U: UserdataTypes>(bank: Bank<U>) -> Result<()> {
-    let userdata = bank.get_raw_user_data()?;
-
-    // deallocate the userdata if it is not null
-    if !userdata.is_null() {
-        unsafe {
-            let userdata = userdata.cast::<super::bank::InternalUserdata<U>>();
-            drop(Box::from_raw(userdata));
-
-            bank.set_raw_userdata(std::ptr::null_mut())?;
-        }
-    }
-
-    Ok(())
-}
-
-impl SystemBuilder<()> {
-    /// Creates a new [`SystemBuilder`], with no userdata.
+impl SystemBuilder {
+    /// Creates a new [`SystemBuilder`].
     ///
     /// # Safety
     ///
@@ -142,19 +49,6 @@ impl SystemBuilder<()> {
     /// External synchronization must be used if calls to [`SystemBuilder::new`] or [`System::release`] could overlap other FMOD Studio API calls.
     /// All other FMOD Studio API functions are thread safe and may be called freely from any thread unless otherwise documented.
     pub unsafe fn new() -> Result<Self> {
-        unsafe { Self::with_userdata() }
-    }
-}
-
-impl<U: UserdataTypes> SystemBuilder<U> {
-    /// Creates a new [`SystemBuilder`], with a specified userdata type.
-    ///
-    /// # Safety
-    ///
-    /// Calling either of this function concurrently with any FMOD Studio API function (including this function) may cause undefined behavior.
-    /// External synchronization must be used if calls to [`SystemBuilder::new`] or [`System::release`] could overlap other FMOD Studio API calls.
-    /// All other FMOD Studio API functions are thread safe and may be called freely from any thread unless otherwise documented.
-    pub unsafe fn with_userdata() -> Result<Self> {
         let mut system = std::ptr::null_mut();
         unsafe { FMOD_Studio_System_Create(&mut system, FMOD_VERSION).to_result()? };
 
@@ -166,7 +60,6 @@ impl<U: UserdataTypes> SystemBuilder<U> {
             core_builder: crate::SystemBuilder {
                 system: core_system,
             },
-            _phantom: PhantomData,
         })
     }
 
@@ -182,7 +75,7 @@ impl<U: UserdataTypes> SystemBuilder<U> {
         max_channels: c_int,
         studio_flags: InitFlags,
         flags: crate::InitFlags,
-    ) -> Result<System<U>> {
+    ) -> Result<System> {
         unsafe {
             // we don't need
             self.build_with_extra_driver_data(
@@ -207,7 +100,7 @@ impl<U: UserdataTypes> SystemBuilder<U> {
         studio_flags: InitFlags,
         flags: crate::InitFlags,
         driver_data: *mut c_void,
-    ) -> Result<System<U>> {
+    ) -> Result<System> {
         unsafe {
             FMOD_Studio_System_Initialize(
                 self.system,
@@ -217,82 +110,46 @@ impl<U: UserdataTypes> SystemBuilder<U> {
                 driver_data,
             )
             .to_result()?;
-
-            // ensure the callback is always set so we can properly deallocate bank userdata
-            FMOD_Studio_System_SetCallback(
-                self.system,
-                Some(internal_callback::<U>),
-                FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD,
-            )
-            .to_result()?;
         }
-        Ok(System {
-            inner: self.system,
-            _phantom: PhantomData,
-        })
+        Ok(System { inner: self.system })
     }
 }
 
-impl<U: UserdataTypes> System<U> {
+impl System {
     /// Create a System instance from its FFI equivalent.
     ///
     /// # Safety
     /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_SYSTEM`] will not have the right userdata type.
     pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_SYSTEM) -> Self {
-        System {
-            inner: value,
-            _phantom: PhantomData,
-        }
+        System { inner: value }
     }
 }
 
 /// Convert a System instance to its FFI equivalent.
 ///
 /// This is safe, provided you don't use the pointer.
-impl<U: UserdataTypes> From<System<U>> for *mut FMOD_STUDIO_SYSTEM {
-    fn from(value: System<U>) -> Self {
+impl From<System> for *mut FMOD_STUDIO_SYSTEM {
+    fn from(value: System) -> Self {
         value.inner
     }
 }
 
 /// Most of FMOD is thread safe.
 /// There are some select functions that are not thread safe to call, those are marked as unsafe.
-unsafe impl<U: UserdataTypes> Send for System<U> {}
-unsafe impl<U: UserdataTypes> Sync for System<U> {}
+unsafe impl Send for System {}
+unsafe impl Sync for System {}
 
-impl<U: UserdataTypes> Clone for System<U> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl<U: UserdataTypes> Copy for System<U> {}
-
-impl System<()> {
+impl System {
     /// A convenience function over [`SystemBuilder`] with sane defaults.
     ///
     /// # Safety
     ///
     /// See [`SystemBuilder::new`] for safety info.
     pub unsafe fn new() -> Result<Self> {
-        unsafe { Self::with_userdata() }
-    }
-}
-
-// TODO: could we solve this with an "owned" system and a shared system?
-impl<U: UserdataTypes> System<U> {
-    /// A convenience function over [`SystemBuilder`] with sane defaults, as well as a userdata type.
-    ///
-    /// # Safety
-    ///
-    /// See [`SystemBuilder::with_userdata`] for safety info.
-    pub unsafe fn with_userdata() -> Result<Self> {
-        unsafe { SystemBuilder::with_userdata() }?.build(
-            0,
-            InitFlags::NORMAL,
-            crate::InitFlags::NORMAL,
-        )
+        unsafe { SystemBuilder::new() }?.build(0, InitFlags::NORMAL, crate::InitFlags::NORMAL)
     }
 
+    // TODO: could we solve this with an "owned" system and a shared system?
     ///This function will free the memory used by the Studio System object and everything created under it.
     ///
     /// # Safety
@@ -306,19 +163,7 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// This function is not safe to be called at the same time across multiple threads.
     pub unsafe fn release(self) -> Result<()> {
-        unsafe {
-            // fetch userdata before release is called
-            let userdata = self.get_raw_user_data()?;
-
-            FMOD_Studio_System_Release(self.inner).to_result()?;
-
-            // deallocate the userdata after the system is released
-            if !userdata.is_null() {
-                let userdata = Box::from_raw(userdata.cast::<InternalUserdata<U>>());
-                drop(userdata);
-            }
-        }
-        Ok(())
+        unsafe { FMOD_Studio_System_Release(self.inner).to_result() }
     }
 
     /// Update the FMOD Studio System.
@@ -349,7 +194,7 @@ impl<U: UserdataTypes> System<U> {
     }
 
     // TODO: load bank with callbacks
-    pub fn load_bank_custom(&self) -> Result<Bank<U>> {
+    pub fn load_bank_custom(&self) -> Result<Bank> {
         todo!()
     }
 
@@ -364,11 +209,7 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// If a bank has been split, separating out assets and optionally streams from the metadata bank, all parts must be loaded before any APIs that use the data are called.
     /// It is recommended you load each part one after another (order is not important), then proceed with dependent API calls such as [`Bank::load_sample_data`] or [`System::get_event`].
-    pub fn load_bank_file(
-        &self,
-        filename: &Utf8CStr,
-        load_flags: LoadBankFlags,
-    ) -> Result<Bank<U>> {
+    pub fn load_bank_file(&self, filename: &Utf8CStr, load_flags: LoadBankFlags) -> Result<Bank> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_LoadBankFile(
@@ -399,7 +240,7 @@ impl<U: UserdataTypes> System<U> {
     ///
     /// If a bank has been split, separating out assets and optionally streams from the metadata bank, all parts must be loaded before any APIs that use the data are called.
     /// It is recommended you load each part one after another (order is not important), then proceed with dependent API calls such as [`Bank::load_sample_data`] or [`System::get_event`].
-    pub fn load_bank_memory(&self, buffer: &[u8], flags: LoadBankFlags) -> Result<Bank<U>> {
+    pub fn load_bank_memory(&self, buffer: &[u8], flags: LoadBankFlags) -> Result<Bank> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_LoadBankMemory(
@@ -440,7 +281,7 @@ impl<U: UserdataTypes> System<U> {
         &self,
         buffer: *const [u8],
         flags: LoadBankFlags,
-    ) -> Result<Bank<U>> {
+    ) -> Result<Bank> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_LoadBankMemory(
@@ -466,7 +307,7 @@ impl<U: UserdataTypes> System<U> {
     /// `path_or_id` may be a path, such as `bank:/Weapons` or an ID string such as `{793cddb6-7fa1-4e06-b805-4c74c0fd625b}`.
     ///
     /// Note that path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_bank(&self, path_or_id: &Utf8CStr) -> Result<Bank<U>> {
+    pub fn get_bank(&self, path_or_id: &Utf8CStr) -> Result<Bank> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetBank(self.inner, path_or_id.as_ptr(), &mut bank).to_result()?;
@@ -475,7 +316,7 @@ impl<U: UserdataTypes> System<U> {
     }
 
     /// Retrieves a loaded bank.
-    pub fn get_bank_by_id(&self, id: Guid) -> Result<Bank<U>> {
+    pub fn get_bank_by_id(&self, id: Guid) -> Result<Bank> {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetBankByID(self.inner, &id.into(), &mut bank).to_result()?;
@@ -492,7 +333,7 @@ impl<U: UserdataTypes> System<U> {
         Ok(count)
     }
 
-    pub fn get_bank_list(&self) -> Result<Vec<Bank<U>>> {
+    pub fn get_bank_list(&self) -> Result<Vec<Bank>> {
         let expected_count = self.bank_count()?;
         let mut count = 0;
         let mut list = vec![std::ptr::null_mut(); expected_count as usize];
@@ -509,7 +350,10 @@ impl<U: UserdataTypes> System<U> {
 
             debug_assert_eq!(count, expected_count);
 
-            Ok(std::mem::transmute(list))
+            Ok(std::mem::transmute::<
+                Vec<*mut fmod_sys::FMOD_STUDIO_BANK>,
+                Vec<Bank>,
+            >(list))
         }
     }
 
@@ -631,7 +475,7 @@ impl<U: UserdataTypes> System<U> {
     /// `path+or_id` may be a path, such as `event:/UI/Cancel` or `snapshot:/IngamePause`, or an ID string, such as `{2a3e48e6-94fc-4363-9468-33d2dd4d7b00}`.
     ///
     /// Note that path lookups will only succeed if the strings bank has been loaded.
-    pub fn get_event(&self, path_or_id: &Utf8CStr) -> Result<EventDescription<U>> {
+    pub fn get_event(&self, path_or_id: &Utf8CStr) -> Result<EventDescription> {
         let mut event = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetEvent(self.inner, path_or_id.as_ptr(), &mut event).to_result()?;
@@ -642,7 +486,7 @@ impl<U: UserdataTypes> System<U> {
     /// Retrieves an [`EventDescription`].
     ///
     /// This function allows you to retrieve a handle to any loaded event description.
-    pub fn get_event_by_id(&self, id: Guid) -> Result<EventDescription<U>> {
+    pub fn get_event_by_id(&self, id: Guid) -> Result<EventDescription> {
         let mut event = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetEventByID(self.inner, &id.into(), &mut event).to_result()?;
@@ -1051,7 +895,7 @@ impl<U: UserdataTypes> System<U> {
         &self,
         filename: &Utf8CStr,
         flags: CommandReplayFlags,
-    ) -> Result<CommandReplay<U>> {
+    ) -> Result<CommandReplay> {
         let mut replay = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_LoadCommandReplay(
@@ -1134,117 +978,6 @@ impl<U: UserdataTypes> System<U> {
     /// TODO
     pub unsafe fn unregister_plugin(&self) {
         todo!()
-    }
-
-    /// Sets a callback for the FMOD Studio System.
-    ///
-    /// The system callback function is called for a variety of reasons, use the callbackmask to choose which callbacks you are interested in.
-    ///
-    /// Callbacks are called from the Studio Update Thread in default / async mode and the main (calling) thread in synchronous mode. See the [`SystemCallbackKind`] for details.
-    pub fn set_callback(
-        &self,
-        callback: Option<Box<dyn SystemCallback<U>>>,
-        mask: SystemCallbackMask,
-    ) -> Result<()> {
-        // Always enable BankUnload to deallocate any userdata attached to banks
-        let raw_mask = (mask | SystemCallbackMask::BANK_UNLOAD).into();
-
-        unsafe {
-            // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.enabled_callbacks = mask;
-
-            if let Some(f) = callback {
-                userdata.callback = Some(f);
-                self.set_callback_raw(Some(internal_callback::<U>), raw_mask)
-            } else {
-                userdata.callback = None;
-                self.set_callback_raw(None, raw_mask)
-            }
-        }
-    }
-
-    /// Sets the user data.
-    ///
-    /// This function allows arbitrary user data to be attached to this object, which wll be passed through the userdata parameter in any [`FMOD_STUDIO_SYSTEM_CALLBACK`]s.
-    /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data(&self, data: Option<Arc<U::StudioSystem>>) -> Result<()> {
-        unsafe {
-            // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *self.get_or_insert_userdata()?;
-            userdata.userdata = data;
-        }
-
-        Ok(())
-    }
-
-    /// Retrieves the user data.
-    ///
-    /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data(&self) -> Result<Option<Arc<U::StudioSystem>>> {
-        unsafe {
-            let userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
-
-            if userdata.is_null() {
-                return Ok(None);
-            }
-
-            // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata;
-            Ok(userdata.userdata.clone())
-        }
-    }
-
-    /// Retrieves the event instance raw userdata.
-    ///
-    /// This function is safe because accessing the pointer is unsafe.
-    pub fn get_raw_user_data(&self) -> Result<*mut std::ffi::c_void> {
-        unsafe {
-            let mut userdata = std::ptr::null_mut();
-            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
-            Ok(userdata)
-        }
-    }
-
-    /// Sets the event instance raw userdata.
-    ///
-    /// This function is UNSAFE (more unsafe than most in this crate!) because this crate makes assumptions about the type of userdata.
-    ///
-    /// # Safety
-    /// When calling this function with *any* pointer not recieved from a prior call to [`Self::get_raw_user_data`] you must call [`Self::set_callback_raw`]!
-    /// Calbacks in this crate always assume that the userdata pointer always points to an internal struct.
-    pub unsafe fn set_raw_userdata(&self, userdata: *mut std::ffi::c_void) -> Result<()> {
-        unsafe { FMOD_Studio_System_SetUserData(self.inner, userdata).to_result() }
-    }
-
-    /// Sets the raw callback.
-    ///
-    /// Unlike [`Self::set_raw_userdata`], this crate makes no assumptions about callbacks.
-    /// It expects them to be set (for memory management reasons) but setting it to a raw callback is ok.
-    ///
-    /// It's worth noting that this crate sets userdata to an internal structure by default. You will generally want to use [`Self::set_callback_raw`].
-    pub fn set_callback_raw(&self, callback: FMOD_STUDIO_SYSTEM_CALLBACK, mask: u32) -> Result<()> {
-        unsafe { FMOD_Studio_System_SetCallback(self.inner, callback, mask).to_result() }
-    }
-
-    unsafe fn get_or_insert_userdata(&self) -> Result<*mut InternalUserdata<U>> {
-        unsafe {
-            let mut userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
-
-            // FIXME extract this common behavior into a macro or something
-            // create and set the userdata if we haven't already
-            if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata {
-                    callback: None,
-                    userdata: None,
-                    enabled_callbacks: SystemCallbackMask::empty(),
-                });
-                userdata = Box::into_raw(boxed_userdata);
-                self.set_raw_userdata(userdata.cast())?;
-            }
-
-            Ok(userdata)
-        }
     }
 
     /// Retrieves information for loading a sound from the audio table.

@@ -41,9 +41,6 @@ use std::os::raw::c_int;
 mod common;
 pub use common::*;
 
-mod userdata;
-pub use userdata::UserdataTypes;
-
 pub const VERSION: u32 = FMOD_VERSION;
 
 // relatively common bound

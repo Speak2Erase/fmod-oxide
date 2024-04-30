@@ -8,12 +8,6 @@ use fmod_sys::*;
 use lanyard::Utf8CString;
 use std::ffi::{c_float, c_int};
 
-use super::{
-    Bank, EventInstance, PluginInstanceProperties, ProgrammerSoundProperties,
-    TimelineBeatProperties, TimelineMarkerProperties, TimelineNestedBeatProperties,
-};
-use crate::{core::Sound, UserdataTypes};
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum LoadingState {
@@ -218,15 +212,6 @@ impl From<EventProperty> for FMOD_STUDIO_EVENT_PROPERTY {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SystemCallbackKind<U: UserdataTypes> {
-    Preupdate,
-    Postupdate,
-    BankUnload(Bank<U>),
-    LiveupdateConnected,
-    LiveupdateDisconnected,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum InstanceType {
     None = FMOD_STUDIO_INSTANCETYPE_FMOD_STUDIO_INSTANCETYPE_NONE,
@@ -287,26 +272,4 @@ impl From<InstanceType> for FMOD_STUDIO_INSTANCETYPE {
             }
         }
     }
-}
-
-pub enum EventCallbackKind<'prop, U: UserdataTypes> {
-    Created,
-    Destroyed,
-    Starting,
-    Started,
-    Restarted,
-    Stopped,
-    StartFailed,
-    CreateProgrammerSound(ProgrammerSoundProperties<'prop>),
-    DestroyProgrammerSound(ProgrammerSoundProperties<'prop>),
-    PluginCreated(PluginInstanceProperties),
-    PluginDestroyed(PluginInstanceProperties),
-    TimelineMarker(TimelineMarkerProperties),
-    TimelineBeat(TimelineBeatProperties),
-    SoundPlayed(Sound),
-    SoundStopped(Sound),
-    RealToVirtual,
-    VirtualToReal,
-    StartEventCommand(EventInstance<U>),
-    NestedTimelineBeat(TimelineNestedBeatProperties),
 }

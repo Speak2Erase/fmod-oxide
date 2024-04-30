@@ -4,56 +4,39 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::{ffi::c_int, marker::PhantomData, mem::MaybeUninit, sync::Arc};
+use std::{ffi::c_int, mem::MaybeUninit};
 
-use crate::{Guid, UserdataTypes};
+use crate::Guid;
 
 use super::{Bus, EventDescription, LoadingState, Vca};
 use fmod_sys::*;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)] // so we can transmute between types
-pub struct Bank<U: UserdataTypes = ()> {
+pub struct Bank {
     pub(crate) inner: *mut FMOD_STUDIO_BANK,
-    _phantom: PhantomData<U>,
 }
 
-pub(crate) struct InternalUserdata<U: UserdataTypes> {
-    // this is an arc in case someone unloads the bank while holding onto a reference to the userdata
-    // we don't convert the Arc<T> to a raw pointer because that would be a dyn pointer which is not ffi safe
-    // ideally we should be doing C++ style polymorphism, but the cost of dereferencing the userdata twice is... fine
-    userdata: Option<Arc<U::Bank>>,
-}
+unsafe impl Send for Bank {}
+unsafe impl Sync for Bank {}
 
-unsafe impl<U: UserdataTypes> Send for Bank<U> {}
-unsafe impl<U: UserdataTypes> Sync for Bank<U> {}
-impl<U: UserdataTypes> Clone for Bank<U> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl<U: UserdataTypes> Copy for Bank<U> {}
-
-impl<U: UserdataTypes> Bank<U> {
+impl Bank {
     /// Create a System instance from its FFI equivalent.
     ///
     /// # Safety
     /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_BANK`] will not have the right userdata type.
     pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_BANK) -> Self {
-        Bank {
-            inner: value,
-            _phantom: PhantomData,
-        }
+        Bank { inner: value }
     }
 }
 
-impl<U: UserdataTypes> From<Bank<U>> for *mut FMOD_STUDIO_BANK {
-    fn from(value: Bank<U>) -> Self {
+impl From<Bank> for *mut FMOD_STUDIO_BANK {
+    fn from(value: Bank) -> Self {
         value.inner
     }
 }
 
-impl<U: UserdataTypes> Bank<U> {
+impl Bank {
     /// This function may be used to check the loading state of a bank which has been loaded asynchronously using the [`super::LoadBankFlags::NONBLOCKING`] flag,
     /// or is pending unload following a call to [`Bank::unload`].
     ///
@@ -157,7 +140,7 @@ impl<U: UserdataTypes> Bank<U> {
     ///
     /// This function counts the events which were added to the bank by the sound designer.
     /// The bank may contain additional events which are referenced by event instruments but were not added to the bank, and those referenced events are not counted.
-    pub fn get_event_list(&self) -> Result<Vec<EventDescription<U>>> {
+    pub fn get_event_list(&self) -> Result<Vec<EventDescription>> {
         let expected_count = self.event_count()?;
         let mut count = 0;
         let mut list = vec![std::ptr::null_mut(); expected_count as usize];
@@ -174,7 +157,10 @@ impl<U: UserdataTypes> Bank<U> {
 
             debug_assert_eq!(count, expected_count);
 
-            Ok(std::mem::transmute(list))
+            Ok(std::mem::transmute::<
+                Vec<*mut fmod_sys::FMOD_STUDIO_EVENTDESCRIPTION>,
+                Vec<EventDescription>,
+            >(list))
         }
     }
 
@@ -331,69 +317,6 @@ impl<U: UserdataTypes> Bank<U> {
 
             Ok(path)
         }
-    }
-
-    /// Sets the bank user data.
-    ///
-    /// This function allows arbitrary user data to be attached to this object.
-    /// The provided data may be shared/accessed from multiple threads, and so must implement Send + Sync 'static.
-    pub fn set_user_data(&self, data: Option<Arc<U::Bank>>) -> Result<()> {
-        unsafe {
-            let mut userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
-
-            // create and set the userdata if we haven't already
-            if userdata.is_null() {
-                let boxed_userdata = Box::new(InternalUserdata { userdata: None });
-                userdata = Box::into_raw(boxed_userdata);
-
-                self.set_raw_userdata(userdata.cast())?;
-            }
-
-            let userdata = &mut *userdata;
-            userdata.userdata = data;
-        }
-
-        Ok(())
-    }
-
-    /// Retrieves the bank user data.
-    ///
-    /// This function allows arbitrary user data to be retrieved from this object.
-    pub fn get_user_data(&self) -> Result<Option<Arc<U::Bank>>> {
-        unsafe {
-            let userdata = self.get_raw_user_data()?.cast::<InternalUserdata<U>>();
-
-            if userdata.is_null() {
-                return Ok(None);
-            }
-
-            // userdata should ALWAYS be InternalUserdata
-            let userdata = &mut *userdata;
-            let userdata = userdata.userdata.clone();
-            Ok(userdata)
-        }
-    }
-
-    /// Retrieves the event instance raw userdata.
-    ///
-    /// This function is safe because accessing the pointer is unsafe.
-    pub fn get_raw_user_data(&self) -> Result<*mut std::ffi::c_void> {
-        unsafe {
-            let mut userdata = std::ptr::null_mut();
-            FMOD_Studio_Bank_GetUserData(self.inner, &mut userdata).to_result()?;
-            Ok(userdata)
-        }
-    }
-
-    /// Sets the event instance raw userdata.
-    ///
-    /// This function is UNSAFE (more unsafe than most in this crate!) because this crate makes assumptions about the type of userdata.
-    ///
-    /// # Safety
-    /// When calling this function with *any* pointer not recieved from a prior call to [`Self::get_raw_user_data`] you must call [`System::set_callback_raw`]!
-    /// Calbacks in this crate always assume that the userdata pointer always points to an internal struct.
-    pub unsafe fn set_raw_userdata(&self, userdata: *mut std::ffi::c_void) -> Result<()> {
-        unsafe { FMOD_Studio_Bank_SetUserData(self.inner, userdata).to_result() }
     }
 
     /// Checks that the Bank reference is valid.
