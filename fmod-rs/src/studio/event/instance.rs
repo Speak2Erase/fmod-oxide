@@ -68,7 +68,8 @@ impl EventInstance {
         unsafe {
             FMOD_Studio_EventInstance_GetPlaybackState(self.inner, &mut state).to_result()?;
         }
-        Ok(state.into())
+        let state = state.try_into()?;
+        Ok(state)
     }
 
     /// Sets the pause state.

@@ -6,8 +6,9 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum Error {
-    Fmod(FMOD_RESULT),
+    Fmod(FMOD_RESULT), // FIXME make FMOD_RESULT be a NonZero
     NulError(std::ffi::NulError),
+    EnumFromPrivitive { name: &'static str, primitive: u32 },
 }
 
 impl std::fmt::Debug for Error {
@@ -19,6 +20,10 @@ impl std::fmt::Debug for Error {
                 .field("message", &error_code_to_str(*code))
                 .finish(),
             Self::NulError(e) => debug_struct.field("nul error", e).finish(),
+            Self::EnumFromPrivitive { name, primitive } => debug_struct
+                .field("name", name)
+                .field("primitive", primitive)
+                .finish(),
         }
     }
 }
@@ -28,6 +33,9 @@ impl std::fmt::Display for Error {
         match self {
             Self::Fmod(code) => f.write_str(error_code_to_str(*code)),
             Self::NulError(error) => error.fmt(f),
+            Self::EnumFromPrivitive { name, primitive } => f.write_fmt(format_args!(
+                "No discriminant in enum `{name}` matches the value `{primitive:?}"
+            )),
         }
     }
 }
@@ -45,6 +53,19 @@ impl From<FMOD_RESULT> for Error {
 impl From<std::ffi::NulError> for Error {
     fn from(value: std::ffi::NulError) -> Self {
         Self::NulError(value)
+    }
+}
+
+impl<T> From<num_enum::TryFromPrimitiveError<T>> for Error
+where
+    T: num_enum::TryFromPrimitive,
+    T::Primitive: Into<u32>,
+{
+    fn from(value: num_enum::TryFromPrimitiveError<T>) -> Self {
+        Self::EnumFromPrivitive {
+            name: T::NAME,
+            primitive: value.number.into(),
+        }
     }
 }
 
@@ -81,6 +102,7 @@ impl From<Error> for FMOD_RESULT {
         match val {
             Error::Fmod(code) => code,
             Error::NulError(_) => FMOD_RESULT::FMOD_ERR_INVALID_PARAM,
+            Error::EnumFromPrivitive { .. } => FMOD_RESULT::FMOD_ERR_INVALID_PARAM,
         }
     }
 }

@@ -6,6 +6,12 @@
 
 use fmod_sys::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
 #[repr(u32)]
 pub enum SpeakerMode {
     Default = FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_DEFAULT,
@@ -19,26 +25,33 @@ pub enum SpeakerMode {
     SevenPointOneFour = FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_7POINT1POINT4,
 }
 
-impl From<FMOD_SPEAKERMODE> for SpeakerMode {
-    fn from(value: FMOD_SPEAKERMODE) -> Self {
-        match value {
-            FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_DEFAULT => SpeakerMode::Default,
-            FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_RAW => SpeakerMode::Raw,
-            FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_MONO => SpeakerMode::Mono,
-            FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_STEREO => SpeakerMode::Stereo,
-            FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_QUAD => SpeakerMode::Quad,
-            FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_SURROUND => SpeakerMode::Surround,
-            FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_5POINT1 => SpeakerMode::FivePointOne,
-            FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_7POINT1 => SpeakerMode::SevenPointOne,
-            FMOD_SPEAKERMODE_FMOD_SPEAKERMODE_7POINT1POINT4 => SpeakerMode::SevenPointOneFour,
-            // TODO: is this the right way to handle invalid states?
-            v => panic!("invalid loading state {v}"),
-        }
-    }
-}
-
-impl From<SpeakerMode> for FMOD_SPEAKERMODE {
-    fn from(value: SpeakerMode) -> Self {
-        value as FMOD_SPEAKERMODE
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
+#[repr(u32)]
+pub enum OutputType {
+    AutoDetect = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_AUTODETECT,
+    Unknown = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_UNKNOWN,
+    NoSound = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_NOSOUND,
+    WavWriter = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_WAVWRITER,
+    NoSoundNRT = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_NOSOUND_NRT,
+    WavWriterNRT = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_WAVWRITER_NRT,
+    WASAPI = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_WASAPI,
+    ASIO = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_ASIO,
+    PulseAudio = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_PULSEAUDIO,
+    Alsa = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_ALSA,
+    CoreAudio = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_COREAUDIO,
+    AudioTrack = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_AUDIOTRACK,
+    OpenSL = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_OPENSL,
+    AudioOut = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_AUDIOOUT,
+    WebAudio = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_WEBAUDIO,
+    NNAudio = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_NNAUDIO,
+    WinSonic = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_WINSONIC,
+    AAudio = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_AAUDIO,
+    AudioWorklet = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_AUDIOWORKLET,
+    Phase = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_PHASE,
+    OHAudio = FMOD_OUTPUTTYPE_FMOD_OUTPUTTYPE_OHAUDIO,
 }

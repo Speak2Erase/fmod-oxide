@@ -88,8 +88,9 @@ impl CommandReplay {
         let mut state = 0;
         unsafe {
             FMOD_Studio_CommandReplay_GetPlaybackState(self.inner, &mut state).to_result()?;
+            let state = state.try_into()?;
+            Ok(state)
         }
-        Ok(state.into())
     }
 
     /// Sets the paused state.

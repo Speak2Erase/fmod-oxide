@@ -116,15 +116,15 @@ impl EventDescription {
     /// Retrieves the sample data loading state.
     ///
     /// If the event is invalid, then the returned state is [`LoadingState::Unloaded`] and this function returns [`FMOD_RESULT::FMOD_ERR_INVALID_HANDLE`].
-    pub fn get_sample_loading_state(&self) -> (LoadingState, Option<Error>) {
-        let mut state = 0;
-        unsafe {
-            let error = FMOD_Studio_EventDescription_GetSampleLoadingState(self.inner, &mut state)
-                .to_error();
-            let state = state.into();
+    pub fn get_sample_loading_state(&self) -> Result<LoadingState> {
+        let mut loading_state = 0;
 
-            (state, error)
-        }
+        let error = unsafe {
+            FMOD_Studio_EventDescription_GetSampleLoadingState(self.inner, &mut loading_state)
+                .to_error()
+        };
+
+        LoadingState::try_from_ffi(loading_state, error)
     }
 
     /// Retrieves the event's 3D status.

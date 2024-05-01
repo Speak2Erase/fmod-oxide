@@ -6,6 +6,7 @@
 
 use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
+use num_enum::UnsafeFromPrimitive;
 use std::ffi::{c_float, c_int, c_uint};
 
 use super::{InstanceType, ParameterFlags, ParameterKind, UserPropertyKind};
@@ -169,7 +170,7 @@ impl ParameterDescription {
                 minimum: value.minimum,
                 maximum: value.maximum,
                 default_value: value.defaultvalue,
-                kind: value.type_.into(),
+                kind: ParameterKind::unchecked_transmute_from(value.type_),
                 flags: value.flags.into(),
                 guid: value.guid.into(),
             }
@@ -409,8 +410,8 @@ impl CommandInfo {
             parent_command_index: value.parentcommandindex,
             frame_number: value.framenumber,
             frame_time: value.frametime,
-            instance_type: value.instancetype.into(),
-            output_type: value.outputtype.into(),
+            instance_type: unsafe { InstanceType::unchecked_transmute_from(value.instancetype) },
+            output_type: unsafe { InstanceType::unchecked_transmute_from(value.instancetype) },
             instance_handle: value.instancehandle,
             output_handle: value.outputhandle,
         }

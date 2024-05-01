@@ -42,12 +42,12 @@ impl Bank {
     ///
     /// If an asynchronous load failed due to a file error state will contain [`LoadingState::Error`] and the return code from this function will be the error code of the bank load function.
     // TODO: make LoadingState contain the error?
-    pub fn get_loading_state(&self) -> (LoadingState, Option<Error>) {
+    pub fn get_loading_state(&self) -> Result<LoadingState> {
         let mut loading_state = 0;
         let error =
             unsafe { FMOD_Studio_Bank_GetLoadingState(self.inner, &mut loading_state).to_error() };
 
-        (loading_state.into(), error)
+        LoadingState::try_from_ffi(loading_state, error)
     }
 
     /// Use this function to preload sample data ahead of time so that the events in the bank can play immediately when started.
@@ -71,10 +71,9 @@ impl Bank {
     /// If [`Bank::load_sample_data`] has not been called for the bank then this function will return [`LoadingState::Unloaded`] even though sample data may have been loaded by other API calls.
     pub fn get_sample_loading_state(&self) -> Result<LoadingState> {
         let mut loading_state = 0;
-        unsafe {
-            FMOD_Studio_Bank_GetLoadingState(self.inner, &mut loading_state).to_result()?;
-        }
-        Ok(loading_state.into())
+        let error =
+            unsafe { FMOD_Studio_Bank_GetLoadingState(self.inner, &mut loading_state).to_error() };
+        LoadingState::try_from_ffi(loading_state, error)
     }
 
     /// Unloads the bank.
