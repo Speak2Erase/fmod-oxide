@@ -5,14 +5,14 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::{
-    ffi::{c_int, c_uint, c_void},
+    ffi::{c_float, c_int, c_uint, c_void},
     mem::MaybeUninit,
 };
 
 use fmod_sys::*;
 use lanyard::Utf8CString;
 
-use crate::{Guid, OutputType, SpeakerMode};
+use crate::{Guid, OutputType, Speaker, SpeakerMode, TimeUnit};
 
 use super::InitFlags;
 
@@ -286,5 +286,145 @@ impl System {
             FMOD_System_GetDriver(self.inner, &mut driver).to_result()?;
         }
         Ok(driver)
+    }
+
+    /// Retrieves the maximum number of software mixed Channels possible.
+    ///
+    /// Software [`Channel`]s refers to real voices that will play,
+    /// with the return value being the maximum number of voices before successive voices start becoming virtual.
+    /// For differences between real and virtual voices see the Virtual Voices guide.
+    pub fn get_software_channels(&self) -> Result<c_int> {
+        let mut channels = 0;
+        unsafe {
+            FMOD_System_GetSoftwareChannels(self.inner, &mut channels).to_result()?;
+        }
+        Ok(channels)
+    }
+
+    /// Retrieves the output format for the software mixer.
+    pub fn get_software_format(&self) -> Result<(c_int, SpeakerMode, c_int)> {
+        let mut sample_rate = 0;
+        let mut speaker_mode = 0;
+        let mut raw_speakers = 0;
+        unsafe {
+            FMOD_System_GetSoftwareFormat(
+                self.inner,
+                &mut sample_rate,
+                &mut speaker_mode,
+                &mut raw_speakers,
+            )
+            .to_result()?;
+        }
+        let speaker_mode = speaker_mode.try_into()?;
+        Ok((sample_rate, speaker_mode, raw_speakers))
+    }
+
+    /// Retrieves the buffer size settings for the FMOD software mixing engine.
+    ///
+    /// To get the buffer length in milliseconds, divide it by the output rate and multiply the result by 1000.
+    /// For a buffer length of 1024 and an output rate of 48khz (see [`SystemBuilder::software_format`]), milliseconds = 1024 / 48000 * 1000 = 21.33ms.
+    /// This means the mixer updates every 21.33ms.
+    ///
+    /// To get the total buffer size multiply the buffer length by the buffer count value.
+    /// By default this would be 41024 = 4096 samples, or 421.33ms = 85.33ms.
+    /// This would generally be the total latency of the software mixer, but in reality due to one of the buffers being written to constantly,
+    /// and the cursor position of the buffer that is audible, the latency is typically more like the (number of buffers - 1.5) multiplied by the buffer length.
+    ///
+    /// To convert from milliseconds back to 'samples', simply multiply the value in milliseconds by the sample rate of the output
+    /// (ie 48000 if that is what it is set to), then divide by 1000.
+    pub fn get_dsp_buffer_size(&self) -> Result<(c_uint, c_int)> {
+        let mut buffer_length = 0;
+        let mut buffer_count = 0;
+        unsafe {
+            FMOD_System_GetDSPBufferSize(self.inner, &mut buffer_length, &mut buffer_count)
+                .to_result()?;
+        }
+        Ok((buffer_length, buffer_count))
+    }
+
+    /// Sets the default file buffer size for newly opened streams.
+    ///
+    /// Larger values will consume more memory, whereas smaller values may cause buffer under-run / starvation / stuttering caused by large delays in disk access (ie netstream),
+    /// or CPU usage in slow machines, or by trying to play too many streams at once.
+    ///
+    /// Does not affect streams created with FMOD_OPENUSER, as the buffer size is specified in System::createSound.
+    ///
+    /// Does not affect latency of playback. All streams are pre-buffered (unless opened with FMOD_OPENONLY), so they will always start immediately.
+    ///
+    /// Seek and Play operations can sometimes cause a reflush of this buffer.
+    ///
+    /// If FMOD_TIMEUNIT_RAWBYTES is used, the memory allocated is two times the size passed in, because fmod allocates a double buffer.
+    ///
+    /// If FMOD_TIMEUNIT_MS, FMOD_TIMEUNIT_PCM or FMOD_TIMEUNIT_PCMBYTES is used, and the stream is infinite (such as a shoutcast netstream),
+    /// or VBR, then FMOD cannot calculate an accurate compression ratio to work with when the file is opened.
+    /// This means it will then base the buffersize on FMOD_TIMEUNIT_PCMBYTES, or in other words the number of PCM bytes,
+    /// but this will be incorrect for some compressed formats. Use FMOD_TIMEUNIT_RAWBYTES for these type (infinite / undetermined length) of streams for more accurate read sizes.
+    ///
+    /// To determine the actual memory usage of a stream, including sound buffer and other overhead, use Memory_GetStats before and after creating a sound.
+    ///
+    /// Stream may still stutter if the codec uses a large amount of cpu time, which impacts the smaller, internal 'decode' buffer.
+    /// The decode buffer size is changeable via FMOD_CREATESOUNDEXINFO.
+    pub fn set_stream_buffer_size(&self, file_buffer_size: c_uint, kind: TimeUnit) -> Result<()> {
+        unsafe {
+            FMOD_System_SetStreamBufferSize(self.inner, file_buffer_size, kind.into()).to_result()
+        }
+    }
+
+    /// Retrieves the default file buffer size for newly opened streams.
+    pub fn get_stream_buffer_size(&self) -> Result<(c_uint, TimeUnit)> {
+        let mut file_buffer_size = 0;
+        let mut time_unit = 0;
+        unsafe {
+            FMOD_System_GetStreamBufferSize(self.inner, &mut file_buffer_size, &mut time_unit)
+                .to_result()?;
+        }
+        let time_unit = time_unit.try_into()?;
+        Ok((file_buffer_size, time_unit))
+    }
+
+    // TODO advanced settings
+
+    /// Sets the position of the specified speaker for the current speaker mode.
+    ///
+    /// This function allows the user to specify the position of their speaker to account for non standard setups.
+    /// It also allows the user to disable speakers from 3D consideration in a game.
+    ///
+    /// This allows you to customize the position of the speakers for the current FMOD_SPEAKERMODE by giving X (left to right) and Y (front to back) coordinates.
+    /// When disabling a speaker, 3D spatialization will be redistributed around the missing speaker so signal isn't lost.
+    ///
+    /// Stereo setup would look like this:
+    ///
+    /// ```rs
+    /// system.set_speaker_position(fmod::Speaker::FrontLeft, -1.0,  0.0, true);
+    /// system.set_speaker_position(system, fmod::Speaker::FrontRight, 1.0f,  0.0f, true);
+    /// ```
+    ///
+    /// 7.1 setup would look like this:
+    /// ```rs
+    /// system.set_speaker_position(fmod::Speaker::FrontLeft,      -30_f32.to_radians().sin(),  -30_f32.to_radians().cos(), true);
+    /// system.set_speaker_position(fmod::Speaker::FrontRight,      30_f32.to_radians().sin(),   30_f32.to_radians().cos(), true);
+    /// system.set_speaker_position(fmod::Speaker::FrontCenter,      0_f32.to_radians().sin(),    0_f32.to_radians().cos(), true);
+    /// system.set_speaker_position(fmod::Speaker::LowFrequency,     0_f32.to_radians().sin(),    0_f32.to_radians().cos(), true);
+    /// system.set_speaker_position(fmod::Speaker::SurroundLeft,   -90_f32.to_radians().sin(),  -90_f32.to_radians().cos(), true);
+    /// system.set_speaker_position(fmod::Speaker::SurroundRight,   90_f32.to_radians().sin(),   90_f32.to_radians().cos(), true);
+    /// system.set_speaker_position(fmod::Speaker::BackLeft,      -150_f32.to_radians().sin(), -150_f32.to_radians().cos(), true);
+    /// system.set_speaker_position(fmod::Speaker::BackRight,      150_f32.to_radians().sin(),  150_f32.to_radians().cos(), true);
+    /// ```
+    ///
+    /// Calling System::setSoftwareFormat will override any customization made with this function.
+    ///
+    /// Users of the Studio API should be aware this function does not affect the speaker positions used by the Spatializer DSPs,
+    /// it is purely for Core API spatialization via ChannelControl::set3DAttributes.
+    pub fn set_speaker_position(
+        &self,
+        speaker: Speaker,
+        x: c_float,
+        y: c_float,
+        active: bool,
+    ) -> Result<()> {
+        unsafe {
+            FMOD_System_SetSpeakerPosition(self.inner, speaker.into(), x, y, active.into())
+                .to_result()
+        }
     }
 }

@@ -224,7 +224,6 @@ pub mod memory {
     use fmod_sys::*;
     use std::ffi::{c_char, c_int, c_uint, c_void};
 
-    // FIXME do these belong in core?
     #[derive(PartialEq, Eq, Debug)]
     pub enum MemoryType {
         Pool(&'static mut [u8]),

@@ -78,3 +78,44 @@ pub enum ThreadType {
     Convolution1 = FMOD_THREAD_TYPE_FMOD_THREAD_TYPE_CONVOLUTION1,
     Convolution2 = FMOD_THREAD_TYPE_FMOD_THREAD_TYPE_CONVOLUTION2,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
+#[repr(u32)]
+pub enum TimeUnit {
+    MS = FMOD_TIMEUNIT_MS,
+    PCM = FMOD_TIMEUNIT_PCM,
+    PCMBytes = FMOD_TIMEUNIT_PCMBYTES,
+    RAWBytes = FMOD_TIMEUNIT_RAWBYTES,
+    PCMFraction = FMOD_TIMEUNIT_PCMFRACTION,
+    ModOrder = FMOD_TIMEUNIT_MODORDER,
+    ModRow = FMOD_TIMEUNIT_MODROW,
+    ModPattern = FMOD_TIMEUNIT_MODPATTERN,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
+#[repr(i32)]
+pub enum Speaker {
+    None = FMOD_SPEAKER_FMOD_SPEAKER_NONE,
+    FrontLeft = FMOD_SPEAKER_FMOD_SPEAKER_FRONT_LEFT,
+    FrontRight = FMOD_SPEAKER_FMOD_SPEAKER_FRONT_RIGHT,
+    FrontCenter = FMOD_SPEAKER_FMOD_SPEAKER_FRONT_CENTER,
+    LowFrequency = FMOD_SPEAKER_FMOD_SPEAKER_LOW_FREQUENCY,
+    SurroundLeft = FMOD_SPEAKER_FMOD_SPEAKER_SURROUND_LEFT,
+    SurroundRight = FMOD_SPEAKER_FMOD_SPEAKER_SURROUND_RIGHT,
+    BackLeft = FMOD_SPEAKER_FMOD_SPEAKER_BACK_LEFT,
+    BackRight = FMOD_SPEAKER_FMOD_SPEAKER_BACK_RIGHT,
+    TopFrontLeft = FMOD_SPEAKER_FMOD_SPEAKER_TOP_FRONT_LEFT,
+    TopFrontRight = FMOD_SPEAKER_FMOD_SPEAKER_TOP_FRONT_RIGHT,
+    TopBackLeft = FMOD_SPEAKER_FMOD_SPEAKER_TOP_BACK_LEFT,
+    TopBackRight = FMOD_SPEAKER_FMOD_SPEAKER_TOP_BACK_RIGHT,
+}
