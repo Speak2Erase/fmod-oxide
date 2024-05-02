@@ -8,7 +8,7 @@ use std::ffi::{c_int, c_uint, c_void};
 
 use fmod_sys::*;
 
-use crate::SpeakerMode;
+use crate::{OutputType, SpeakerMode};
 
 use super::InitFlags;
 
@@ -90,9 +90,9 @@ impl SystemBuilder {
         Ok(self)
     }
 
-    pub fn output(&mut self, kind: FMOD_OUTPUTTYPE) -> Result<&mut Self> {
+    pub fn output(&mut self, kind: OutputType) -> Result<&mut Self> {
         unsafe {
-            FMOD_System_SetOutput(self.system, kind).to_result()?;
+            FMOD_System_SetOutput(self.system, kind.into()).to_result()?;
         };
         Ok(self)
     }
@@ -160,7 +160,7 @@ impl System {
     /// - Firing callbacks that are deferred until Update.
     /// - DSP cleanup.
     ///
-    /// If FMOD_OUTPUTTYPE_NOSOUND_NRT or FMOD_OUTPUTTYPE_WAVWRITER_NRT output modes are used,
+    /// If [`OutputType::NoSoundNRT`] or  [`OutputType::WavWriterNRT`] output modes are used,
     /// this function also drives the software / DSP engine, instead of it running asynchronously in a thread as is the default behavior.
     /// This can be used for faster than realtime updates to the decoding or DSP engine which might be useful if the output is the wav writer for example.
     ///
