@@ -123,6 +123,7 @@ impl Geometry {
     ///
     /// Position is in world space.
     pub fn set_position(&self, position: Vector) -> Result<()> {
+        // FIXME position is optional
         unsafe {
             FMOD_Geometry_SetPosition(self.inner, std::ptr::from_ref(&position).cast()).to_result()
         }

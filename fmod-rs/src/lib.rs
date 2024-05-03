@@ -38,6 +38,9 @@ pub mod core;
 pub use core::*;
 
 pub const VERSION: u32 = fmod_sys::FMOD_VERSION;
+pub const MAX_CHANNEL_WIDTH: u32 = fmod_sys::FMOD_MAX_CHANNEL_WIDTH;
+pub const MAX_LISTENERS: u32 = fmod_sys::FMOD_MAX_LISTENERS;
+pub const MAX_SYSTEMS: u32 = fmod_sys::FMOD_MAX_SYSTEMS;
 
 // relatively common bound
 pub trait Shareable: Send + Sync + 'static {}

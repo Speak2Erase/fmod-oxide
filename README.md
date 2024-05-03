@@ -34,5 +34,13 @@ Luckily all FMOD functions return UTF-8 strings so this isn't really a problem i
 
 TODO
 
-# Differences to libfmod and fmod
-libfmod is automatically generated from the FMOD documentation and is full of mistakes. It also does not provide an abstraction over userdata or callbacks.
+# Differences to other crates
+[https://github.com/lebedec/libfmod](libfmod) is automatically generated from the FMOD documentation and is full of mistakes. (Wrong parameter types in functions, accepting &str instead of &[u8], etc)
+It also does not provide an abstraction over userdata or callbacks.
+
+[https://github.com/GuillaumeGomez/rust-fmod](rust-fmod) is outdated, has no studio bindings, and has major safety holes (userdata takes an `&'a mut T` and does no type checking, System creation functions are not marked as unsafe, etc)
+
+[https://github.com/CAD97/fmod-rs](fmod-rs)
+I'll be honest, I wasn't aware of this crate until recently. It's missing studio bindings and is designed to be used with bevy. 
+There's a couple decisions (like a reference counted Handle type) that are interesting but aren't zero cost.
+If my crate doesn't work for you, it's definitely worth checking out!
