@@ -100,7 +100,7 @@ impl CommandReplay {
 
     /// Retrieves the paused state.
     pub fn get_paused(&self) -> Result<bool> {
-        let mut paused = FMOD_BOOL(0);
+        let mut paused = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_CommandReplay_GetPaused(self.inner, &mut paused).to_result()?;
         }

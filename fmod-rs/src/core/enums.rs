@@ -5,6 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use fmod_sys::*;
+use lanyard::Utf8CString;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[derive(
@@ -118,4 +119,81 @@ pub enum Speaker {
     TopFrontRight = FMOD_SPEAKER_FMOD_SPEAKER_TOP_FRONT_RIGHT,
     TopBackLeft = FMOD_SPEAKER_FMOD_SPEAKER_TOP_BACK_LEFT,
     TopBackRight = FMOD_SPEAKER_FMOD_SPEAKER_TOP_BACK_RIGHT,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
+#[repr(u32)]
+pub enum PluginType {
+    Output = FMOD_PLUGINTYPE_FMOD_PLUGINTYPE_OUTPUT,
+    Codec = FMOD_PLUGINTYPE_FMOD_PLUGINTYPE_CODEC,
+    DSP = FMOD_PLUGINTYPE_FMOD_PLUGINTYPE_DSP,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
+#[repr(u32)]
+pub enum DspType {
+    Unknown = FMOD_DSP_TYPE_FMOD_DSP_TYPE_UNKNOWN,
+    Mixer = FMOD_DSP_TYPE_FMOD_DSP_TYPE_MIXER,
+    Oscillator = FMOD_DSP_TYPE_FMOD_DSP_TYPE_OSCILLATOR,
+    Lowpass = FMOD_DSP_TYPE_FMOD_DSP_TYPE_LOWPASS,
+    ItLowpass = FMOD_DSP_TYPE_FMOD_DSP_TYPE_ITLOWPASS,
+    Highpass = FMOD_DSP_TYPE_FMOD_DSP_TYPE_HIGHPASS,
+    Echo = FMOD_DSP_TYPE_FMOD_DSP_TYPE_ECHO,
+    Fader = FMOD_DSP_TYPE_FMOD_DSP_TYPE_FADER,
+    Flange = FMOD_DSP_TYPE_FMOD_DSP_TYPE_FLANGE,
+    Distortion = FMOD_DSP_TYPE_FMOD_DSP_TYPE_DISTORTION,
+    Normalize = FMOD_DSP_TYPE_FMOD_DSP_TYPE_NORMALIZE,
+    Limiter = FMOD_DSP_TYPE_FMOD_DSP_TYPE_LIMITER,
+    ParamEq = FMOD_DSP_TYPE_FMOD_DSP_TYPE_PARAMEQ,
+    PitchShift = FMOD_DSP_TYPE_FMOD_DSP_TYPE_PITCHSHIFT,
+    Chorus = FMOD_DSP_TYPE_FMOD_DSP_TYPE_CHORUS,
+    VstPlugin = FMOD_DSP_TYPE_FMOD_DSP_TYPE_VSTPLUGIN,
+    WinampPlugin = FMOD_DSP_TYPE_FMOD_DSP_TYPE_WINAMPPLUGIN,
+    ItEcho = FMOD_DSP_TYPE_FMOD_DSP_TYPE_ITECHO,
+    Compressor = FMOD_DSP_TYPE_FMOD_DSP_TYPE_COMPRESSOR,
+    SfxReverb = FMOD_DSP_TYPE_FMOD_DSP_TYPE_SFXREVERB,
+    LowpassSimple = FMOD_DSP_TYPE_FMOD_DSP_TYPE_LOWPASS_SIMPLE,
+    Delay = FMOD_DSP_TYPE_FMOD_DSP_TYPE_DELAY,
+    Tremolo = FMOD_DSP_TYPE_FMOD_DSP_TYPE_TREMOLO,
+    LadspaPlugin = FMOD_DSP_TYPE_FMOD_DSP_TYPE_LADSPAPLUGIN,
+    Send = FMOD_DSP_TYPE_FMOD_DSP_TYPE_SEND,
+    Return = FMOD_DSP_TYPE_FMOD_DSP_TYPE_RETURN,
+    HighpassSimple = FMOD_DSP_TYPE_FMOD_DSP_TYPE_HIGHPASS_SIMPLE,
+    Pan = FMOD_DSP_TYPE_FMOD_DSP_TYPE_PAN,
+    ThreeEq = FMOD_DSP_TYPE_FMOD_DSP_TYPE_THREE_EQ,
+    Fft = FMOD_DSP_TYPE_FMOD_DSP_TYPE_FFT,
+    LoudnessMeter = FMOD_DSP_TYPE_FMOD_DSP_TYPE_LOUDNESS_METER,
+    EnvelopeFollower = FMOD_DSP_TYPE_FMOD_DSP_TYPE_ENVELOPEFOLLOWER,
+    ConvolutionReverb = FMOD_DSP_TYPE_FMOD_DSP_TYPE_CONVOLUTIONREVERB,
+    ChannelMix = FMOD_DSP_TYPE_FMOD_DSP_TYPE_CHANNELMIX,
+    Transceiver = FMOD_DSP_TYPE_FMOD_DSP_TYPE_TRANSCEIVER,
+    ObjectPan = FMOD_DSP_TYPE_FMOD_DSP_TYPE_OBJECTPAN,
+    MultibandEq = FMOD_DSP_TYPE_FMOD_DSP_TYPE_MULTIBAND_EQ,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
+#[repr(u32)]
+pub enum PortType {
+    Music = FMOD_PORT_TYPE_FMOD_PORT_TYPE_MUSIC,
+    CopyrightMusic = FMOD_PORT_TYPE_FMOD_PORT_TYPE_COPYRIGHT_MUSIC,
+    Voice = FMOD_PORT_TYPE_FMOD_PORT_TYPE_VOICE,
+    Controller = FMOD_PORT_TYPE_FMOD_PORT_TYPE_CONTROLLER,
+    Personal = FMOD_PORT_TYPE_FMOD_PORT_TYPE_PERSONAL,
+    Vibration = FMOD_PORT_TYPE_FMOD_PORT_TYPE_VIBRATION,
+    AUX = FMOD_PORT_TYPE_FMOD_PORT_TYPE_AUX,
 }

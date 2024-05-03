@@ -7,6 +7,18 @@
 mod channel_group;
 pub use channel_group::*;
 
+mod sound_group;
+pub use sound_group::*;
+
+mod reverb_3d;
+pub use reverb_3d::*;
+
+mod channel;
+pub use channel::*;
+
+mod geometry;
+pub use geometry::*;
+
 mod system;
 pub use system::*;
 

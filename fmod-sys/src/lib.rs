@@ -129,6 +129,11 @@ impl From<bool> for FMOD_BOOL {
     }
 }
 
+impl FMOD_BOOL {
+    pub const FALSE: Self = Self(0);
+    pub const TRUE: Self = Self(1);
+}
+
 #[allow(non_snake_case)]
 pub const fn error_code_to_str(result: FMOD_RESULT) -> &'static str {
     match result

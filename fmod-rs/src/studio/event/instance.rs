@@ -81,7 +81,7 @@ impl EventInstance {
 
     /// Retrieves the paused state.
     pub fn get_paused(&self) -> Result<bool> {
-        let mut paused = FMOD_BOOL(0);
+        let mut paused = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_EventInstance_GetPaused(self.inner, &mut paused).to_result()?;
         }
@@ -182,7 +182,7 @@ impl EventInstance {
     ///
     /// This function checks whether an event instance has been virtualized due to the polyphony limit being exceeded.
     pub fn is_virtual(&self) -> Result<bool> {
-        let mut is_virtual = FMOD_BOOL(0);
+        let mut is_virtual = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_EventInstance_IsVirtual(self.inner, &mut is_virtual).to_result()?;
         }

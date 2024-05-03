@@ -143,7 +143,7 @@ impl EventDescription {
     ///
     /// Note: If the event contains nested events built to separate banks using versions of FMOD Studio prior to 2.00.10 and those banks have not been loaded then this function may fail to correctly determine the event's 3D status.
     pub fn is_3d(&self) -> Result<bool> {
-        let mut is_3d = FMOD_BOOL(0);
+        let mut is_3d = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_EventDescription_Is3D(self.inner, &mut is_3d).to_result()?;
         }
@@ -154,7 +154,7 @@ impl EventDescription {
     ///
     /// Note: If the event was built to a bank using versions of FMOD Studio prior to 2.01.09, then this function will return false regardless of the event's doppler state.
     pub fn is_doppler_enabled(&self) -> Result<bool> {
-        let mut is_doppler = FMOD_BOOL(0);
+        let mut is_doppler = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_EventDescription_IsDopplerEnabled(self.inner, &mut is_doppler)
                 .to_result()?;
@@ -169,7 +169,7 @@ impl EventDescription {
     ///
     /// Note: If the event contains nested events built to separate banks and those banks have not been loaded then this function may fail to correctly determine the event's oneshot status.
     pub fn is_oneshot(&self) -> Result<bool> {
-        let mut is_oneshot = FMOD_BOOL(0);
+        let mut is_oneshot = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_EventDescription_IsOneshot(self.inner, &mut is_oneshot).to_result()?;
         }
@@ -178,7 +178,7 @@ impl EventDescription {
 
     /// Retrieves the event's snapshot status.
     pub fn is_snapshot(&self) -> Result<bool> {
-        let mut is_snapshot = FMOD_BOOL(0);
+        let mut is_snapshot = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_EventDescription_IsSnapshot(self.inner, &mut is_snapshot).to_result()?;
         }
@@ -189,7 +189,7 @@ impl EventDescription {
     ///
     /// Note: If the event contains nested events built to separate banks and those banks have not been loaded then this function may fail to correctly determine the event's stream status.
     pub fn is_stream(&self) -> Result<bool> {
-        let mut is_stream = FMOD_BOOL(0);
+        let mut is_stream = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_EventDescription_IsStream(self.inner, &mut is_stream).to_result()?;
         }
@@ -198,7 +198,7 @@ impl EventDescription {
 
     /// Retrieves whether the event has any sustain points.
     pub fn has_sustain_point(&self) -> Result<bool> {
-        let mut sustain_point = FMOD_BOOL(0);
+        let mut sustain_point = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_EventDescription_HasSustainPoint(self.inner, &mut sustain_point)
                 .to_result()?;

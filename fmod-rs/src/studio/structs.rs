@@ -12,7 +12,7 @@ use std::ffi::{c_float, c_int, c_uint};
 use super::{InstanceType, ParameterFlags, ParameterKind, UserPropertyKind};
 use crate::{
     core::{Dsp, Sound},
-    Guid,
+    Guid, SoundMode,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -333,7 +333,7 @@ impl From<CpuUsage> for FMOD_STUDIO_CPU_USAGE {
 #[derive(Debug)]
 pub struct SoundInfo {
     pub name_or_data: Utf8CString,
-    pub mode: FMOD_MODE, // FIXME ffi types
+    pub mode: SoundMode, // FIXME ffi types
     pub ex_info: FMOD_CREATESOUNDEXINFO,
     pub subsound_index: c_int,
 }
@@ -350,7 +350,7 @@ impl SoundInfo {
         unsafe {
             SoundInfo {
                 name_or_data: Utf8CStr::from_ptr_unchecked(value.name_or_data).to_cstring(),
-                mode: value.mode,
+                mode: value.mode.into(),
                 ex_info: value.exinfo,
                 subsound_index: value.subsoundindex,
             }
@@ -362,7 +362,7 @@ impl From<&SoundInfo> for FMOD_STUDIO_SOUND_INFO {
     fn from(value: &SoundInfo) -> Self {
         FMOD_STUDIO_SOUND_INFO {
             name_or_data: value.name_or_data.as_ptr(),
-            mode: value.mode,
+            mode: value.mode.into(),
             exinfo: value.ex_info,
             subsoundindex: value.subsound_index,
         }

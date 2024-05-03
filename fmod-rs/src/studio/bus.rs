@@ -50,7 +50,7 @@ impl Bus {
 
     /// Retrieves the pause state.
     pub fn get_paused(&self) -> Result<bool> {
-        let mut paused = FMOD_BOOL(0);
+        let mut paused = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_Bus_GetPaused(self.inner, &mut paused).to_result()?;
         }
@@ -97,7 +97,7 @@ impl Bus {
 
     /// Retrieves the mute state.
     pub fn get_mute(&self) -> Result<bool> {
-        let mut mute = FMOD_BOOL(0);
+        let mut mute = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Studio_Bus_GetMute(self.inner, &mut mute).to_result()?;
         }
