@@ -5,7 +5,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use fmod_sys::*;
-use lanyard::Utf8CString;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[derive(
@@ -91,7 +90,7 @@ pub enum TimeUnit {
     MS = FMOD_TIMEUNIT_MS,
     PCM = FMOD_TIMEUNIT_PCM,
     PCMBytes = FMOD_TIMEUNIT_PCMBYTES,
-    RAWBytes = FMOD_TIMEUNIT_RAWBYTES,
+    RawBytes = FMOD_TIMEUNIT_RAWBYTES,
     PCMFraction = FMOD_TIMEUNIT_PCMFRACTION,
     ModOrder = FMOD_TIMEUNIT_MODORDER,
     ModRow = FMOD_TIMEUNIT_MODROW,

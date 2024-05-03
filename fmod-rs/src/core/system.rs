@@ -351,20 +351,20 @@ impl System {
     /// Larger values will consume more memory, whereas smaller values may cause buffer under-run / starvation / stuttering caused by large delays in disk access (ie netstream),
     /// or CPU usage in slow machines, or by trying to play too many streams at once.
     ///
-    /// Does not affect streams created with FMOD_OPENUSER, as the buffer size is specified in System::createSound.
+    /// Does not affect streams created with [`SoundMoude::OpenUser`], as the buffer size is specified in [`System::create_sound`].
     ///
-    /// Does not affect latency of playback. All streams are pre-buffered (unless opened with FMOD_OPENONLY), so they will always start immediately.
+    /// Does not affect latency of playback. All streams are pre-buffered (unless opened with [`SoundMode::OpenOnly`]), so they will always start immediately.
     ///
     /// Seek and Play operations can sometimes cause a reflush of this buffer.
     ///
-    /// If FMOD_TIMEUNIT_RAWBYTES is used, the memory allocated is two times the size passed in, because fmod allocates a double buffer.
+    /// If [`TimeUnit::RawBytes`] is used, the memory allocated is two times the size passed in, because fmod allocates a double buffer.
     ///
-    /// If FMOD_TIMEUNIT_MS, FMOD_TIMEUNIT_PCM or FMOD_TIMEUNIT_PCMBYTES is used, and the stream is infinite (such as a shoutcast netstream),
+    /// If [`TimeUnit::MS`], [`TimeUnit::PCM`] or [`TimeUnit::PCMBytes`] is used, and the stream is infinite (such as a shoutcast netstream),
     /// or VBR, then FMOD cannot calculate an accurate compression ratio to work with when the file is opened.
-    /// This means it will then base the buffersize on FMOD_TIMEUNIT_PCMBYTES, or in other words the number of PCM bytes,
-    /// but this will be incorrect for some compressed formats. Use FMOD_TIMEUNIT_RAWBYTES for these type (infinite / undetermined length) of streams for more accurate read sizes.
+    /// This means it will then base the buffersize on [`TimeUnit::PCMBytes`], or in other words the number of PCM bytes,
+    /// but this will be incorrect for some compressed formats. Use [`TimeUnit::RawBytes`] for these type (infinite / undetermined length) of streams for more accurate read sizes.
     ///
-    /// To determine the actual memory usage of a stream, including sound buffer and other overhead, use Memory_GetStats before and after creating a sound.
+    /// To determine the actual memory usage of a stream, including sound buffer and other overhead, use [`crate::memory::memory_get_stats`] before and after creating a sound.
     ///
     /// Stream may still stutter if the codec uses a large amount of cpu time, which impacts the smaller, internal 'decode' buffer.
     /// The decode buffer size is changeable via FMOD_CREATESOUNDEXINFO.
@@ -393,7 +393,7 @@ impl System {
     /// This function allows the user to specify the position of their speaker to account for non standard setups.
     /// It also allows the user to disable speakers from 3D consideration in a game.
     ///
-    /// This allows you to customize the position of the speakers for the current FMOD_SPEAKERMODE by giving X (left to right) and Y (front to back) coordinates.
+    /// This allows you to customize the position of the speakers for the current [`SpeakerMode`] by giving X (left to right) and Y (front to back) coordinates.
     /// When disabling a speaker, 3D spatialization will be redistributed around the missing speaker so signal isn't lost.
     ///
     /// Stereo setup would look like this:
@@ -415,7 +415,7 @@ impl System {
     /// system.set_speaker_position(fmod::Speaker::BackRight,      150_f32.to_radians().sin(),  150_f32.to_radians().cos(), true);
     /// ```
     ///
-    /// Calling System::setSoftwareFormat will override any customization made with this function.
+    /// Calling [`SystemBuilder::software_format`] will override any customization made with this function.
     ///
     /// Users of the Studio API should be aware this function does not affect the speaker positions used by the Spatializer DSPs,
     /// it is purely for Core API spatialization via ChannelControl::set3DAttributes.
