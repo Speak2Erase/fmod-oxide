@@ -13,7 +13,7 @@
           "test",
           "--no-run",
           "--lib",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "fmod",
@@ -31,7 +31,7 @@
         "args": [
           "build",
           "--example=3d_multi",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "3d_multi",
@@ -50,7 +50,7 @@
           "test",
           "--no-run",
           "--example=3d_multi",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "3d_multi",
@@ -68,7 +68,7 @@
         "args": [
           "build",
           "--example=music_callbacks",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "music_callbacks",
@@ -87,7 +87,7 @@
           "test",
           "--no-run",
           "--example=music_callbacks",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "music_callbacks",
@@ -105,7 +105,7 @@
         "args": [
           "build",
           "--example=event_parameter",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "event_parameter",
@@ -124,7 +124,7 @@
           "test",
           "--no-run",
           "--example=event_parameter",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "event_parameter",
@@ -142,7 +142,7 @@
         "args": [
           "build",
           "--example=programmer_sound",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "programmer_sound",
@@ -161,7 +161,7 @@
           "test",
           "--no-run",
           "--example=programmer_sound",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "programmer_sound",
@@ -179,7 +179,7 @@
         "args": [
           "build",
           "--example=recording_playback",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "recording_playback",
@@ -189,7 +189,7 @@
       "args": [],
       "cwd": "${workspaceFolder}",
       "env": {
-        "LD_LIBRARY_PATH": "/mnt/hdd/Git/fmod-rs/target/debug/deps"
+        "LD_LIBRARY_PATH": "/mnt/hdd/Git/fmod-oxide/target/debug/deps"
       }
     },
     {
@@ -201,7 +201,7 @@
           "test",
           "--no-run",
           "--example=recording_playback",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "recording_playback",
@@ -219,7 +219,7 @@
         "args": [
           "build",
           "--example=3d",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "3d",
@@ -238,7 +238,7 @@
           "test",
           "--no-run",
           "--example=3d",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "3d",
@@ -256,7 +256,7 @@
         "args": [
           "build",
           "--example=testing",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "testing",
@@ -275,7 +275,7 @@
           "test",
           "--no-run",
           "--example=testing",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "testing",
@@ -293,7 +293,7 @@
         "args": [
           "build",
           "--example=objectpan",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "objectpan",
@@ -312,7 +312,7 @@
           "test",
           "--no-run",
           "--example=objectpan",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "objectpan",
@@ -330,7 +330,7 @@
         "args": [
           "build",
           "--example=simple_event",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "simple_event",
@@ -349,7 +349,7 @@
           "test",
           "--no-run",
           "--example=simple_event",
-          "--package=fmod-rs"
+          "--package=fmod-oxide"
         ],
         "filter": {
           "name": "simple_event",

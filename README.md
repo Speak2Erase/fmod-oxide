@@ -17,7 +17,7 @@ This is a bit like the `magnus` crate, where there are a lot of unsafe invariant
 I've elected to mark release as safe but it's up to you to ensure that you're not using an object after it's been released.
 
 # String types
-fmod-rs aims to be as zero-cost as possible, and as such, it uses UTF-8 C strings from the `lanyard` crate as its string type.
+fmod-oxide aims to be as zero-cost as possible, and as such, it uses UTF-8 C strings from the `lanyard` crate as its string type.
 This means that all FMOD functions take a `&Utf8CStr` instead of a `&str` or `&CStr`. 
 `&Utf8CStr` is pretty cheap to construct (and can even be done statically with the `c!` macro), so this should not be a problem.
 

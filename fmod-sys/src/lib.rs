@@ -1,6 +1,8 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![doc(html_favicon_url = "https://www.fmod.com/assets/fmod-logo.svg")]
+#![doc(html_logo_url = "https://www.fmod.com/assets/fmod-logo.svg")]
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 

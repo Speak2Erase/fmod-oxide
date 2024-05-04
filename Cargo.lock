@@ -126,8 +126,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "fmod-rs"
-version = "2.2.20"
+name = "fmod-oxide"
+version = "2.2.0"
 dependencies = [
  "bitflags 2.4.2",
  "crossterm",

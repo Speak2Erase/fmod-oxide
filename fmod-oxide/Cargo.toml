@@ -1,6 +1,6 @@
 [package]
-name = "fmod-rs"
-version = "2.2.20"
+name = "fmod-oxide"
+version = "2.2.0"
 edition = "2021"
 
 [lib]
@@ -10,7 +10,7 @@ name = "fmod"
 
 [dependencies]
 bitflags = "2.4.2"
-fmod-sys = { version = "2.2.20", path = "../fmod-sys" }
+fmod-sys = { version = "2.2.*", path = "../fmod-sys" }
 lanyard = { version = "0.1.0", path = "../lanyard/" }
 num_enum = "0.7.2"
 
