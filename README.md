@@ -1,4 +1,4 @@
-# fmod-rs
+# fmod-oxide
 
 Safe rust bindings to the FMOD sound engine.
 This crate tries to be as rusty and low-cost as possible, without comprimising on any APIs.
@@ -35,12 +35,12 @@ Luckily all FMOD functions return UTF-8 strings so this isn't really a problem i
 TODO
 
 # Differences to other crates
-[https://github.com/lebedec/libfmod](libfmod) is automatically generated from the FMOD documentation and is full of mistakes. (Wrong parameter types in functions, accepting &str instead of &[u8], etc)
+[libfmod](https://github.com/lebedec/libfmod) is automatically generated from the FMOD documentation and is full of mistakes. (Wrong parameter types in functions, accepting &str instead of &[u8], etc)
 It also does not provide an abstraction over userdata or callbacks.
 
-[https://github.com/GuillaumeGomez/rust-fmod](rust-fmod) is outdated, has no studio bindings, and has major safety holes (userdata takes an `&'a mut T` and does no type checking, System creation functions are not marked as unsafe, etc)
+[rust-fmod](https://github.com/GuillaumeGomez/rust-fmod) is outdated, has no studio bindings, and has major safety holes (userdata takes an `&'a mut T` and does no type checking, System creation functions are not marked as unsafe, etc)
 
-[https://github.com/CAD97/fmod-rs](fmod-rs)
+[fmod-rs](https://github.com/CAD97/fmod-rs)
 I'll be honest, I wasn't aware of this crate until recently. It's missing studio bindings and is designed to be used with bevy. 
 There's a couple decisions (like a reference counted Handle type) that are interesting but aren't zero cost.
 If my crate doesn't work for you, it's definitely worth checking out!
