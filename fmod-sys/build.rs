@@ -45,4 +45,16 @@ fn main() {
     bindings
         .write_to_file(out_path)
         .expect("failed to write bindings");
+
+    println!("cargo:rerun-if-changed=\"src/channel_control.cpp\"");
+    println!("cargo:rerun-if-changed=\"src/channel_control.h\"");
+
+    // wrapper does not use the stdlib
+    cc::Build::new()
+        .cpp(true)
+        .cpp_link_stdlib(None)
+        .cpp_set_stdlib(None)
+        .include(format!("{api_dir_display}/core/inc"))
+        .file("src/channel_control.cpp")
+        .compile("channel_control_wrapper");
 }

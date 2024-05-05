@@ -16,6 +16,9 @@ pub use reverb_3d::*;
 mod channel;
 pub use channel::*;
 
+mod channel_control;
+pub use channel_control::*;
+
 mod geometry;
 pub use geometry::*;
 
@@ -27,6 +30,9 @@ pub use sound::*;
 
 mod dsp;
 pub use dsp::*;
+
+mod dsp_connection;
+pub use dsp_connection::*;
 
 mod flags;
 pub use flags::*;
