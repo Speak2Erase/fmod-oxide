@@ -6,8 +6,6 @@
 
 use fmod_sys::*;
 
-use crate::Channel;
-
 // FMOD's C API provides two versions of functions for channels: one that takes a `*mut FMOD_CHANNEL` and one that takes a `*mut FMOD_CHANNELGROUP`.
 // The C++ API provides a base class `ChannelControl` that `Channel` and `ChannelGroup` inherits from.
 // Seeing as we can cast from FMOD_CHANNELCONTROL to Channel* (in c++) we should be able to cast from FMOD_CHANNEL(GROUP) to FMOD_CHANNELCONTROL.
@@ -23,26 +21,10 @@ pub struct ChannelControl {
 unsafe impl Send for ChannelControl {}
 unsafe impl Sync for ChannelControl {}
 
-impl From<*mut FMOD_CHANNEL> for ChannelControl {
-    fn from(value: *mut FMOD_CHANNEL) -> Self {
-        ChannelControl {
-            inner: value.cast(),
-        }
-    }
-}
-
 impl From<*mut FMOD_CHANNELCONTROL> for ChannelControl {
     fn from(value: *mut FMOD_CHANNELCONTROL) -> Self {
         ChannelControl {
             inner: value.cast(),
-        }
-    }
-}
-
-impl From<Channel> for ChannelControl {
-    fn from(value: Channel) -> Self {
-        ChannelControl {
-            inner: value.inner.cast(),
         }
     }
 }
