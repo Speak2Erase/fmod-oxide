@@ -45,7 +45,7 @@ Neither of these are good.
 
 The only solution I can currently think of would be to store a map of all FMOD objects in memory and their userdata, and then every so often check if every FMOD object in it has been released. 
 If it has been, we release the associated userdata as well.
-This solution works best with a mark and sweep GC, which Rust does not have. We could solve somewhat this by doing this check in `System::update`.
+This solution works best with a mark and sweep GC, which Rust does not have. We could somewhat solve this by doing this check in `System::update`.
 That would make `System::update`  *really* expensive- it would have an additional `O(n)` complexity added to it, which goes against the purpose of this crate.
 
 I'm still thinking on how to solve this issue, but I'll probably put this behind a feature gate and fall back to `*mut c_void` getters and setters if it is disabled.

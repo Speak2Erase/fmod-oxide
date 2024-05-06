@@ -4,12 +4,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 use std::{
-    ffi::{c_float, c_uchar, c_uint, c_ushort},
+    ffi::{c_float, c_int, c_short, c_uchar, c_uint, c_ushort},
     mem::MaybeUninit,
 };
 
 use fmod_sys::*;
-use lanyard::Utf8CStr;
+use lanyard::{Utf8CStr, Utf8CString};
+
+use crate::DspParameterDataType;
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
 // force this type to have the exact same layout as FMOD_STUDIO_PARAMETER_ID so we can safely transmute between them.
@@ -560,4 +562,129 @@ impl ReverbProperties {
         early_late_mix: 92.0,
         wet_level: 7.0,
     };
+}
+
+pub struct DspParameterDescription {
+    kind: DspParameterType,
+    name: Utf8CString,
+    label: Utf8CString,
+    description: Utf8CString,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum DspParameterType {
+    Float {
+        min: f32,
+        max: f32,
+        default: f32,
+        mapping: FloatMapping,
+    },
+    Int {
+        min: i32,
+        max: i32,
+        default: i32,
+        goes_to_infinity: bool,
+        // TODO names
+    },
+    Bool {
+        default: bool,
+        // TODO names
+    },
+    Data {
+        data_type: DspParameterDataType,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FloatMapping {
+    // TODO
+}
+
+impl DspParameterDescription {
+    /// Create a safe [`DspParameterDescription`] struct from the FFI equivalent.
+    ///
+    /// # Safety
+    ///
+    /// [`FMOD_DSP_PARAMETER_DESC::type_`] must match the union value.
+    ///
+    /// The strings [`FMOD_DSP_PARAMETER_DESC`] must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
+    ///
+    /// See [`Utf8CStr::from_ptr_unchecked`] for more information.
+    pub unsafe fn from_ffi(value: FMOD_DSP_PARAMETER_DESC) -> Self {
+        // FIXME these array accesses are safe and could be done in a safer way
+        let name = unsafe { Utf8CStr::from_ptr_unchecked(value.name.as_ptr()).to_cstring() };
+        let label = unsafe { Utf8CStr::from_ptr_unchecked(value.label.as_ptr()).to_cstring() };
+        let description = unsafe { Utf8CStr::from_ptr_unchecked(value.description).to_cstring() };
+        let kind = match value.type_ {
+            FMOD_DSP_PARAMETER_TYPE_FMOD_DSP_PARAMETER_TYPE_FLOAT => {
+                let floatdesc = unsafe { value.__bindgen_anon_1.floatdesc };
+                DspParameterType::Float {
+                    min: floatdesc.min,
+                    max: floatdesc.max,
+                    default: floatdesc.defaultval,
+                    mapping: FloatMapping {},
+                }
+            }
+            FMOD_DSP_PARAMETER_TYPE_FMOD_DSP_PARAMETER_TYPE_INT => {
+                let intdesc = unsafe { value.__bindgen_anon_1.intdesc };
+                DspParameterType::Int {
+                    min: intdesc.min,
+                    max: intdesc.max,
+                    default: intdesc.defaultval,
+                    goes_to_infinity: intdesc.goestoinf.into(),
+                }
+            }
+            FMOD_DSP_PARAMETER_TYPE_FMOD_DSP_PARAMETER_TYPE_BOOL => {
+                let booldesc = unsafe { value.__bindgen_anon_1.booldesc };
+                DspParameterType::Bool {
+                    default: booldesc.defaultval.into(),
+                }
+            }
+            FMOD_DSP_PARAMETER_TYPE_FMOD_DSP_PARAMETER_TYPE_DATA => {
+                let datadesc = unsafe { value.__bindgen_anon_1.datadesc };
+                DspParameterType::Data {
+                    data_type: datadesc.datatype.into(),
+                }
+            }
+            _ => panic!("invalid parameter description type"), // FIXME panic
+        };
+        Self {
+            kind,
+            name,
+            label,
+            description,
+        }
+    }
+
+    // TODO ffi conversion (altho is it even needed?)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DspMeteringInfo {
+    sample_count: c_int,
+    peak_level: [c_float; 32],
+    rms_level: [c_float; 32],
+    channel_count: c_short,
+}
+
+impl From<FMOD_DSP_METERING_INFO> for DspMeteringInfo {
+    fn from(value: FMOD_DSP_METERING_INFO) -> Self {
+        Self {
+            sample_count: value.numsamples,
+            peak_level: value.peaklevel,
+            rms_level: value.rmslevel,
+            channel_count: value.numchannels,
+        }
+    }
+}
+
+impl From<DspMeteringInfo> for FMOD_DSP_METERING_INFO {
+    fn from(value: DspMeteringInfo) -> Self {
+        FMOD_DSP_METERING_INFO {
+            numsamples: value.sample_count,
+            peaklevel: value.peak_level,
+            rmslevel: value.rms_level,
+            numchannels: value.channel_count,
+        }
+    }
 }

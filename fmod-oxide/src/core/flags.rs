@@ -135,3 +135,40 @@ impl From<SoundMode> for FMOD_MODE {
         value.bits()
     }
 }
+
+// FIXME: this is deprecated..?
+bitflags::bitflags! {
+  #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+  pub struct ChannelMask: FMOD_CHANNELMASK {
+    const FRONT_LEFT        = FMOD_CHANNELMASK_FRONT_LEFT;
+    const FRONT_RIGHT       = FMOD_CHANNELMASK_FRONT_RIGHT;
+    const FRONT_CENTER      = FMOD_CHANNELMASK_FRONT_CENTER;
+    const LOW_FREQUENCY     = FMOD_CHANNELMASK_LOW_FREQUENCY;
+    const SURROUND_LEFT     = FMOD_CHANNELMASK_SURROUND_LEFT;
+    const SURROUND_RIGHT    = FMOD_CHANNELMASK_SURROUND_RIGHT ;
+    const BACK_LEFT         = FMOD_CHANNELMASK_BACK_LEFT;
+    const BACK_RIGHT        = FMOD_CHANNELMASK_BACK_RIGHT;
+    const BACK_CENTER       = FMOD_CHANNELMASK_BACK_CENTER;
+    const MONO              = FMOD_CHANNELMASK_MONO;
+    const STEREO            = FMOD_CHANNELMASK_STEREO;
+    const LRC               = FMOD_CHANNELMASK_LRC;
+    const QUAD              = FMOD_CHANNELMASK_QUAD;
+    const SURROUND          = FMOD_CHANNELMASK_SURROUND;
+    const _5POINT1          = FMOD_CHANNELMASK_5POINT1;
+    const _5POINT1_REARS    = FMOD_CHANNELMASK_5POINT1_REARS;
+    const _7POINT0          = FMOD_CHANNELMASK_7POINT0;
+    const _7POINT1          = FMOD_CHANNELMASK_7POINT1;
+  }
+}
+
+impl From<FMOD_CHANNELMASK> for ChannelMask {
+    fn from(value: FMOD_CHANNELMASK) -> Self {
+        ChannelMask::from_bits_truncate(value)
+    }
+}
+
+impl From<ChannelMask> for FMOD_CHANNELMASK {
+    fn from(value: ChannelMask) -> Self {
+        value.bits()
+    }
+}

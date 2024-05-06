@@ -196,3 +196,46 @@ pub enum PortType {
     Vibration = FMOD_PORT_TYPE_FMOD_PORT_TYPE_VIBRATION,
     AUX = FMOD_PORT_TYPE_FMOD_PORT_TYPE_AUX,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
+#[repr(u32)]
+pub enum SoundGroupBehavior {
+    Fail = FMOD_SOUNDGROUP_BEHAVIOR_FMOD_SOUNDGROUP_BEHAVIOR_FAIL,
+    Mute = FMOD_SOUNDGROUP_BEHAVIOR_FMOD_SOUNDGROUP_BEHAVIOR_MUTE,
+    StealLowest = FMOD_SOUNDGROUP_BEHAVIOR_FMOD_SOUNDGROUP_BEHAVIOR_STEALLOWEST,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
+#[repr(u32)]
+pub enum DspConnectionType {
+    Standard = FMOD_DSPCONNECTION_TYPE_FMOD_DSPCONNECTION_TYPE_STANDARD,
+    Sidechain = FMOD_DSPCONNECTION_TYPE_FMOD_DSPCONNECTION_TYPE_SIDECHAIN,
+    Send = FMOD_DSPCONNECTION_TYPE_FMOD_DSPCONNECTION_TYPE_SEND,
+    SendSidechain = FMOD_DSPCONNECTION_TYPE_FMOD_DSPCONNECTION_TYPE_SEND_SIDECHAIN,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(num_enum::FromPrimitive, num_enum::IntoPrimitive)]
+#[repr(i32)]
+pub enum DspParameterDataType {
+    User = FMOD_DSP_PARAMETER_DATA_TYPE_FMOD_DSP_PARAMETER_DATA_TYPE_USER,
+    OverAlign = FMOD_DSP_PARAMETER_DATA_TYPE_FMOD_DSP_PARAMETER_DATA_TYPE_OVERALLGAIN,
+    Attributes3D = FMOD_DSP_PARAMETER_DATA_TYPE_FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
+    Sidechain = FMOD_DSP_PARAMETER_DATA_TYPE_FMOD_DSP_PARAMETER_DATA_TYPE_SIDECHAIN,
+    FFT = FMOD_DSP_PARAMETER_DATA_TYPE_FMOD_DSP_PARAMETER_DATA_TYPE_FFT,
+    Attributes3DMulti =
+        FMOD_DSP_PARAMETER_DATA_TYPE_FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES_MULTI,
+    AttenuationRange = FMOD_DSP_PARAMETER_DATA_TYPE_FMOD_DSP_PARAMETER_DATA_TYPE_ATTENUATION_RANGE,
+    #[num_enum(catch_all)]
+    CatchAll(i32) = i32::MIN,
+}

@@ -772,7 +772,7 @@ impl System {
     /// If '`source_mode`' or '`target_mode`' is [`SpeakerMode::Raw`], this function will return [`FMOD_RESULT::FMOD_ERR_INVALID_PARAM`].
     /// The number of source channels can be found from [`System::get_speaker_mode_channels`].
     // FIXME: do we take an out slice param?
-    pub fn get_default_mix_matric(
+    pub fn get_default_mix_matrix(
         &self,
         source_mode: SpeakerMode,
         target_mode: SpeakerMode,
