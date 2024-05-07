@@ -25,8 +25,11 @@ pub use system::*;
 mod command_replay;
 pub use command_replay::*;
 
-mod event;
-pub use event::*;
+mod event_description;
+pub use event_description::*;
+
+mod event_instance;
+pub use event_instance::*;
 
 mod vca;
 pub use vca::*;

@@ -1,0 +1,54 @@
+// Copyright (c) 2024 Lily Lyons
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use fmod_sys::*;
+
+mod bank;
+mod builder;
+mod command_replay;
+mod general;
+mod lifecycle;
+mod listener;
+mod misc;
+mod parameter;
+mod plugins;
+mod profiling; // things too small to really make their own module
+pub use builder::SystemBuilder;
+
+/// The main system object for FMOD Studio.
+///
+/// Initializing the FMOD Studio System object will also initialize the core System object.
+///
+/// Created with [`SystemBuilder`], which handles initialization for you.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)] // TODO: should this logically be copy?
+#[repr(transparent)] // so we can transmute between types
+pub struct System {
+    pub(crate) inner: *mut FMOD_STUDIO_SYSTEM,
+}
+
+impl System {
+    /// Create a System instance from its FFI equivalent.
+    ///
+    /// # Safety
+    /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_SYSTEM`] will not have the right userdata type.
+    pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_SYSTEM) -> Self {
+        System { inner: value }
+    }
+}
+
+/// Convert a System instance to its FFI equivalent.
+///
+/// This is safe, provided you don't use the pointer.
+impl From<System> for *mut FMOD_STUDIO_SYSTEM {
+    fn from(value: System) -> Self {
+        value.inner
+    }
+}
+
+/// Most of FMOD is thread safe.
+/// There are some select functions that are not thread safe to call, those are marked as unsafe.
+unsafe impl Send for System {}
+unsafe impl Sync for System {}
