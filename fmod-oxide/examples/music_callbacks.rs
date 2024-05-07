@@ -10,32 +10,96 @@ use crossterm::{
     execute,
     terminal::*,
 };
-use fmod::studio::{EventCallbackKind, EventCallbackMask};
+use fmod::studio::{EventCallbackMask, EventInstanceCallback};
 use fmod_sys::{FMOD_Sound_GetLength, FMOD_Sound_GetName};
 use lanyard::c;
-use std::{
-    io::Write,
-    sync::{Arc, Mutex},
-};
+use std::{io::Write, sync::Mutex};
 
 #[derive(Default)]
 struct CallbackInfo {
     entries: Mutex<Vec<String>>,
 }
 
-struct Userdata;
+struct Callback;
 
-impl fmod::UserdataTypes for Userdata {
-    type StudioSystem = ();
-    type Bank = ();
-    type CommandReplay = ();
-    type Event = CallbackInfo;
+impl EventInstanceCallback for Callback {
+    fn timeline_marker(
+        event: fmod::studio::EventInstance,
+        timeline_props: fmod::studio::TimelineMarkerProperties,
+    ) -> fmod::Result<()> {
+        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let mut entries = callback_info.entries.lock().unwrap();
+
+        let name = timeline_props.name.to_string();
+        entries.push(format!("Named marker '{name}'"));
+
+        Ok(())
+    }
+
+    fn timeline_beat(
+        event: fmod::studio::EventInstance,
+        timeline_beat: fmod::studio::TimelineBeatProperties,
+    ) -> fmod::Result<()> {
+        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let mut entries = callback_info.entries.lock().unwrap();
+
+        entries.push(format!(
+            "beat {}, bar {} (tempo {} {:.1}:{:.1})",
+            timeline_beat.beat,
+            timeline_beat.bar,
+            timeline_beat.tempo,
+            timeline_beat.time_signature_upper,
+            timeline_beat.time_signature_lower,
+        ));
+
+        Ok(())
+    }
+
+    fn sound_played(event: fmod::studio::EventInstance, sound: fmod::Sound) -> fmod::Result<()> {
+        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let mut entries = callback_info.entries.lock().unwrap();
+
+        unsafe {
+            let mut name_buf = [0u8; 256];
+            FMOD_Sound_GetName(sound.into(), &mut name_buf as *mut u8 as *mut i8, 256)
+                .to_result()?;
+            let name = std::ffi::CStr::from_bytes_with_nul_unchecked(&name_buf).to_string_lossy();
+
+            let mut length = 0;
+            FMOD_Sound_GetLength(sound.into(), &mut length, fmod_sys::FMOD_TIMEUNIT_MS)
+                .to_result()?;
+
+            entries.push(format!("Sound '{name}' (length {length:.3}) started",));
+        }
+
+        Ok(())
+    }
+
+    fn sound_stopped(event: fmod::studio::EventInstance, sound: fmod::Sound) -> fmod::Result<()> {
+        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let mut entries = callback_info.entries.lock().unwrap();
+
+        unsafe {
+            let mut name_buf = [0u8; 256];
+            FMOD_Sound_GetName(sound.into(), &mut name_buf as *mut u8 as *mut i8, 256)
+                .to_result()?;
+            let name = std::ffi::CStr::from_bytes_with_nul_unchecked(&name_buf).to_string_lossy();
+
+            let mut length = 0;
+            FMOD_Sound_GetLength(sound.into(), &mut length, fmod_sys::FMOD_TIMEUNIT_MS)
+                .to_result()?;
+
+            entries.push(format!("Sound '{name}' (length {length:.3}) stopped",));
+        }
+
+        Ok(())
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = unsafe {
         // Safety: we call this before calling any other functions and only in main, so this is safe
-        fmod::studio::SystemBuilder::with_userdata()?
+        fmod::studio::SystemBuilder::new()?
     };
 
     // The example Studio project is authored for 5.1 sound, so set up the system output mode to match
@@ -71,11 +135,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let event_description = system.get_event(c!("event:/Music/Level 01"))?;
     let event_instance = event_description.create_instance()?;
 
-    let callback_info = Arc::new(CallbackInfo::default());
+    let callback_info = CallbackInfo::default();
 
-    event_instance.set_user_data(Some(callback_info.clone()))?;
-    event_instance.set_callback(
-        Some(Arc::new(marker_callback)),
+    event_instance.set_raw_userdata(std::ptr::from_ref(&callback_info).cast_mut().cast())?;
+    event_instance.set_callback::<Callback>(
         EventCallbackMask::TIMELINE_MARKER
             | EventCallbackMask::TIMELINE_BEAT
             | EventCallbackMask::SOUND_PLAYED
@@ -167,56 +230,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     unsafe {
         // Safety: we don't use any fmod api calls after this, so this is ok
         system.release()?;
-    }
-
-    Ok(())
-}
-
-fn marker_callback(
-    kind: EventCallbackKind<Userdata>,
-    instance: fmod::studio::EventInstance<Userdata>,
-) -> fmod::Result<()> {
-    let callback_info = instance.get_user_data()?.unwrap();
-    let mut entries = callback_info.entries.lock().unwrap();
-
-    match kind {
-        EventCallbackKind::TimelineMarker(props) => {
-            let name = props.name.to_string();
-            entries.push(format!("Named marker '{name}'"));
-        }
-        EventCallbackKind::TimelineBeat(props) => {
-            entries.push(format!(
-                "beat {}, bar {} (tempo {} {:.1}:{:.1})",
-                props.beat,
-                props.bar,
-                props.tempo,
-                props.time_signature_upper,
-                props.time_signature_lower,
-            ));
-        }
-        EventCallbackKind::SoundPlayed(sound) | EventCallbackKind::SoundStopped(sound) => {
-            // TODO
-            unsafe {
-                let mut name_buf = [0u8; 256];
-                FMOD_Sound_GetName(sound.into(), &mut name_buf as *mut u8 as *mut i8, 256)
-                    .to_result()?;
-                let name =
-                    std::ffi::CStr::from_bytes_with_nul_unchecked(&name_buf).to_string_lossy();
-
-                let mut length = 0;
-                FMOD_Sound_GetLength(sound.into(), &mut length, fmod_sys::FMOD_TIMEUNIT_MS)
-                    .to_result()?;
-
-                let status_text = if matches!(kind, EventCallbackKind::SoundPlayed(_)) {
-                    "Started"
-                } else {
-                    "Stopped"
-                };
-
-                entries.push(format!("Sound '{name}' (length {length:.3}) {status_text}",));
-            }
-        }
-        _ => {}
     }
 
     Ok(())

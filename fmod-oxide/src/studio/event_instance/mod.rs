@@ -7,10 +7,14 @@
 use fmod_sys::*;
 
 mod attributes_3d;
+mod callback;
 mod general;
 mod parameters;
 mod playback;
 mod playback_properties;
+
+pub(crate) use callback::event_callback_impl;
+pub use callback::EventInstanceCallback;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)] // so we can transmute between types

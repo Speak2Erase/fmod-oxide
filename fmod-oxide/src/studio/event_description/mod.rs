@@ -7,6 +7,7 @@
 use fmod_sys::*;
 
 mod attributes;
+mod callback;
 mod general;
 mod instance;
 mod parameter;
