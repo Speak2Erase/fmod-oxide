@@ -8,6 +8,7 @@ use fmod_sys::*;
 
 mod bank;
 mod builder;
+mod callback;
 mod command_replay;
 mod general;
 mod lifecycle;
@@ -16,7 +17,9 @@ mod misc;
 mod parameter;
 mod plugins;
 mod profiling; // things too small to really make their own module
+
 pub use builder::SystemBuilder;
+pub use callback::SystemCallback;
 
 /// The main system object for FMOD Studio.
 ///

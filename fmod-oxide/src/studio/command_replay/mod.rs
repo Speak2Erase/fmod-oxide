@@ -6,6 +6,7 @@
 
 use fmod_sys::*;
 
+mod callback;
 mod general;
 mod playback;
 mod query;

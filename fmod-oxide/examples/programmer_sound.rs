@@ -11,32 +11,75 @@ use crossterm::{
     terminal::*,
 };
 
-use fmod::Utf8CStr;
+use fmod::{studio::EventInstanceCallback, Utf8CStr};
 use lanyard::c;
-use std::{
-    io::Write,
-    sync::{Arc, Mutex},
-};
+use std::{io::Write, sync::Mutex};
 
 pub struct ProgrammerSoundContext {
     core_system: fmod::System,
-    studio_system: fmod::studio::System<Userdata>,
+    studio_system: fmod::studio::System,
     dialogue_string: &'static Utf8CStr,
 }
 
-struct Userdata;
+struct Callback;
 
-impl fmod::UserdataTypes for Userdata {
-    type Bank = ();
-    type CommandReplay = ();
-    type Event = Mutex<ProgrammerSoundContext>;
-    type StudioSystem = ();
+impl EventInstanceCallback for Callback {
+    fn create_programmer_sound(
+        event: fmod::studio::EventInstance,
+        sound_props: fmod::studio::ProgrammerSoundProperties<'_>,
+    ) -> fmod::Result<()> {
+        let context = unsafe {
+            &*event
+                .get_raw_userdata()?
+                .cast::<Mutex<ProgrammerSoundContext>>()
+        };
+        let context = context.lock().unwrap();
+
+        unsafe {
+            let mut info = std::mem::MaybeUninit::uninit();
+            fmod::ffi::FMOD_Studio_System_GetSoundInfo(
+                context.studio_system.into(),
+                context.dialogue_string.as_ptr(),
+                info.as_mut_ptr(),
+            )
+            .to_result()?;
+            let mut info = info.assume_init();
+
+            let mut sound = std::ptr::null_mut();
+            fmod::ffi::FMOD_System_CreateSound(
+                context.core_system.into(),
+                info.name_or_data,
+                fmod::ffi::FMOD_LOOP_NORMAL
+                    | fmod::ffi::FMOD_CREATECOMPRESSEDSAMPLE
+                    | fmod::ffi::FMOD_NONBLOCKING
+                    | info.mode,
+                &mut info.exinfo,
+                &mut sound,
+            )
+            .to_result()?;
+
+            *sound_props.sound = sound.into();
+            *sound_props.subsound_index = info.subsoundindex;
+        };
+
+        Ok(())
+    }
+
+    fn destroy_programmer_sound(
+        _: fmod::studio::EventInstance,
+        sound_props: fmod::studio::ProgrammerSoundProperties<'_>,
+    ) -> fmod::Result<()> {
+        unsafe {
+            let sound = (*sound_props.sound).into();
+            fmod::ffi::FMOD_Sound_Release(sound).to_result()
+        }
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = unsafe {
         // Safety: we call this before calling any other functions and only in main, so this is safe
-        fmod::studio::SystemBuilder::with_userdata()?
+        fmod::studio::SystemBuilder::new()?
     };
 
     // The example Studio project is authored for 5.1 sound, so set up the system output mode to match
@@ -83,11 +126,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         studio_system: system,
         dialogue_string: DIALOGUE[dialogue_index],
     };
-    let programmer_sound_context = Arc::new(Mutex::new(programmer_sound_context));
+    let programmer_sound_context = Mutex::new(programmer_sound_context);
 
-    event_instance.set_user_data(Some(programmer_sound_context.clone()))?;
-    event_instance.set_callback(
-        Some(Arc::new(programmer_sound_callback)),
+    event_instance.set_raw_userdata(
+        std::ptr::from_ref(&programmer_sound_context)
+            .cast_mut()
+            .cast(),
+    )?;
+    event_instance.set_callback::<Callback>(
         fmod::studio::EventCallbackMask::CREATE_PROGRAMMER_SOUND
             | fmod::studio::EventCallbackMask::DESTROY_PROGRAMMER_SOUND,
     )?;
@@ -210,52 +256,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     unsafe {
         // Safety: we don't use any fmod api calls after this, so this is ok
         system.release()?;
-    }
-
-    Ok(())
-}
-
-fn programmer_sound_callback(
-    kind: fmod::studio::EventCallbackKind<'_, Userdata>,
-    event_instance: fmod::studio::EventInstance<Userdata>,
-) -> fmod::Result<()> {
-    match kind {
-        fmod::studio::EventCallbackKind::CreateProgrammerSound(props) => {
-            let context = event_instance.get_user_data()?.unwrap();
-            let context = context.lock().unwrap();
-
-            unsafe {
-                let mut info = std::mem::MaybeUninit::uninit();
-                fmod::ffi::FMOD_Studio_System_GetSoundInfo(
-                    context.studio_system.into(),
-                    context.dialogue_string.as_ptr(),
-                    info.as_mut_ptr(),
-                )
-                .to_result()?;
-                let mut info = info.assume_init();
-
-                let mut sound = std::ptr::null_mut();
-                fmod::ffi::FMOD_System_CreateSound(
-                    context.core_system.into(),
-                    info.name_or_data,
-                    fmod::ffi::FMOD_LOOP_NORMAL
-                        | fmod::ffi::FMOD_CREATECOMPRESSEDSAMPLE
-                        | fmod::ffi::FMOD_NONBLOCKING
-                        | info.mode,
-                    &mut info.exinfo,
-                    &mut sound,
-                )
-                .to_result()?;
-
-                *props.sound = sound.into();
-                *props.subsound_index = info.subsoundindex;
-            };
-        }
-        fmod::studio::EventCallbackKind::DestroyProgrammerSound(props) => unsafe {
-            let sound = (*props.sound).into();
-            fmod::ffi::FMOD_Sound_Release(sound).to_result()?
-        },
-        _ => {}
     }
 
     Ok(())
