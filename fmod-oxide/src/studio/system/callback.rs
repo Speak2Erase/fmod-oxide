@@ -9,6 +9,34 @@ use std::ffi::c_void;
 
 use crate::studio::{Bank, System, SystemCallbackMask};
 
+#[cfg(feature = "userdata-abstraction")]
+use crate::userdata::{get_userdata, insert_userdata, set_userdata, Userdata};
+
+#[cfg(feature = "userdata-abstraction")]
+#[allow(unused_variables)]
+pub trait SystemCallback {
+    fn preupdate(system: System, userdata: Option<Userdata>) -> Result<()> {
+        Ok(())
+    }
+
+    fn postupdate(system: System, userdata: Option<Userdata>) -> Result<()> {
+        Ok(())
+    }
+
+    fn bank_unload(system: System, bank: Bank, userdata: Option<Userdata>) -> Result<()> {
+        Ok(())
+    }
+
+    fn liveupdate_connected(system: System, userdata: Option<Userdata>) -> Result<()> {
+        Ok(())
+    }
+
+    fn liveupdate_disconnected(system: System, userdata: Option<Userdata>) -> Result<()> {
+        Ok(())
+    }
+}
+
+#[cfg(not(feature = "userdata-abstraction"))]
 #[allow(unused_variables)]
 pub trait SystemCallback {
     fn preupdate(system: System, userdata: *mut c_void) -> Result<()> {
@@ -40,6 +68,10 @@ unsafe extern "C" fn callback_impl<C: SystemCallback>(
 ) -> FMOD_RESULT {
     // FIXME handle panics
     let system = unsafe { System::from_ffi(system) };
+
+    #[cfg(feature = "userdata-abstraction")]
+    let userdata = get_userdata(userdata.into());
+
     let result = match kind {
         FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE => C::preupdate(system, userdata),
         FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE => C::postupdate(system, userdata),
@@ -59,6 +91,26 @@ unsafe extern "C" fn callback_impl<C: SystemCallback>(
         }
     };
     result.into()
+}
+
+#[cfg(feature = "userdata-abstraction")]
+impl System {
+    pub fn set_userdata(&self, userdata: Userdata) -> Result<()> {
+        let pointer = self.get_raw_userdata()?;
+        if pointer.is_null() {
+            let key = insert_userdata(userdata, *self);
+            self.set_raw_userdata(key.into())?;
+        } else {
+            set_userdata(pointer.into(), userdata);
+        }
+
+        Ok(())
+    }
+
+    pub fn get_userdata(&self) -> Result<Option<Userdata>> {
+        let pointer = self.get_raw_userdata()?;
+        Ok(get_userdata(pointer.into()))
+    }
 }
 
 impl System {

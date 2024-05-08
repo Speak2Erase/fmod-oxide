@@ -13,7 +13,10 @@ use crossterm::{
 
 use fmod::{studio::EventInstanceCallback, Utf8CStr};
 use lanyard::c;
-use std::{io::Write, sync::Mutex};
+use std::{
+    io::Write,
+    sync::{Arc, Mutex},
+};
 
 pub struct ProgrammerSoundContext {
     core_system: fmod::System,
@@ -28,11 +31,11 @@ impl EventInstanceCallback for Callback {
         event: fmod::studio::EventInstance,
         sound_props: fmod::studio::ProgrammerSoundProperties<'_>,
     ) -> fmod::Result<()> {
-        let context = unsafe {
-            &*event
-                .get_raw_userdata()?
-                .cast::<Mutex<ProgrammerSoundContext>>()
-        };
+        let context = event
+            .get_userdata()?
+            .unwrap()
+            .downcast::<Mutex<ProgrammerSoundContext>>()
+            .unwrap();
         let context = context.lock().unwrap();
 
         unsafe {
@@ -126,13 +129,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         studio_system: system,
         dialogue_string: DIALOGUE[dialogue_index],
     };
-    let programmer_sound_context = Mutex::new(programmer_sound_context);
+    let programmer_sound_context = Arc::new(Mutex::new(programmer_sound_context));
 
-    event_instance.set_raw_userdata(
-        std::ptr::from_ref(&programmer_sound_context)
-            .cast_mut()
-            .cast(),
-    )?;
+    event_instance.set_userdata(programmer_sound_context.clone())?;
     event_instance.set_callback::<Callback>(
         fmod::studio::EventCallbackMask::CREATE_PROGRAMMER_SOUND
             | fmod::studio::EventCallbackMask::DESTROY_PROGRAMMER_SOUND,

@@ -13,7 +13,10 @@ use crossterm::{
 use fmod::studio::{EventCallbackMask, EventInstanceCallback};
 use fmod_sys::{FMOD_Sound_GetLength, FMOD_Sound_GetName};
 use lanyard::c;
-use std::{io::Write, sync::Mutex};
+use std::{
+    io::Write,
+    sync::{Arc, Mutex},
+};
 
 #[derive(Default)]
 struct CallbackInfo {
@@ -27,7 +30,11 @@ impl EventInstanceCallback for Callback {
         event: fmod::studio::EventInstance,
         timeline_props: fmod::studio::TimelineMarkerProperties,
     ) -> fmod::Result<()> {
-        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let callback_info = event
+            .get_userdata()?
+            .unwrap()
+            .downcast::<CallbackInfo>()
+            .unwrap();
         let mut entries = callback_info.entries.lock().unwrap();
 
         let name = timeline_props.name.to_string();
@@ -40,7 +47,11 @@ impl EventInstanceCallback for Callback {
         event: fmod::studio::EventInstance,
         timeline_beat: fmod::studio::TimelineBeatProperties,
     ) -> fmod::Result<()> {
-        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let callback_info = event
+            .get_userdata()?
+            .unwrap()
+            .downcast::<CallbackInfo>()
+            .unwrap();
         let mut entries = callback_info.entries.lock().unwrap();
 
         entries.push(format!(
@@ -56,7 +67,11 @@ impl EventInstanceCallback for Callback {
     }
 
     fn sound_played(event: fmod::studio::EventInstance, sound: fmod::Sound) -> fmod::Result<()> {
-        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let callback_info = event
+            .get_userdata()?
+            .unwrap()
+            .downcast::<CallbackInfo>()
+            .unwrap();
         let mut entries = callback_info.entries.lock().unwrap();
 
         unsafe {
@@ -76,7 +91,11 @@ impl EventInstanceCallback for Callback {
     }
 
     fn sound_stopped(event: fmod::studio::EventInstance, sound: fmod::Sound) -> fmod::Result<()> {
-        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let callback_info = event
+            .get_userdata()?
+            .unwrap()
+            .downcast::<CallbackInfo>()
+            .unwrap();
         let mut entries = callback_info.entries.lock().unwrap();
 
         unsafe {
@@ -135,9 +154,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let event_description = system.get_event(c!("event:/Music/Level 01"))?;
     let event_instance = event_description.create_instance()?;
 
-    let callback_info = CallbackInfo::default();
+    let callback_info = Arc::new(CallbackInfo::default());
 
-    event_instance.set_raw_userdata(std::ptr::from_ref(&callback_info).cast_mut().cast())?;
+    event_instance.set_userdata(callback_info.clone())?;
     event_instance.set_callback::<Callback>(
         EventCallbackMask::TIMELINE_MARKER
             | EventCallbackMask::TIMELINE_BEAT

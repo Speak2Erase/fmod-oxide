@@ -43,12 +43,15 @@ That callback would be a perfect place to clean up userdata on `EventDescription
 Pretty much the only option here would be to either a) require the user to manually release userdata or b) leak memory.
 Neither of these are good.
 
-The only solution I can currently think of would be to store a map of all FMOD objects in memory and their userdata, and then every so often check if every FMOD object in it has been released. 
-If it has been, we release the associated userdata as well.
-This solution works best with a mark and sweep GC, which Rust does not have. We could somewhat solve this by doing this check in `System::update`.
+Right now this crate stores userdata in a global slotmap alongside its owner, and every so often will remove userdata with invalid owners.
+This solution works best with a mark and sweep GC, which Rust does not have. We could somewhat solve this doing this in `System::update`.
 That would make `System::update`  *really* expensive- it would have an additional `O(n)` complexity added to it, which goes against the purpose of this crate.
 
-I'm still thinking on how to solve this issue, but I'll probably put this behind a feature gate and fall back to `*mut c_void` getters and setters if it is disabled.
+It's difficult to associate userdata with an individual system in this system though- so we have to clear the slotmap whenever any system is released.
+Releasing a system is performed at the end of execution generally so this probably won't be an issue.
+The only other workaround would be to set the userdata pointer of any object returned to a hashmap that each system owns. 
+
+I'm still thinking on how to solve this issue, but I'll probably put this behind a feature gate and provide `*mut c_void` setters and getters as well.
 Not the approach I would *like*, but oh well.
 
 If there was an easy way to enforce that a `T` is pointer sized and needs no `Drop` (at compile time) then I could use the approach I was going for early on in this crate and just transmute the `T` to a `*mut c_void`.

@@ -11,6 +11,29 @@ use crate::studio::{
     event_callback_impl, EventCallbackMask, EventDescription, EventInstanceCallback,
 };
 
+#[cfg(feature = "userdata-abstraction")]
+use crate::userdata::{get_userdata, insert_userdata, set_userdata, Userdata};
+
+#[cfg(feature = "userdata-abstraction")]
+impl EventDescription {
+    pub fn set_userdata(&self, userdata: Userdata) -> Result<()> {
+        let pointer = self.get_raw_userdata()?;
+        if pointer.is_null() {
+            let key = insert_userdata(userdata, *self);
+            self.set_raw_userdata(key.into())?;
+        } else {
+            set_userdata(pointer.into(), userdata);
+        }
+
+        Ok(())
+    }
+
+    pub fn get_userdata(&self) -> Result<Option<Userdata>> {
+        let pointer = self.get_raw_userdata()?;
+        Ok(get_userdata(pointer.into()))
+    }
+}
+
 impl EventDescription {
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_raw_userdata(&self, userdata: *mut c_void) -> Result<()> {

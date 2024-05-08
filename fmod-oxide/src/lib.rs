@@ -41,6 +41,12 @@ pub use core::*;
 
 pub mod studio;
 
+#[doc(hidden)]
+#[cfg(feature = "userdata-abstraction")]
+pub mod userdata;
+#[cfg(feature = "userdata-abstraction")]
+pub use userdata::Userdata;
+
 pub const VERSION: u32 = fmod_sys::FMOD_VERSION;
 pub const MAX_CHANNEL_WIDTH: u32 = fmod_sys::FMOD_MAX_CHANNEL_WIDTH;
 pub const MAX_LISTENERS: u32 = fmod_sys::FMOD_MAX_LISTENERS;

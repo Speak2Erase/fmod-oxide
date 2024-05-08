@@ -27,6 +27,7 @@ impl EventInstance {
     /// unless you want to play the event instance multiple times or explicitly stop it and start it again later.
     /// It is possible to interact with the instance after falling [`EventInstance::release`], however if the sound has stopped [`FMOD_RESULT::FMOD_ERR_INVALID_HANDLE`] will be returned.
     pub fn release(self) -> Result<()> {
+        // we don't actually release userdata here because there is a callback, and the user might interact with the instance while it's being released
         unsafe { FMOD_Studio_EventInstance_Release(self.inner).to_result() }
     }
 

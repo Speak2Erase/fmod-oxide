@@ -13,6 +13,20 @@ use crate::{
     Guid,
 };
 
+#[cfg(feature = "userdata-abstraction")]
+use crate::userdata::{get_userdata, insert_userdata, set_userdata, Userdata};
+
+#[cfg(feature = "userdata-abstraction")]
+pub trait CreateInstanceCallback {
+    fn create_instance_callback(
+        replay: CommandReplay,
+        command_index: c_int,
+        description: EventDescription,
+        userdata: Option<Userdata>,
+    ) -> Result<Option<EventInstance>>;
+}
+
+#[cfg(not(feature = "userdata-abstraction"))]
 pub trait CreateInstanceCallback {
     fn create_instance_callback(
         replay: CommandReplay,
@@ -29,6 +43,9 @@ unsafe extern "C" fn create_instance_impl<C: CreateInstanceCallback>(
     event_instance: *mut *mut FMOD_STUDIO_EVENTINSTANCE,
     userdata: *mut c_void,
 ) -> FMOD_RESULT {
+    #[cfg(feature = "userdata-abstraction")]
+    let userdata = get_userdata(userdata.into());
+
     unsafe {
         let replay = CommandReplay::from_ffi(replay);
         let description = EventDescription::from_ffi(event_description);
@@ -44,6 +61,17 @@ unsafe extern "C" fn create_instance_impl<C: CreateInstanceCallback>(
     }
 }
 
+#[cfg(feature = "userdata-abstraction")]
+pub trait FrameCallback {
+    fn frame_callback(
+        replay: CommandReplay,
+        command_index: c_int,
+        current_time: c_float,
+        userdata: Option<Userdata>,
+    ) -> Result<()>;
+}
+
+#[cfg(not(feature = "userdata-abstraction"))]
 pub trait FrameCallback {
     fn frame_callback(
         replay: CommandReplay,
@@ -59,10 +87,26 @@ unsafe extern "C" fn frame_impl<C: FrameCallback>(
     current_time: c_float,
     userdata: *mut c_void,
 ) -> FMOD_RESULT {
+    #[cfg(feature = "userdata-abstraction")]
+    let userdata = get_userdata(userdata.into());
+
     let replay = unsafe { CommandReplay::from_ffi(replay) };
     C::frame_callback(replay, command_index, current_time, userdata).into()
 }
 
+#[cfg(feature = "userdata-abstraction")]
+pub trait LoadBankCallback {
+    fn load_bank_callback(
+        replay: CommandReplay,
+        command_index: c_int,
+        guid: Option<Guid>,
+        filename: Option<&Utf8CStr>,
+        flags: LoadBankFlags,
+        userdata: Option<Userdata>,
+    ) -> Result<Option<Bank>>;
+}
+
+#[cfg(not(feature = "userdata-abstraction"))]
 pub trait LoadBankCallback {
     fn load_bank_callback(
         replay: CommandReplay,
@@ -83,6 +127,9 @@ unsafe extern "C" fn load_bank_impl<C: LoadBankCallback>(
     bank_ptr: *mut *mut FMOD_STUDIO_BANK,
     userdata: *mut c_void,
 ) -> FMOD_RESULT {
+    #[cfg(feature = "userdata-abstraction")]
+    let userdata = get_userdata(userdata.into());
+
     let replay = unsafe { CommandReplay::from_ffi(replay) };
     let flags = LoadBankFlags::from(flags);
     let guid = if guid.is_null() {
@@ -105,6 +152,26 @@ unsafe extern "C" fn load_bank_impl<C: LoadBankCallback>(
         }
         Ok(None) => FMOD_RESULT::FMOD_OK,
         Err(e) => e.into(),
+    }
+}
+
+#[cfg(feature = "userdata-abstraction")]
+impl CommandReplay {
+    pub fn set_userdata(&self, userdata: Userdata) -> Result<()> {
+        let pointer = self.get_raw_userdata()?;
+        if pointer.is_null() {
+            let key = insert_userdata(userdata, *self);
+            self.set_raw_userdata(key.into())?;
+        } else {
+            set_userdata(pointer.into(), userdata);
+        }
+
+        Ok(())
+    }
+
+    pub fn get_userdata(&self) -> Result<Option<Userdata>> {
+        let pointer = self.get_raw_userdata()?;
+        Ok(get_userdata(pointer.into()))
     }
 }
 

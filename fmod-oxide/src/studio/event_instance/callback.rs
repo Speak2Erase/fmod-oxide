@@ -16,6 +16,9 @@ use crate::{
     Sound,
 };
 
+#[cfg(feature = "userdata-abstraction")]
+use crate::userdata::{get_userdata, insert_userdata, set_userdata, Userdata};
+
 #[allow(unused_variables)]
 pub trait EventInstanceCallback {
     fn created(event: EventInstance) -> Result<()> {
@@ -195,6 +198,30 @@ pub(crate) unsafe extern "C" fn event_callback_impl<C: EventInstanceCallback>(
         }
     };
     result.into()
+}
+
+#[cfg(feature = "userdata-abstraction")]
+impl EventInstance {
+    pub fn set_userdata(&self, userdata: Userdata) -> Result<()> {
+        let pointer = self.get_raw_userdata()?;
+        let desc_pointer = self.get_description()?.get_raw_userdata()?;
+
+        // if the pointer is null or the same as the description pointer, insert the userdata
+        if pointer.is_null() || pointer == desc_pointer {
+            let key = insert_userdata(userdata, *self);
+            self.set_raw_userdata(key.into())?;
+        // if not then we already have a key, so just set the userdata
+        } else {
+            set_userdata(pointer.into(), userdata);
+        }
+
+        Ok(())
+    }
+
+    pub fn get_userdata(&self) -> Result<Option<Userdata>> {
+        let pointer = self.get_raw_userdata()?;
+        Ok(get_userdata(pointer.into()))
+    }
 }
 
 impl EventInstance {
