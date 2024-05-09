@@ -26,11 +26,21 @@ This means that all FMOD functions take a `&Utf8CStr` instead of a `&str` or `&C
 When FMOD returns a string, it will always return a `Utf8CString` (the owned version of `Utf8CStr`) because it's difficult to encode lifetime requirements of FMOD strings.
 
 This applies to structs like `fmod::studio::AdvancedSettings` which store C strings. 
-Converting structs like `AdvancedSettings` to their FFI equivalents is done by reference as to not pass ownership of the string to FMOD. 
+Converting structs like `AdvancedSettings` to their FFI equivalents is done by reference as to not pass ownership of the string to FMOD.
+FMOD *seems* to copy strings into its own memory, so this is ok?
 
-When converting from an FFI struct to something like `AdvancedSettings`, the C string pointer is cloned into a `Utf8CString`. 
+When converting from an FFI struct to something like `AdvancedSettings`, the C string pointer is copied into a `Utf8CString`. 
 *This is unsafe* as there are no guarantees that the pointer is valid or that the string is null-terminated and UTF-8.
 Luckily all FMOD functions return UTF-8 strings so this isn't really a problem in practice.
+
+# Undefine Behaviour and unsafe fns
+
+I'm trying to make these bindings as safe as possible, if you find UB please report it!
+There are a couple cases related to thread safety (You can initialize FMOD to be thread unsafe) and panics that I am aware of and actively trying to fix.
+
+Right now there are a some fns marked as unsafe that I'm not sure how to get working safely. 
+System creation, initialization, and cleanup is a pretty big one- creating a system is really unsafe, and certain functions can only be called before or after system creation.
+Releasing a system is probably the most unsafe operation of all though, as it invalidates all FMOD handles associated with that system
 
 # Userdata
 
@@ -44,8 +54,8 @@ Pretty much the only option here would be to either a) require the user to manua
 Neither of these are good.
 
 Right now this crate stores userdata in a global slotmap alongside its owner, and every so often will remove userdata with invalid owners.
-This solution works best with a mark and sweep GC, which Rust does not have. We could somewhat solve this doing this in `System::update`.
-That would make `System::update`  *really* expensive- it would have an additional `O(n)` complexity added to it, which goes against the purpose of this crate.
+This solution works best with a mark and sweep GC, which Rust does not have. We could somewhat solve this issue by doing this check in `System::update`.
+That would make `System::update` expensive- it would have an additional `O(n)` complexity added to it, which goes against the purpose of this crate.
 
 It's difficult to associate userdata with an individual system in this system though- so we have to clear the slotmap whenever any system is released.
 Releasing a system is performed at the end of execution generally so this probably won't be an issue.

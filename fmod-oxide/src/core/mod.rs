@@ -40,6 +40,7 @@ pub use flags::*;
 mod enums;
 pub use enums::*;
 
+mod reverb_presets;
 mod structs;
 pub use structs::*;
 
