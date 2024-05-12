@@ -12,7 +12,7 @@ use std::ffi::{c_float, c_int, c_uint};
 use super::{InstanceType, ParameterFlags, ParameterKind, UserPropertyKind};
 use crate::{
     core::{Dsp, Sound},
-    Guid, SoundMode,
+    Guid, Mode,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -333,7 +333,7 @@ impl From<CpuUsage> for FMOD_STUDIO_CPU_USAGE {
 #[derive(Debug)]
 pub struct SoundInfo {
     pub name_or_data: Utf8CString,
-    pub mode: SoundMode, // FIXME ffi types
+    pub mode: Mode, // FIXME ffi types
     pub ex_info: FMOD_CREATESOUNDEXINFO,
     pub subsound_index: c_int,
 }

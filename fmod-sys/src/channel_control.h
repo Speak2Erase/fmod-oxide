@@ -33,7 +33,7 @@ FMOD_ChannelControl_GetSystemObject(FMOD_CHANNELCONTROL *channelcontrol,
                                     FMOD_SYSTEM **system);
 
 // General control functionality for Channels and ChannelGroups.
-FMOD_RESULT FMOD_ChannelControl_stop(FMOD_CHANNELCONTROL *channelcontrol);
+FMOD_RESULT FMOD_ChannelControl_Stop(FMOD_CHANNELCONTROL *channelcontrol);
 FMOD_RESULT
 FMOD_ChannelControl_SetPaused(FMOD_CHANNELCONTROL *channelcontrol, bool paused);
 FMOD_RESULT FMOD_ChannelControl_GetPaused(FMOD_CHANNELCONTROL *channelcontrol,

@@ -91,7 +91,7 @@ impl From<ThreadAffinity> for FMOD_THREAD_AFFINITY {
 // FIXME: A LOT OF THESE ARE UNSAFE!
 bitflags::bitflags! {
   #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-  pub struct SoundMode: FMOD_MODE {
+  pub struct Mode: FMOD_MODE {
     const DEFAULT                   = FMOD_DEFAULT;
     const LOOP_OFF                  = FMOD_LOOP_OFF;
     const LOOP_NORMAL               = FMOD_LOOP_NORMAL;
@@ -115,7 +115,7 @@ bitflags::bitflags! {
     const INVERSE_ROLLOFF_3D        = FMOD_3D_INVERSEROLLOFF;
     const LINEAR_ROLLOFF_3D         = FMOD_3D_LINEARROLLOFF;
     const LINEAR_SQUARE_ROLLOFF_3D  = FMOD_3D_LINEARSQUAREROLLOFF;
-    const INVERSE_TAPERED_ROLLOF_3D = FMOD_3D_INVERSETAPEREDROLLOFF;
+    const INVERSE_TAPERED_ROLLOFF_3D = FMOD_3D_INVERSETAPEREDROLLOFF;
     const CUSTOM_ROLLOFF_3D         = FMOD_3D_CUSTOMROLLOFF;
     const IGNORE_GEOMETRY_3D        = FMOD_3D_IGNOREGEOMETRY;
     const IGNORE_TAGS               = FMOD_IGNORETAGS;
@@ -124,14 +124,14 @@ bitflags::bitflags! {
   }
 }
 
-impl From<FMOD_MODE> for SoundMode {
+impl From<FMOD_MODE> for Mode {
     fn from(value: FMOD_MODE) -> Self {
-        SoundMode::from_bits_truncate(value)
+        Mode::from_bits_truncate(value)
     }
 }
 
-impl From<SoundMode> for FMOD_MODE {
-    fn from(value: SoundMode) -> Self {
+impl From<Mode> for FMOD_MODE {
+    fn from(value: Mode) -> Self {
         value.bits()
     }
 }

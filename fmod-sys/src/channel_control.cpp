@@ -33,7 +33,7 @@ FMOD_ChannelControl_GetSystemObject(FMOD_CHANNELCONTROL *channelcontrol,
 
 // General control functionality for Channels and ChannelGroups.
 FMOD_RESULT
-FMOD_ChannelControl_stop(FMOD_CHANNELCONTROL *channelcontrol) {
+FMOD_ChannelControl_Stop(FMOD_CHANNELCONTROL *channelcontrol) {
   ChannelControl *c = (ChannelControl *)channelcontrol;
   return c->stop();
 }

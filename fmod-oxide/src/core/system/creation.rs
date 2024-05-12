@@ -8,7 +8,7 @@ use fmod_sys::*;
 use lanyard::Utf8CStr;
 use std::ffi::c_int;
 
-use crate::{Channel, ChannelGroup, Dsp, DspType, Reverb3D, Sound, SoundGroup, SoundMode, System};
+use crate::{Channel, ChannelGroup, Dsp, DspType, Mode, Reverb3D, Sound, SoundGroup, System};
 
 impl System {
     /// WARNING: At the moment this function has no guardrails and WILL cause undefined behaviour if used incorrectly.
@@ -43,7 +43,7 @@ impl System {
     pub fn create_sound(
         &self,
         name_or_data: Option<&[u8]>,
-        mode: SoundMode,
+        mode: Mode,
         ex_info: Option<&mut FMOD_CREATESOUNDEXINFO>,
     ) -> Result<Sound> {
         let name_or_data = name_or_data.map_or(std::ptr::null(), <[u8]>::as_ptr).cast();
@@ -69,7 +69,7 @@ impl System {
     pub fn create_stream(
         &self,
         name_or_data: Option<&[u8]>,
-        mode: SoundMode,
+        mode: Mode,
         ex_info: Option<&mut FMOD_CREATESOUNDEXINFO>,
     ) -> Result<Sound> {
         let name_or_data = name_or_data.map_or(std::ptr::null(), <[u8]>::as_ptr).cast();
