@@ -68,27 +68,17 @@ impl From<DebugFlags> for FMOD_DEBUG_FLAGS {
 pub fn initialize(flags: DebugFlags, mode: DebugMode) -> Result<()> {
     match mode {
         DebugMode::TTY => unsafe {
-            FMOD_Debug_Initialize(
-                flags.into(),
-                FMOD_DEBUG_MODE_FMOD_DEBUG_MODE_TTY,
-                None,
-                std::ptr::null(),
-            )
-            .to_result()
+            FMOD_Debug_Initialize(flags.into(), FMOD_DEBUG_MODE_TTY, None, std::ptr::null())
+                .to_result()
         },
         DebugMode::File(file) => unsafe {
-            FMOD_Debug_Initialize(
-                flags.into(),
-                FMOD_DEBUG_MODE_FMOD_DEBUG_MODE_FILE,
-                None,
-                file.as_ptr(),
-            )
-            .to_result()
+            FMOD_Debug_Initialize(flags.into(), FMOD_DEBUG_MODE_FILE, None, file.as_ptr())
+                .to_result()
         },
         DebugMode::Callback(c) => unsafe {
             FMOD_Debug_Initialize(
                 flags.into(),
-                FMOD_DEBUG_MODE_FMOD_DEBUG_MODE_CALLBACK,
+                FMOD_DEBUG_MODE_CALLBACK,
                 Some(c),
                 std::ptr::null(),
             )

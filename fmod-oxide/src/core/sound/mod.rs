@@ -6,6 +6,8 @@
 
 use fmod_sys::*;
 
+mod information;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Sound {

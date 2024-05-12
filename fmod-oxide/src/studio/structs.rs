@@ -198,16 +198,16 @@ impl UserProperty {
             UserProperty {
                 name: Utf8CStr::from_ptr_unchecked(value.name).to_cstring(),
                 kind: match value.type_ {
-                    FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_INTEGER => {
+                    FMOD_STUDIO_USER_PROPERTY_TYPE_INTEGER => {
                         UserPropertyKind::Int(value.__bindgen_anon_1.intvalue)
                     }
-                    FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_BOOLEAN => {
+                    FMOD_STUDIO_USER_PROPERTY_TYPE_BOOLEAN => {
                         UserPropertyKind::Bool(value.__bindgen_anon_1.boolvalue.into())
                     }
-                    FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_FLOAT => {
+                    FMOD_STUDIO_USER_PROPERTY_TYPE_FLOAT => {
                         UserPropertyKind::Float(value.__bindgen_anon_1.floatvalue)
                     }
-                    FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_STRING => {
+                    FMOD_STUDIO_USER_PROPERTY_TYPE_STRING => {
                         let cstring =
                             Utf8CStr::from_ptr_unchecked(value.__bindgen_anon_1.stringvalue)
                                 .to_cstring();
@@ -224,21 +224,21 @@ impl From<&UserProperty> for FMOD_STUDIO_USER_PROPERTY {
     fn from(value: &UserProperty) -> Self {
         let (kind, union) = match value.kind {
             UserPropertyKind::Int(v) => (
-                FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_INTEGER,
+                FMOD_STUDIO_USER_PROPERTY_TYPE_INTEGER,
                 FMOD_STUDIO_USER_PROPERTY__bindgen_ty_1 { intvalue: v },
             ),
             UserPropertyKind::Bool(v) => (
-                FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_BOOLEAN,
+                FMOD_STUDIO_USER_PROPERTY_TYPE_BOOLEAN,
                 FMOD_STUDIO_USER_PROPERTY__bindgen_ty_1 {
                     boolvalue: v.into(),
                 },
             ),
             UserPropertyKind::Float(v) => (
-                FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_FLOAT,
+                FMOD_STUDIO_USER_PROPERTY_TYPE_FLOAT,
                 FMOD_STUDIO_USER_PROPERTY__bindgen_ty_1 { floatvalue: v },
             ),
             UserPropertyKind::String(ref v) => (
-                FMOD_STUDIO_USER_PROPERTY_TYPE_FMOD_STUDIO_USER_PROPERTY_TYPE_STRING,
+                FMOD_STUDIO_USER_PROPERTY_TYPE_STRING,
                 FMOD_STUDIO_USER_PROPERTY__bindgen_ty_1 {
                     stringvalue: v.as_ptr(),
                 },

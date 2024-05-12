@@ -66,7 +66,7 @@ impl System {
                 self.inner,
                 buffer.as_ptr().cast::<i8>(),
                 buffer.len() as c_int,
-                FMOD_STUDIO_LOAD_MEMORY_MODE_FMOD_STUDIO_LOAD_MEMORY,
+                FMOD_STUDIO_LOAD_MEMORY,
                 flags.bits(),
                 &mut bank,
             )
@@ -107,7 +107,7 @@ impl System {
                 self.inner,
                 buffer.cast::<i8>(),
                 (*buffer).len() as c_int,
-                FMOD_STUDIO_LOAD_MEMORY_MODE_FMOD_STUDIO_LOAD_MEMORY_POINT,
+                FMOD_STUDIO_LOAD_MEMORY_POINT,
                 flags.bits(),
                 &mut bank,
             )

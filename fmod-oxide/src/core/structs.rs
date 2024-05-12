@@ -11,7 +11,7 @@ use std::{
 use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
 
-use crate::DspParameterDataType;
+use crate::{DspParameterDataType, TagType};
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
 // force this type to have the exact same layout as FMOD_STUDIO_PARAMETER_ID so we can safely transmute between them.
@@ -276,7 +276,7 @@ impl DspParameterDescription {
         let label = unsafe { Utf8CStr::from_ptr_unchecked(value.label.as_ptr()).to_cstring() };
         let description = unsafe { Utf8CStr::from_ptr_unchecked(value.description).to_cstring() };
         let kind = match value.type_ {
-            FMOD_DSP_PARAMETER_TYPE_FMOD_DSP_PARAMETER_TYPE_FLOAT => {
+            FMOD_DSP_PARAMETER_TYPE_FLOAT => {
                 let floatdesc = unsafe { value.__bindgen_anon_1.floatdesc };
                 DspParameterType::Float {
                     min: floatdesc.min,
@@ -285,7 +285,7 @@ impl DspParameterDescription {
                     mapping: FloatMapping {},
                 }
             }
-            FMOD_DSP_PARAMETER_TYPE_FMOD_DSP_PARAMETER_TYPE_INT => {
+            FMOD_DSP_PARAMETER_TYPE_INT => {
                 let intdesc = unsafe { value.__bindgen_anon_1.intdesc };
                 DspParameterType::Int {
                     min: intdesc.min,
@@ -294,16 +294,16 @@ impl DspParameterDescription {
                     goes_to_infinity: intdesc.goestoinf.into(),
                 }
             }
-            FMOD_DSP_PARAMETER_TYPE_FMOD_DSP_PARAMETER_TYPE_BOOL => {
+            FMOD_DSP_PARAMETER_TYPE_BOOL => {
                 let booldesc = unsafe { value.__bindgen_anon_1.booldesc };
                 DspParameterType::Bool {
                     default: booldesc.defaultval.into(),
                 }
             }
-            FMOD_DSP_PARAMETER_TYPE_FMOD_DSP_PARAMETER_TYPE_DATA => {
+            FMOD_DSP_PARAMETER_TYPE_DATA => {
                 let datadesc = unsafe { value.__bindgen_anon_1.datadesc };
                 DspParameterType::Data {
-                    data_type: datadesc.datatype.into(),
+                    data_type: datadesc.datatype.try_into().unwrap(),
                 }
             }
             _ => panic!("invalid parameter description type"), // FIXME panic
@@ -345,6 +345,62 @@ impl From<DspMeteringInfo> for FMOD_DSP_METERING_INFO {
             peaklevel: value.peak_level,
             rmslevel: value.rms_level,
             numchannels: value.channel_count,
+        }
+    }
+}
+
+pub struct Tag {
+    kind: TagType,
+    name: Utf8CString,
+    data: TagData,
+    updated: bool,
+}
+
+pub enum TagData {
+    Binary(Vec<u8>),
+    Integer(i64),
+    Float(f64),
+    Utf8String(Utf8CString),
+    // TODO other string types
+}
+
+impl Tag {
+    pub unsafe fn from_ffi(value: FMOD_TAG) -> Self {
+        let kind = value.type_.try_into().unwrap();
+        let name = unsafe { Utf8CStr::from_ptr_unchecked(value.name).to_cstring() };
+        let updated = value.updated.into();
+        let data = unsafe {
+            // awful union-esquqe code
+            match value.datatype {
+                FMOD_TAGDATATYPE_BINARY => {
+                    let slice =
+                        std::slice::from_raw_parts(value.data as *const u8, value.datalen as usize);
+                    TagData::Binary(slice.to_vec())
+                }
+                FMOD_TAGDATATYPE_INT => match value.datalen {
+                    1 => TagData::Integer(*value.data.cast::<i8>() as i64),
+                    2 => TagData::Integer(*value.data.cast::<i16>() as i64),
+                    4 => TagData::Integer(*value.data.cast::<i32>() as i64),
+                    8 => TagData::Integer(*value.data.cast::<i64>() as i64),
+                    _ => panic!("unrecognized integer data len"),
+                },
+                FMOD_TAGDATATYPE_FLOAT => match value.datalen {
+                    4 => TagData::Float(*value.data.cast::<f32>() as f64),
+                    8 => TagData::Float(*value.data.cast::<f64>() as f64),
+                    _ => panic!("unrecognized float data len"),
+                },
+                FMOD_TAGDATATYPE_STRING_UTF8 => {
+                    let string = Utf8CStr::from_ptr_unchecked(value.data.cast()).to_cstring();
+                    TagData::Utf8String(string)
+                }
+                _ => unimplemented!(), // TODO
+            }
+        };
+        Tag {
+            kind,
+            name,
+            data,
+            updated,
         }
     }
 }

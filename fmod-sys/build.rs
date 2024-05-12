@@ -20,6 +20,7 @@ fn main() {
         .newtype_enum("FMOD_RESULT")
         .must_use_type("FMOD_RESULT")
         .new_type_alias("FMOD_BOOL")
+        .prepend_enum_name(false) // fmod already does this
         .header("src/wrapper.h");
 
     #[cfg(target_arch = "x86")]
