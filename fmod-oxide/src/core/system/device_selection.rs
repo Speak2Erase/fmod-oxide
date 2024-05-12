@@ -8,7 +8,7 @@ use fmod_sys::*;
 use lanyard::Utf8CString;
 use std::{ffi::c_int, mem::MaybeUninit};
 
-use crate::{Guid, OutputType, SpeakerMode, System};
+use crate::{get_string, Guid, OutputType, SpeakerMode, System};
 
 impl System {
     #[allow(clippy::doc_markdown)]
@@ -57,31 +57,24 @@ impl System {
         id: c_int,
     ) -> Result<(Utf8CString, Guid, c_int, SpeakerMode, c_int)> {
         unsafe {
-            let mut name = [0_i8; 512];
             let mut guid = MaybeUninit::zeroed();
             let mut system_rate = 0;
             let mut speaker_mode = 0;
             let mut speaker_mode_channels = 0;
 
-            FMOD_System_GetDriverInfo(
-                self.inner,
-                id,
-                name.as_mut_ptr(),
-                512,
-                guid.as_mut_ptr(),
-                &mut system_rate,
-                &mut speaker_mode,
-                &mut speaker_mode_channels,
-            )
-            .to_result()?;
+            let name = get_string(|name| {
+                FMOD_System_GetDriverInfo(
+                    self.inner,
+                    id,
+                    name.as_mut_ptr().cast(),
+                    name.len() as c_int,
+                    guid.as_mut_ptr(),
+                    &mut system_rate,
+                    &mut speaker_mode,
+                    &mut speaker_mode_channels,
+                )
+            })?;
 
-            // FIXME is this right?
-            let name = name
-                .into_iter()
-                .take_while(|&v| v != 0)
-                .map(|v| v as u8)
-                .collect();
-            let name = Utf8CString::from_utf8_with_nul_unchecked(name);
             let guid = guid.assume_init().into();
             let speaker_mode = speaker_mode.try_into()?;
 

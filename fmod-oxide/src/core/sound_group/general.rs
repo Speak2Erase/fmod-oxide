@@ -8,25 +8,14 @@ use fmod_sys::*;
 use lanyard::Utf8CString;
 use std::ffi::c_int;
 
-use crate::{SoundGroup, System};
+use crate::{get_string, SoundGroup, System};
 
 impl SoundGroup {
     /// Retrieves the name of the sound group.
     pub fn get_name(&self) -> Result<Utf8CString> {
-        let mut name = [0_i8; 512];
-        unsafe {
-            FMOD_SoundGroup_GetName(self.inner, name.as_mut_ptr(), name.len() as c_int)
-                .to_result()?;
-
-            // FIXME is this right?
-            let name = name
-                .into_iter()
-                .take_while(|&v| v != 0)
-                .map(|v| v as u8)
-                .collect();
-            let name = Utf8CString::from_utf8_with_nul_unchecked(name);
-            Ok(name)
-        }
+        get_string(|name| unsafe {
+            FMOD_SoundGroup_GetName(self.inner, name.as_mut_ptr().cast(), name.len() as c_int)
+        })
     }
 
     /// Releases a soundgroup object and returns all sounds back to the master sound group.

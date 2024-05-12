@@ -8,24 +8,15 @@ use fmod_sys::*;
 use lanyard::Utf8CString;
 use std::ffi::c_int;
 
-use crate::ChannelGroup;
+use crate::{get_string, ChannelGroup};
 
 impl ChannelGroup {
     /// Retrieves the name set when the group was created.
     pub fn get_name(&self) -> Result<Utf8CString> {
-        let mut name = [0_i8; 512];
         unsafe {
-            FMOD_ChannelGroup_GetName(self.inner, name.as_mut_ptr(), name.len() as c_int)
-                .to_result()?;
-
-            // FIXME is this right?
-            let name = name
-                .into_iter()
-                .take_while(|&v| v != 0)
-                .map(|v| v as u8)
-                .collect();
-            let name = Utf8CString::from_utf8_with_nul_unchecked(name);
-            Ok(name)
+            get_string(|name| {
+                FMOD_ChannelGroup_GetName(self.inner, name.as_mut_ptr().cast(), name.len() as c_int)
+            })
         }
     }
 

@@ -8,7 +8,7 @@ use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
 use std::ffi::{c_int, c_uint};
 
-use crate::{PluginType, System};
+use crate::{get_string, PluginType, System};
 
 impl System {
     /// Specify a base search path for plugins so they can be placed somewhere else than the directory of the main executable.
@@ -96,30 +96,21 @@ impl System {
     /// Retrieves information for the selected plugin.
     pub fn get_plugin_info(&self, handle: c_uint) -> Result<(PluginType, Utf8CString, c_uint)> {
         let mut plugin_type = 0;
-        let mut name = [0; 512];
         let mut version = 0;
 
-        unsafe {
+        let name = get_string(|name| unsafe {
             FMOD_System_GetPluginInfo(
                 self.inner,
                 handle,
                 &mut plugin_type,
-                name.as_mut_ptr(),
-                512,
+                name.as_mut_ptr().cast(),
+                name.len() as c_int,
                 &mut version,
             )
-            .to_result()?;
+        })?;
 
-            // FIXME is this right?
-            let name = name
-                .into_iter()
-                .take_while(|&v| v != 0)
-                .map(|v| v as u8)
-                .collect();
-            let name = Utf8CString::from_utf8_with_nul_unchecked(name);
-            let plugin_type = plugin_type.try_into()?;
-            Ok((plugin_type, name, version))
-        }
+        let plugin_type = plugin_type.try_into()?;
+        Ok((plugin_type, name, version))
     }
 
     /// Selects an output type given a plugin handle.

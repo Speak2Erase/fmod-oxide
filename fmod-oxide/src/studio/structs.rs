@@ -456,7 +456,6 @@ impl PluginInstanceProperties {
 }
 
 pub struct TimelineMarkerProperties {
-    // FIXME lifetimes
     pub name: Utf8CString,
     pub position: c_int,
 }

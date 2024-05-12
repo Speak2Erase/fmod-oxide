@@ -8,7 +8,7 @@ use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
 use std::ffi::c_int;
 
-use crate::System;
+use crate::{get_string, System};
 
 impl System {
     /// Set a proxy server to use for all subsequent internet connections.
@@ -22,20 +22,9 @@ impl System {
 
     /// Retrieves the URL of the proxy server used in internet streaming.
     pub fn get_network_proxy(&self) -> Result<Utf8CString> {
-        let mut proxy = [0; 512];
-
-        unsafe {
-            FMOD_System_GetNetworkProxy(self.inner, proxy.as_mut_ptr(), 512).to_result()?;
-
-            // FIXME is this right?
-            let name = proxy
-                .into_iter()
-                .take_while(|&v| v != 0)
-                .map(|v| v as u8)
-                .collect();
-            let name = Utf8CString::from_utf8_with_nul_unchecked(name);
-            Ok(name)
-        }
+        get_string(|name| unsafe {
+            FMOD_System_GetNetworkProxy(self.inner, name.as_mut_ptr().cast(), name.len() as c_int)
+        })
     }
 
     /// Set the timeout for network streams.
