@@ -309,3 +309,37 @@ pub enum TagType {
     Fmod = FMOD_TAGTYPE_FMOD,
     User = FMOD_TAGTYPE_USER,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum OpenState {
+    Ready = FMOD_OPENSTATE_READY,
+    Loading = FMOD_OPENSTATE_LOADING,
+    Error(Error) = FMOD_OPENSTATE_ERROR,
+    Connecting = FMOD_OPENSTATE_CONNECTING,
+    Buffering = FMOD_OPENSTATE_BUFFERING,
+    Seeking = FMOD_OPENSTATE_SEEKING,
+    Playing = FMOD_OPENSTATE_PLAYING,
+    SetPosition = FMOD_OPENSTATE_SETPOSITION,
+}
+
+impl OpenState {
+    pub fn try_from_ffi(value: FMOD_OPENSTATE, error: Option<Error>) -> Result<Self> {
+        match value {
+            FMOD_OPENSTATE_READY => Ok(OpenState::Ready),
+            FMOD_OPENSTATE_LOADING => Ok(OpenState::Loading),
+            FMOD_OPENSTATE_ERROR => error
+                .map(OpenState::Error)
+                .ok_or(Error::Fmod(FMOD_RESULT::FMOD_ERR_INVALID_PARAM)),
+            FMOD_OPENSTATE_CONNECTING => Ok(OpenState::Connecting),
+            FMOD_OPENSTATE_BUFFERING => Ok(OpenState::Buffering),
+            FMOD_OPENSTATE_SEEKING => Ok(OpenState::Seeking),
+            FMOD_OPENSTATE_PLAYING => Ok(OpenState::Playing),
+            FMOD_OPENSTATE_SETPOSITION => Ok(OpenState::SetPosition),
+            _ => Err(Error::EnumFromPrivitive {
+                name: "LoadingState",
+                primitive: value,
+            }),
+        }
+    }
+}

@@ -6,7 +6,13 @@
 
 use fmod_sys::*;
 
+mod data_reading;
+mod defaults;
+mod general;
 mod information;
+mod music;
+mod relationship;
+mod synchronization;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)] // so we can transmute between types

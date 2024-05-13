@@ -13,7 +13,6 @@ impl Bank {
     /// or is pending unload following a call to [`Bank::unload`].
     ///
     /// If an asynchronous load failed due to a file error state will contain [`LoadingState::Error`] and the return code from this function will be the error code of the bank load function.
-    // TODO: make LoadingState contain the error?
     pub fn get_loading_state(&self) -> Result<LoadingState> {
         let mut loading_state = 0;
         let error =

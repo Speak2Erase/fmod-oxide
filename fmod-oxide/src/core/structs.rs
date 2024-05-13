@@ -11,7 +11,7 @@ use std::{
 use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
 
-use crate::{DspParameterDataType, TagType};
+use crate::{string_from_utf16_be, string_from_utf16_le, DspParameterDataType, TagType};
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
 // force this type to have the exact same layout as FMOD_STUDIO_PARAMETER_ID so we can safely transmute between them.
@@ -321,10 +321,10 @@ impl DspParameterDescription {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DspMeteringInfo {
-    sample_count: c_int,
-    peak_level: [c_float; 32],
-    rms_level: [c_float; 32],
-    channel_count: c_short,
+    pub sample_count: c_int,
+    pub peak_level: [c_float; 32],
+    pub rms_level: [c_float; 32],
+    pub channel_count: c_short,
 }
 
 impl From<FMOD_DSP_METERING_INFO> for DspMeteringInfo {
@@ -350,21 +350,31 @@ impl From<DspMeteringInfo> for FMOD_DSP_METERING_INFO {
 }
 
 pub struct Tag {
-    kind: TagType,
-    name: Utf8CString,
-    data: TagData,
-    updated: bool,
+    pub kind: TagType,
+    pub name: Utf8CString,
+    pub data: TagData,
+    pub updated: bool,
 }
 
 pub enum TagData {
     Binary(Vec<u8>),
     Integer(i64),
     Float(f64),
-    Utf8String(Utf8CString),
+    Utf8String(String),
+    Utf16StringBE(String),
+    Utf16String(String),
     // TODO other string types
 }
 
 impl Tag {
+    /// Create a safe [`Tag`] struct from the FFI equivalent.
+    ///
+    /// # Safety
+    ///
+    /// The string [`FMOD_TAG::name`] must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
+    ///
+    /// This function will read into arbitrary memory! Because of this the tag data type must match the data type of the data pointer.
+    #[allow(clippy::cast_lossless)]
     pub unsafe fn from_ffi(value: FMOD_TAG) -> Self {
         let kind = value.type_.try_into().unwrap();
         let name = unsafe { Utf8CStr::from_ptr_unchecked(value.name).to_cstring() };
@@ -381,19 +391,37 @@ impl Tag {
                     1 => TagData::Integer(*value.data.cast::<i8>() as i64),
                     2 => TagData::Integer(*value.data.cast::<i16>() as i64),
                     4 => TagData::Integer(*value.data.cast::<i32>() as i64),
-                    8 => TagData::Integer(*value.data.cast::<i64>() as i64),
+                    8 => TagData::Integer(*value.data.cast::<i64>()),
                     _ => panic!("unrecognized integer data len"),
                 },
                 FMOD_TAGDATATYPE_FLOAT => match value.datalen {
                     4 => TagData::Float(*value.data.cast::<f32>() as f64),
-                    8 => TagData::Float(*value.data.cast::<f64>() as f64),
+                    8 => TagData::Float(*value.data.cast::<f64>()),
                     _ => panic!("unrecognized float data len"),
                 },
                 FMOD_TAGDATATYPE_STRING_UTF8 => {
-                    let string = Utf8CStr::from_ptr_unchecked(value.data.cast()).to_cstring();
+                    let utf8 =
+                        std::slice::from_raw_parts(value.data.cast(), value.datalen as usize)
+                            .to_vec();
+                    let string = String::from_utf8_unchecked(utf8);
                     TagData::Utf8String(string)
                 }
-                _ => unimplemented!(), // TODO
+                // depending on the architecture rust will optimize this to a no-op
+                // we still need to do this to ensure the correct endianness
+                // ideally we could use String::from_utf16_be_lossy but that is nightly only and the tracking issue has basically no activity
+                FMOD_TAGDATATYPE_STRING_UTF16 => {
+                    let slice =
+                        std::slice::from_raw_parts(value.data.cast(), value.datalen as usize);
+                    let string = string_from_utf16_le(slice);
+                    TagData::Utf16String(string)
+                }
+                FMOD_TAGDATATYPE_STRING_UTF16BE => {
+                    let slice =
+                        std::slice::from_raw_parts(value.data.cast(), value.datalen as usize);
+                    let string = string_from_utf16_be(slice);
+                    TagData::Utf16StringBE(string)
+                }
+                _ => panic!("unrecognized tag data type"), // FIXME panic
             }
         };
         Tag {

@@ -137,7 +137,6 @@ impl ChannelControl {
     ///
     /// Must be used in conjunction with [`Mode::CUSTOM_ROLLOFF`] flag to be activated.
     ///
-    ///
     /// If [`Mode::CUSTOM_ROLLOFF`] is set and the roll-off shape is not set, FMOD will revert to [`Mode::INVERSE_ROLLOFF`] roll-off mode.
     ///
     /// When a custom roll-off is specified a [`Channel`] or [`ChannelGroup`]'s 3D 'minimum' and 'maximum' distances are ignored.

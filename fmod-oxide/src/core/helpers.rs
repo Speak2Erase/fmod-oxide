@@ -30,3 +30,19 @@ pub(crate) fn get_string(
     let string = unsafe { Utf8CString::from_utf8_unchecked(buffer) };
     Ok(string)
 }
+
+pub(crate) fn string_from_utf16_le(utf16: &[u16]) -> String {
+    let iter = utf16.iter().copied().map(u16::from_le);
+    // we use char::decode_utf16 instead of String::from_utf16 because the latter would require us to collect into a Vec<u16> first
+    char::decode_utf16(iter)
+        .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
+        .collect()
+}
+
+pub(crate) fn string_from_utf16_be(utf16: &[u16]) -> String {
+    let iter = utf16.iter().copied().map(u16::from_be);
+    // we use char::decode_utf16 instead of String::from_utf16 because the latter would require us to collect into a Vec<u16> first
+    char::decode_utf16(iter)
+        .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
+        .collect()
+}
