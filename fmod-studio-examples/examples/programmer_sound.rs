@@ -11,8 +11,7 @@ use crossterm::{
     terminal::*,
 };
 
-use fmod::{studio::EventInstanceCallback, Utf8CStr};
-use lanyard::c;
+use fmod::{c, studio::EventInstanceCallback, Utf8CStr};
 use std::{
     io::Write,
     sync::{Arc, Mutex},

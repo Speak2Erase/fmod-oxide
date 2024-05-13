@@ -10,7 +10,7 @@ use crossterm::{
     execute,
     terminal::*,
 };
-use lanyard::c;
+use fmod::c;
 use std::io::Write;
 
 enum State {

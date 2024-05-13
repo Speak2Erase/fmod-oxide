@@ -6,6 +6,4 @@
  file, You can obtain one at https://mozilla.org/MPL/2.0/.
 -->
 
-# TODO
-
-Crate is mostly finished, but is going to be fully released alongside another crate when I finish it
+Like camino, but for C strings

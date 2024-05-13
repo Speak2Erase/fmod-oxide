@@ -1,6 +1,6 @@
 [package]
 name = "lanyard"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 authors = ["Melody Madeline Lyons <melody@nowaffles.com>"]
 license = "MPL-2.0"
@@ -8,6 +8,7 @@ keywords = ["ffi", "cstr", "cstring", "string"]
 categories = ["data-structures"]
 readme = "README.md"
 description = "UTF-8 C string types"
+repository = "https://github.com/Speak2Erase/fmod-oxide"
 
 [dependencies]
 

@@ -10,8 +10,7 @@ use crossterm::{
     execute,
     terminal::*,
 };
-
-use lanyard::c;
+use fmod::c;
 use std::io::Write;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
