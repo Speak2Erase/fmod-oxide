@@ -76,7 +76,7 @@ pub struct AdvancedSettings {
     pub studioupdateperiod: c_int,
     pub idle_sample_data_pool_size: c_int,
     pub streaming_schedule_delay: c_uint,
-    pub encryption_key: Option<Utf8CString>,
+    pub encryption_key: Option<Utf8CString>, // TODO investigate if FMOD copies this string or if it needs to be kept alive
 }
 
 impl AdvancedSettings {
@@ -417,8 +417,8 @@ impl CommandInfo {
 }
 
 pub struct ProgrammerSoundProperties<'prop> {
-    // FIXME use option
     pub name: Utf8CString,
+    // FIXME use option for both of these
     pub sound: &'prop mut Sound,
     pub subsound_index: &'prop mut c_int,
 }

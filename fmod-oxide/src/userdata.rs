@@ -15,7 +15,10 @@ use std::{
 use once_cell::sync::Lazy;
 use slotmap::{HopSlotMap, Key, KeyData};
 
-use crate::studio::{Bank, CommandReplay, EventDescription, EventInstance, System as StudioSystem};
+use crate::{
+    studio::{Bank, CommandReplay, EventDescription, EventInstance, System as StudioSystem},
+    ChannelControl, Dsp, DspConnection, Geometry, Reverb3D, Sound, SoundGroup, System,
+};
 
 #[derive(Default)]
 struct UserdataStorage {
@@ -40,16 +43,53 @@ pub(crate) enum HasUserdata {
     EventDescription(EventDescription),
     EventInstance(EventInstance),
     CommandReplay(CommandReplay),
+    //
+    Reverb3D(Reverb3D),
+    SoundGroup(SoundGroup),
+    ChannelControl(ChannelControl),
+    Dsp(Dsp),
+    Sound(Sound),
+    Geometry(Geometry),
+    DspConnection(DspConnection),
+    System(System),
 }
 
 impl HasUserdata {
-    fn is_valid(&self) -> bool {
+    fn get_raw_userdata(&self) -> fmod_sys::Result<*mut std::ffi::c_void> {
+        match self {
+            HasUserdata::StudioSystem(s) => s.get_raw_userdata(),
+            HasUserdata::Bank(b) => b.get_raw_userdata(),
+            HasUserdata::EventDescription(e) => e.get_raw_userdata(),
+            HasUserdata::EventInstance(e) => e.get_raw_userdata(),
+            HasUserdata::CommandReplay(c) => c.get_raw_userdata(),
+            HasUserdata::Reverb3D(r) => r.get_raw_userdata(),
+            HasUserdata::SoundGroup(s) => s.get_raw_userdata(),
+            // may occasionally be called when the channel is lost, but this should return Err() in that case
+            HasUserdata::ChannelControl(c) => c.get_raw_userdata(),
+            HasUserdata::Dsp(d) => d.get_raw_userdata(),
+            HasUserdata::Sound(s) => s.get_raw_userdata(),
+            HasUserdata::Geometry(g) => g.get_raw_userdata(),
+            HasUserdata::DspConnection(c) => c.get_raw_userdata(),
+            HasUserdata::System(s) => s.get_raw_userdata(),
+        }
+    }
+
+    fn is_valid(&self, key: UserdataKey) -> bool {
         match self {
             HasUserdata::StudioSystem(s) => s.is_valid(),
             HasUserdata::Bank(b) => b.is_valid(),
             HasUserdata::EventDescription(e) => e.is_valid(),
             HasUserdata::EventInstance(e) => e.is_valid(),
             HasUserdata::CommandReplay(c) => c.is_valid(),
+            // System is ALWAYS valid
+            HasUserdata::System(_) => true,
+            // when released, get_raw_userdata will return null
+            // this is a bit of a hack though (and not very safe)
+            // this should almost never be called when released though, so it should be fine...?
+            _ => {
+                let userdata = self.get_raw_userdata();
+                userdata.is_ok_and(|ptr| ptr == key.into())
+            }
         }
     }
 }
@@ -86,7 +126,7 @@ pub(crate) fn set_userdata(key: UserdataKey, userdata: Userdata) {
 
 pub(crate) fn cleanup_userdata() {
     let mut storage = STORAGE.write().unwrap();
-    storage.slotmap.retain(|_, v| v.owner.is_valid());
+    storage.slotmap.retain(|k, v| v.owner.is_valid(k));
 }
 
 pub(crate) fn clear_userdata() {
@@ -133,5 +173,53 @@ impl From<EventInstance> for HasUserdata {
 impl From<CommandReplay> for HasUserdata {
     fn from(c: CommandReplay) -> Self {
         HasUserdata::CommandReplay(c)
+    }
+}
+
+impl From<Reverb3D> for HasUserdata {
+    fn from(r: Reverb3D) -> Self {
+        HasUserdata::Reverb3D(r)
+    }
+}
+
+impl From<SoundGroup> for HasUserdata {
+    fn from(s: SoundGroup) -> Self {
+        HasUserdata::SoundGroup(s)
+    }
+}
+
+impl From<ChannelControl> for HasUserdata {
+    fn from(c: ChannelControl) -> Self {
+        HasUserdata::ChannelControl(c)
+    }
+}
+
+impl From<Dsp> for HasUserdata {
+    fn from(d: Dsp) -> Self {
+        HasUserdata::Dsp(d)
+    }
+}
+
+impl From<Sound> for HasUserdata {
+    fn from(s: Sound) -> Self {
+        HasUserdata::Sound(s)
+    }
+}
+
+impl From<Geometry> for HasUserdata {
+    fn from(g: Geometry) -> Self {
+        HasUserdata::Geometry(g)
+    }
+}
+
+impl From<DspConnection> for HasUserdata {
+    fn from(c: DspConnection) -> Self {
+        HasUserdata::DspConnection(c)
+    }
+}
+
+impl From<System> for HasUserdata {
+    fn from(s: System) -> Self {
+        HasUserdata::System(s)
     }
 }

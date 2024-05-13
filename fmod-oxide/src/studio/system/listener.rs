@@ -36,8 +36,8 @@ impl System {
 
     /// Retrieves listener 3D attributes.
     pub fn get_listener_attributes(&self, listener: c_int) -> Result<(Attributes3D, Vector)> {
-        let mut attributes = MaybeUninit::uninit();
-        let mut attenuation_position = MaybeUninit::uninit();
+        let mut attributes = MaybeUninit::zeroed();
+        let mut attenuation_position = MaybeUninit::zeroed();
 
         unsafe {
             FMOD_Studio_System_GetListenerAttributes(
@@ -48,7 +48,6 @@ impl System {
             )
             .to_result()?;
 
-            // TODO: check safety
             Ok((
                 attributes.assume_init().into(),
                 attenuation_position.assume_init().into(),

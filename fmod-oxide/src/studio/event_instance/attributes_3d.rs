@@ -22,7 +22,7 @@ impl EventInstance {
     pub fn set_3d_attributes(&self, attributes: Attributes3D) -> Result<()> {
         let mut attributes = attributes.into();
         unsafe {
-            // FIXME this is not supposed to take an &mut
+            // FIXME is this supposed to take an &mut
             FMOD_Studio_EventInstance_Set3DAttributes(self.inner, &mut attributes).to_result()
         }
     }

@@ -25,7 +25,6 @@ impl EventDescription {
             )
             .to_result()?;
 
-            // FIXME lifetimes are incorrect and MUST be relaxed from 'static
             let description = ParameterDescription::from_ffi(description.assume_init());
             Ok(description)
         }
@@ -42,7 +41,6 @@ impl EventDescription {
             )
             .to_result()?;
 
-            // FIXME lifetimes are incorrect and MUST be relaxed from 'static
             let description = ParameterDescription::from_ffi(description.assume_init());
             Ok(description)
         }
@@ -63,7 +61,6 @@ impl EventDescription {
             )
             .to_result()?;
 
-            // FIXME lifetimes are incorrect and MUST be relaxed from 'static
             let description = ParameterDescription::from_ffi(description.assume_init());
             Ok(description)
         }

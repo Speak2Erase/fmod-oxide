@@ -38,8 +38,19 @@ impl System {
     /// # Safety
     ///
     /// [`System::release`] is not thread-safe. Do not call this function simultaneously from multiple threads at once.
+    #[cfg_attr(
+        feature = "userdata-abstraction",
+        doc = "\n#### Note: This function will drop any associated userdata who's owner is no longer valid."
+    )]
     pub unsafe fn release(&self) -> Result<()> {
-        unsafe { FMOD_System_Release(self.inner).to_result() }
+        unsafe {
+            FMOD_System_Release(self.inner).to_result()?;
+        }
+
+        #[cfg(feature = "userdata-abstraction")]
+        crate::userdata::cleanup_userdata();
+
+        Ok(())
     }
 
     /// Updates the FMOD system.

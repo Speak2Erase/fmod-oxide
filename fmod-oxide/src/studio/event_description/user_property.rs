@@ -22,7 +22,6 @@ impl EventDescription {
             )
             .to_result()?;
 
-            // FIXME wrong lifetimes + wildly unsafe
             let property = UserProperty::from_ffi(property.assume_init());
             Ok(property)
         }
@@ -41,7 +40,6 @@ impl EventDescription {
             )
             .to_result()?;
 
-            // FIXME wrong lifetimes + wildly unsafe
             let property = UserProperty::from_ffi(property.assume_init());
             Ok(property)
         }

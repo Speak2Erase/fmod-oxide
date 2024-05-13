@@ -99,7 +99,6 @@ impl System {
             FMOD_Studio_System_GetAdvancedSettings(self.inner, advanced_settings.as_mut_ptr())
                 .to_result()?;
 
-            // FIXME advancedsettings here is a 'static. this is probably invalid!
             let advanced_settings = AdvancedSettings::from_ffi(advanced_settings.assume_init());
 
             Ok(advanced_settings)

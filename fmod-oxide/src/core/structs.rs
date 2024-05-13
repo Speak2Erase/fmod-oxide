@@ -363,7 +363,6 @@ pub enum TagData {
     Utf8String(String),
     Utf16StringBE(String),
     Utf16String(String),
-    // TODO other string types
 }
 
 impl Tag {
