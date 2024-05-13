@@ -98,18 +98,10 @@ impl EventInstanceCallback for Callback {
             .unwrap();
         let mut entries = callback_info.entries.lock().unwrap();
 
-        unsafe {
-            let mut name_buf = [0u8; 256];
-            FMOD_Sound_GetName(sound.into(), &mut name_buf as *mut u8 as *mut i8, 256)
-                .to_result()?;
-            let name = std::ffi::CStr::from_bytes_with_nul_unchecked(&name_buf).to_string_lossy();
+        let name = sound.get_name()?;
+        let length = sound.get_length(fmod::TimeUnit::MS)?;
 
-            let mut length = 0;
-            FMOD_Sound_GetLength(sound.into(), &mut length, fmod_sys::FMOD_TIMEUNIT_MS)
-                .to_result()?;
-
-            entries.push(format!("Sound '{name}' (length {length:.3}) stopped",));
-        }
+        entries.push(format!("Sound '{name}' (length {length:.3}) stopped",));
 
         Ok(())
     }

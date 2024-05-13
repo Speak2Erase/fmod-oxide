@@ -6,7 +6,7 @@
 
 use fmod_sys::*;
 use lanyard::Utf8CStr;
-use std::ffi::c_int;
+use std::ffi::{c_char, c_int};
 
 use crate::{Channel, ChannelGroup, Dsp, DspType, Mode, Reverb3D, Sound, SoundGroup, System};
 
@@ -40,13 +40,12 @@ impl System {
     ///
     /// With [`SoundMode::OPEN_MEMORY_POINT`], only PCM formats and compressed formats using [`SoundMode::CREATE_COMPRESSED_SAMPLE`] are supported.
     // FIXME: SAFE SOUNDINFO!!!!!!!
-    pub fn create_sound(
+    pub unsafe fn create_sound(
         &self,
-        name_or_data: Option<&[u8]>,
+        name_or_data: *const c_char,
         mode: Mode,
         ex_info: Option<&mut FMOD_CREATESOUNDEXINFO>,
     ) -> Result<Sound> {
-        let name_or_data = name_or_data.map_or(std::ptr::null(), <[u8]>::as_ptr).cast();
         let ex_info = ex_info.map_or(std::ptr::null_mut(), std::ptr::from_mut);
         let mut sound = std::ptr::null_mut();
         unsafe {

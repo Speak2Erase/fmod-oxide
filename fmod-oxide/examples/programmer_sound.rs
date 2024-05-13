@@ -38,32 +38,21 @@ impl EventInstanceCallback for Callback {
             .unwrap();
         let context = context.lock().unwrap();
 
-        unsafe {
-            let mut info = std::mem::MaybeUninit::uninit();
-            fmod::ffi::FMOD_Studio_System_GetSoundInfo(
-                context.studio_system.into(),
-                context.dialogue_string.as_ptr(),
-                info.as_mut_ptr(),
-            )
-            .to_result()?;
-            let mut info = info.assume_init();
-
-            let mut sound = std::ptr::null_mut();
-            fmod::ffi::FMOD_System_CreateSound(
-                context.core_system.into(),
-                info.name_or_data,
-                fmod::ffi::FMOD_LOOP_NORMAL
-                    | fmod::ffi::FMOD_CREATECOMPRESSEDSAMPLE
-                    | fmod::ffi::FMOD_NONBLOCKING
-                    | info.mode,
-                &mut info.exinfo,
-                &mut sound,
-            )
-            .to_result()?;
-
-            *sound_props.sound = sound.into();
-            *sound_props.subsound_index = info.subsoundindex;
+        let mut sound_info = context
+            .studio_system
+            .get_sound_info(context.dialogue_string)?;
+        let sound = unsafe {
+            context.core_system.create_sound(
+                sound_info.name_or_data,
+                fmod::Mode::LOOP_NORMAL
+                    | fmod::Mode::CREATE_COMPRESSED_SAMPLE
+                    | fmod::Mode::NONBLOCKING,
+                Some(&mut sound_info.ex_info),
+            )?
         };
+
+        *sound_props.sound = sound;
+        *sound_props.subsound_index = sound_info.subsound_index;
 
         Ok(())
     }

@@ -7,7 +7,7 @@
 use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
 use num_enum::UnsafeFromPrimitive;
-use std::ffi::{c_float, c_int, c_uint};
+use std::ffi::{c_char, c_float, c_int, c_uint};
 
 use super::{InstanceType, ParameterFlags, ParameterKind, UserPropertyKind};
 use crate::{
@@ -332,7 +332,7 @@ impl From<CpuUsage> for FMOD_STUDIO_CPU_USAGE {
 
 #[derive(Debug)]
 pub struct SoundInfo {
-    pub name_or_data: Utf8CString,
+    pub name_or_data: *const c_char,
     pub mode: Mode, // FIXME ffi types
     pub ex_info: FMOD_CREATESOUNDEXINFO,
     pub subsound_index: c_int,
@@ -347,13 +347,11 @@ impl SoundInfo {
     ///
     /// See [`Utf8CStr::from_ptr_unchecked`] for more information.
     pub unsafe fn from_ffi(value: FMOD_STUDIO_SOUND_INFO) -> Self {
-        unsafe {
-            SoundInfo {
-                name_or_data: Utf8CStr::from_ptr_unchecked(value.name_or_data).to_cstring(),
-                mode: value.mode.into(),
-                ex_info: value.exinfo,
-                subsound_index: value.subsoundindex,
-            }
+        SoundInfo {
+            name_or_data: value.name_or_data,
+            mode: value.mode.into(),
+            ex_info: value.exinfo,
+            subsound_index: value.subsoundindex,
         }
     }
 }
@@ -361,7 +359,7 @@ impl SoundInfo {
 impl From<&SoundInfo> for FMOD_STUDIO_SOUND_INFO {
     fn from(value: &SoundInfo) -> Self {
         FMOD_STUDIO_SOUND_INFO {
-            name_or_data: value.name_or_data.as_ptr(),
+            name_or_data: value.name_or_data,
             mode: value.mode.into(),
             exinfo: value.ex_info,
             subsoundindex: value.subsound_index,
