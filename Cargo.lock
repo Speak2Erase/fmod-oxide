@@ -126,6 +126,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fmod-examples"
+version = "1.0.0"
+dependencies = [
+ "crossterm",
+ "fmod-oxide",
+]
+
+[[package]]
 name = "fmod-oxide"
 version = "2.2.0"
 dependencies = [
@@ -141,7 +149,6 @@ dependencies = [
 name = "fmod-studio-examples"
 version = "1.0.0"
 dependencies = [
- "bitflags",
  "crossterm",
  "fmod-oxide",
 ]

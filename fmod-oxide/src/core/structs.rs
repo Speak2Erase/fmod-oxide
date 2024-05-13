@@ -360,6 +360,7 @@ pub enum TagData {
     Binary(Vec<u8>),
     Integer(i64),
     Float(f64),
+    String(String),
     Utf8String(String),
     Utf16StringBE(String),
     Utf16String(String),
@@ -398,11 +399,16 @@ impl Tag {
                     8 => TagData::Float(*value.data.cast::<f64>()),
                     _ => panic!("unrecognized float data len"),
                 },
+                FMOD_TAGDATATYPE_STRING => {
+                    let ascii =
+                        std::slice::from_raw_parts(value.data.cast(), value.datalen as usize);
+                    let string = String::from_utf8_lossy(ascii).into_owned();
+                    TagData::String(string)
+                }
                 FMOD_TAGDATATYPE_STRING_UTF8 => {
                     let utf8 =
-                        std::slice::from_raw_parts(value.data.cast(), value.datalen as usize)
-                            .to_vec();
-                    let string = String::from_utf8_unchecked(utf8);
+                        std::slice::from_raw_parts(value.data.cast(), value.datalen as usize);
+                    let string = String::from_utf8_lossy(utf8).into_owned();
                     TagData::Utf8String(string)
                 }
                 // depending on the architecture rust will optimize this to a no-op

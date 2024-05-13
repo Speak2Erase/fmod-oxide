@@ -1,9 +1,9 @@
 [package]
-name = "fmod-studio-examples"
+name = "fmod-examples"
 version = "1.0.0"
 edition = "2021"
-publish = false
+publish = true
 
 [dependencies]
-crossterm = "0.27.0"
 fmod-oxide = { version = "2.2.0", path = "../fmod-oxide/" }
+crossterm = "0.27.0"
