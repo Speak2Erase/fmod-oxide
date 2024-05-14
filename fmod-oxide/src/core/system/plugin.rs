@@ -8,7 +8,7 @@ use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
 use std::ffi::{c_int, c_uint};
 
-use crate::{get_string, PluginType, System};
+use crate::{get_string, Dsp, PluginType, System};
 
 impl System {
     /// Specify a base search path for plugins so they can be placed somewhere else than the directory of the main executable.
@@ -27,8 +27,11 @@ impl System {
     ///  - Linux / Android: .so
     ///  - Macintosh: .dylib
     ///  - PS4: .prx
-    // FIXME do we mark this as unsafe? it is loading arbitrary code
-    pub fn load_plugin(&self, filename: &Utf8CStr, priority: c_uint) -> Result<c_uint> {
+    ///
+    /// # Safety
+    ///
+    /// THIS CALLS INTO NON-RUST CODE! There is no guarantee that the plugin is safe to load, use, or unload.
+    pub unsafe fn load_plugin(&self, filename: &Utf8CStr, priority: c_uint) -> Result<c_uint> {
         let mut handle = 0;
         unsafe {
             FMOD_System_LoadPlugin(self.inner, filename.as_ptr(), &mut handle, priority)
@@ -127,8 +130,124 @@ impl System {
         Ok(handle)
     }
 
-    // TODO create dsp stuff
-    // TODO register codec
-    // TODO register dsp
-    // TODO register output
+    /// Create a DSP object given a plugin handle.
+    ///
+    /// A DSP object is a module that can be inserted into the mixing graph to allow sound filtering or sound generation.
+    /// See the DSP architecture guide for more information.
+    ///
+    /// A handle can come from a newly loaded plugin with System::loadPlugin or an existing plugin with System::getPluginHandle.
+    ///
+    /// DSPs must be attached to the DSP graph before they become active, either via ChannelControl::addDSP or DSP::addInput.
+    pub fn create_dsp_by_plugin(&self, handle: c_uint) -> Result<Dsp> {
+        let mut dsp = std::ptr::null_mut();
+        unsafe {
+            FMOD_System_CreateDSPByPlugin(self.inner, handle, &mut dsp).to_result()?;
+        }
+        Ok(dsp.into())
+    }
+
+    /// Retrieve the description structure for a pre-existing DSP plugin.
+    // this is safe, but dereferencing the pointer is not
+    pub fn get_dsp_info_by_plugin(&self, handle: c_uint) -> Result<*const FMOD_DSP_DESCRIPTION> {
+        let mut dsp_description = std::ptr::null();
+        unsafe {
+            FMOD_System_GetDSPInfoByPlugin(self.inner, handle, &mut dsp_description).to_result()?;
+        }
+        Ok(dsp_description)
+    }
+
+    /// Register a Codec plugin description structure for later use.
+    ///
+    /// To create an instances of this plugin use System::createSound and System::createStream.
+    ///
+    /// When opening a file each Codec tests whether it can support the file format in priority order.
+    /// The priority for each FMOD_SOUND_TYPE are as follows:
+    /// - FMOD_SOUND_TYPE_FSB : 250
+    /// - FMOD_SOUND_TYPE_XMA : 250
+    /// - FMOD_SOUND_TYPE_AT9 : 250
+    /// - FMOD_SOUND_TYPE_VORBIS : 250
+    /// - FMOD_SOUND_TYPE_OPUS : 250
+    /// - FMOD_SOUND_TYPE_FADPCM : 250
+    /// - FMOD_SOUND_TYPE_WAV : 600
+    /// - FMOD_SOUND_TYPE_OGGVORBIS : 800
+    /// - FMOD_SOUND_TYPE_AIFF : 1000
+    /// - FMOD_SOUND_TYPE_FLAC : 1100
+    /// - FMOD_SOUND_TYPE_MOD : 1200
+    /// - FMOD_SOUND_TYPE_S3M : 1300
+    /// - FMOD_SOUND_TYPE_XM : 1400
+    /// - FMOD_SOUND_TYPE_IT : 1500
+    /// - FMOD_SOUND_TYPE_MIDI : 1600
+    /// - FMOD_SOUND_TYPE_DLS : 1700
+    /// - FMOD_SOUND_TYPE_ASF : 1900
+    /// - FMOD_SOUND_TYPE_AUDIOQUEUE : 2200
+    /// - FMOD_SOUND_TYPE_MEDIACODEC : 2250
+    /// - FMOD_SOUND_TYPE_MPEG : 2400
+    /// - FMOD_SOUND_TYPE_PLAYLIST : 2450
+    /// - FMOD_SOUND_TYPE_RAW : 2500
+    /// - FMOD_SOUND_TYPE_USER : 2600
+    /// - FMOD_SOUND_TYPE_MEDIA_FOUNDATION : 2600
+    ///
+    /// XMA, AT9, Vorbis, Opus and FADPCM are supported through the FSB format, and therefore have the same priority as FSB.
+    ///
+    /// Media Foundation is supported through the User codec, and therefore has the same priority as User.
+    ///
+    /// Raw and User are only accesible if FMOD_OPENRAW or FMOD_OPENUSER is specified as the mode in System::createSound.
+    ///
+    /// # Safety
+    ///
+    /// This function provides no gaurdrails or safe API for registering a codec.
+    /// It can call into non-rust external code.
+    /// Codec descriptions are intended to be retrieved from a plugin's C API, so it's not feasible to provide a safe API for this function.
+    pub unsafe fn register_codec(
+        &self,
+        description: *mut FMOD_CODEC_DESCRIPTION,
+        priority: c_uint,
+    ) -> Result<c_uint> {
+        let mut handle = 0;
+        unsafe {
+            FMOD_System_RegisterCodec(self.inner, description, &mut handle, priority)
+                .to_result()?;
+        }
+        Ok(handle)
+    }
+
+    /// Register a DSP plugin description structure for later use.
+    ///
+    /// To create an instances of this plugin use System::createDSPByPlugin.
+    ///
+    /// # Safety
+    ///
+    /// This function provides no gaurdrails or safe API for registering a plugin.
+    /// It can call into non-rust external code.
+    /// Dsp descriptions are intended to be retrieved from a plugin's C API, so it's not feasible to provide a safe API for this function.
+    pub unsafe fn register_plugin(
+        &self,
+        dsp_description: *mut FMOD_DSP_DESCRIPTION,
+    ) -> Result<c_uint> {
+        let mut handle = 0;
+        unsafe {
+            FMOD_System_RegisterDSP(self.inner, dsp_description, &mut handle).to_result()?;
+        }
+        Ok(handle)
+    }
+
+    /// Register an Output plugin description structure for later use.
+    ///
+    /// To select this plugin for output use System::setOutputByPlugin.
+    ///
+    /// # Safety
+    ///
+    /// This function provides no gaurdrails or safe API for registering an output.
+    /// It can call into non-rust external code.
+    /// Output descriptions are intended to be retrieved from a plugin's C API, so it's not feasible to provide a safe API for this function.
+    pub unsafe fn register_output(
+        &self,
+        description: *mut FMOD_OUTPUT_DESCRIPTION,
+    ) -> Result<c_uint> {
+        let mut handle = 0;
+        unsafe {
+            FMOD_System_RegisterOutput(self.inner, description, &mut handle).to_result()?;
+        }
+        Ok(handle)
+    }
 }

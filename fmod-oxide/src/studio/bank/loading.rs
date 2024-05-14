@@ -42,8 +42,9 @@ impl Bank {
     /// If [`Bank::load_sample_data`] has not been called for the bank then this function will return [`LoadingState::Unloaded`] even though sample data may have been loaded by other API calls.
     pub fn get_sample_loading_state(&self) -> Result<LoadingState> {
         let mut loading_state = 0;
-        let error =
-            unsafe { FMOD_Studio_Bank_GetLoadingState(self.inner, &mut loading_state).to_error() };
+        let error = unsafe {
+            FMOD_Studio_Bank_GetSampleLoadingState(self.inner, &mut loading_state).to_error()
+        };
         LoadingState::try_from_ffi(loading_state, error)
     }
 

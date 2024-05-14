@@ -38,11 +38,11 @@
 - [x] FMOD_System_GetPluginInfo
 - [x] FMOD_System_SetOutputByPlugin
 - [x] FMOD_System_GetOutputByPlugin
-- [ ] FMOD_System_CreateDSPByPlugin
-- [ ] FMOD_System_GetDSPInfoByPlugin
-- [ ] FMOD_System_RegisterCodec
-- [ ] FMOD_System_RegisterDSP
-- [ ] FMOD_System_RegisterOutput
+- [x] FMOD_System_CreateDSPByPlugin
+- [x] FMOD_System_GetDSPInfoByPlugin
+- [x] FMOD_System_RegisterCodec
+- [x] FMOD_System_RegisterDSP
+- [x] FMOD_System_RegisterOutput
 - [x] FMOD_System_Init
 - [x] FMOD_System_Close
 - [x] FMOD_System_Update
@@ -76,7 +76,7 @@
 - [x] FMOD_System_PlaySound
 - [x] FMOD_System_PlayDSP
 - [x] FMOD_System_GetChannel
-- [ ] FMOD_System_GetDSPInfoByType
+- [x] FMOD_System_GetDSPInfoByType
 - [x] FMOD_System_GetMasterChannelGroup
 - [x] FMOD_System_GetMasterSoundGroup
 - [x] FMOD_System_AttachChannelGroupToPort
@@ -86,7 +86,7 @@
 - [x] FMOD_System_LockDSP
 - [x] FMOD_System_UnlockDSP
 - [x] FMOD_System_GetRecordNumDrivers
-- [ ] FMOD_System_GetRecordDriverInfo
+- [x] FMOD_System_GetRecordDriverInfo
 - [x] FMOD_System_GetRecordPosition
 - [x] FMOD_System_RecordStart
 - [x] FMOD_System_RecordStop
@@ -378,8 +378,8 @@
 - [x] FMOD_Studio_System_LoadBankFile
 - [x] FMOD_Studio_System_LoadBankMemory
 - [ ] FMOD_Studio_System_LoadBankCustom
-- [ ] FMOD_Studio_System_RegisterPlugin
-- [ ] FMOD_Studio_System_UnregisterPlugin
+- [x] FMOD_Studio_System_RegisterPlugin
+- [x] FMOD_Studio_System_UnregisterPlugin
 - [x] FMOD_Studio_System_UnloadAll
 - [x] FMOD_Studio_System_FlushCommands
 - [x] FMOD_Studio_System_FlushSampleLoading
@@ -501,7 +501,7 @@
 - [x] FMOD_Studio_Bank_LoadSampleData
 - [x] FMOD_Studio_Bank_UnloadSampleData
 - [x] FMOD_Studio_Bank_GetLoadingState
-- [ ] FMOD_Studio_Bank_GetSampleLoadingState
+- [x] FMOD_Studio_Bank_GetSampleLoadingState
 - [x] FMOD_Studio_Bank_GetStringCount
 - [x] FMOD_Studio_Bank_GetStringInfo
 - [x] FMOD_Studio_Bank_GetEventCount

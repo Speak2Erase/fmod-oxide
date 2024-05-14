@@ -4,11 +4,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::ffi::{c_int, c_uint};
+use std::{
+    ffi::{c_int, c_uint},
+    mem::MaybeUninit,
+};
 
 use fmod_sys::*;
+use lanyard::Utf8CString;
 
-use crate::{Sound, System};
+use crate::{get_string, DriverState, Guid, Sound, SpeakerMode, System};
 
 impl System {
     /// Retrieves the number of recording devices available for this output mode.
@@ -23,7 +27,43 @@ impl System {
         Ok((drivers, connected))
     }
 
-    // TODO get recording driver info
+    /// Retrieves identification information about an audio device specified by its index, and specific to the output mode.
+    pub fn get_record_driver_info(
+        &self,
+        id: c_int,
+    ) -> Result<(Utf8CString, Guid, c_int, SpeakerMode, c_int, DriverState)> {
+        let mut guid = MaybeUninit::zeroed();
+        let mut system_rate = 0;
+        let mut speaker_mode = 0;
+        let mut speaker_mode_channels = 0;
+        let mut state = 0;
+        let name = get_string(|name| unsafe {
+            FMOD_System_GetRecordDriverInfo(
+                self.inner,
+                id,
+                name.as_mut_ptr().cast(),
+                name.len() as c_int,
+                guid.as_mut_ptr(),
+                &mut system_rate,
+                &mut speaker_mode,
+                &mut speaker_mode_channels,
+                &mut state,
+            )
+        })?;
+        unsafe {
+            let guid = guid.assume_init().into();
+            let speaker_mode = speaker_mode.try_into()?;
+            let state = state.into();
+            Ok((
+                name,
+                guid,
+                system_rate,
+                speaker_mode,
+                speaker_mode_channels,
+                state,
+            ))
+        }
+    }
 
     /// Retrieves the current recording position of the record buffer in PCM samples.
     ///

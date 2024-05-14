@@ -270,7 +270,17 @@ impl System {
         Ok(channel.into())
     }
 
-    // TODO dsp info
+    /// Retrieve the description structure for a built in DSP plugin.
+    ///
+    /// FMOD_DSP_TYPE_MIXER not supported.
+    pub fn get_dsp_info_by_type(&self, dsp_type: DspType) -> Result<*const FMOD_DSP_DESCRIPTION> {
+        let mut description = std::ptr::null();
+        unsafe {
+            FMOD_System_GetDSPInfoByType(self.inner, dsp_type.into(), &mut description)
+                .to_result()?;
+        }
+        Ok(description)
+    }
 
     /// Retrieves the master [`ChannelGroup`] that all sounds ultimately route to.
     ///

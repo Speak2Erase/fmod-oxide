@@ -172,3 +172,23 @@ impl From<ChannelMask> for FMOD_CHANNELMASK {
         value.bits()
     }
 }
+
+bitflags::bitflags! {
+  #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+  pub struct DriverState: FMOD_DRIVER_STATE {
+    const CONNECTED = FMOD_DRIVER_STATE_CONNECTED;
+    const DEFAULT   = FMOD_DRIVER_STATE_DEFAULT;
+  }
+}
+
+impl From<FMOD_DRIVER_STATE> for DriverState {
+    fn from(value: FMOD_DRIVER_STATE) -> Self {
+        DriverState::from_bits_truncate(value)
+    }
+}
+
+impl From<DriverState> for FMOD_DRIVER_STATE {
+    fn from(value: DriverState) -> Self {
+        value.bits()
+    }
+}
