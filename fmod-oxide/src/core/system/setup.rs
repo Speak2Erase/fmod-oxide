@@ -7,7 +7,18 @@
 use fmod_sys::*;
 use std::ffi::{c_float, c_int, c_uint};
 
-use crate::{Speaker, SpeakerMode, System, TimeUnit};
+use crate::{ChannelControl, Speaker, SpeakerMode, System, TimeUnit};
+
+pub trait RolloffCallback {
+    fn rolloff(channel_control: ChannelControl, distance: c_float) -> c_float;
+}
+unsafe extern "C" fn rolloff_callback_impl<C: RolloffCallback>(
+    channel_control: *mut FMOD_CHANNELCONTROL,
+    distance: c_float,
+) -> c_float {
+    let channel_control = channel_control.into();
+    C::rolloff(channel_control, distance)
+}
 
 impl System {
     /// Retrieves the maximum number of software mixed Channels possible.
@@ -230,5 +241,18 @@ impl System {
         Ok(count)
     }
 
-    // TODO rolloff callback
+    /// Sets a callback to allow custom calculation of distance attenuation.
+    ///
+    /// This function overrides FMOD_3D_INVERSEROLLOFF, FMOD_3D_LINEARROLLOFF, FMOD_3D_LINEARSQUAREROLLOFF, FMOD_3D_INVERSETAPEREDROLLOFF and FMOD_3D_CUSTOMROLLOFF.
+    pub fn set_3d_rolloff_callback<C: RolloffCallback>(&self) -> Result<()> {
+        unsafe {
+            FMOD_System_Set3DRolloffCallback(self.inner, Some(rolloff_callback_impl::<C>))
+                .to_result()
+        }
+    }
+
+    /// Unset the 3d rolloff callback, returning control of distance attenuation to FMOD.
+    pub fn unset_3d_rolloff_callback(&self) -> Result<()> {
+        unsafe { FMOD_System_Set3DRolloffCallback(self.inner, None).to_result() }
+    }
 }

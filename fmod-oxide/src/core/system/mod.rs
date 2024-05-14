@@ -20,6 +20,7 @@ mod recording;
 mod runtime_control;
 mod setup;
 pub use builder::SystemBuilder;
+pub use setup::RolloffCallback;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)] // so we can transmute between types
