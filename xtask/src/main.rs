@@ -1,3 +1,5 @@
+#![warn(rust_2018_idioms)]
+
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -32,6 +34,7 @@ fn coverage(core_include_dir: PathBuf, studio_include_dir: PathBuf) -> color_eyr
         .parse()?;
     let entities = translation_unit.get_entity().get_children();
     let mut c_functions: IndexMap<String, bool> = clang::sonar::find_functions(entities)
+        .filter(|f| f.entity.get_linkage().unwrap() != clang::Linkage::Internal)
         .map(|f| (f.name, false))
         .collect();
 

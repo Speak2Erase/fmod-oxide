@@ -259,7 +259,6 @@
 - [x] FMOD_Reverb3D_GetActive
 - [x] FMOD_Reverb3D_SetUserData
 - [x] FMOD_Reverb3D_GetUserData
-- [ ] FMOD_ErrorString
 - [x] FMOD_Studio_ParseID
 - [x] FMOD_Studio_System_Create
 - [x] FMOD_Studio_System_IsValid
