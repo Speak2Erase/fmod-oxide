@@ -10,7 +10,7 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 pub enum Error {
     Fmod(FMOD_RESULT), // FIXME make FMOD_RESULT be a NonZero
     NulError(std::ffi::NulError),
-    EnumFromPrivitive { name: &'static str, primitive: u32 },
+    EnumFromPrivitive { name: &'static str, primitive: i64 },
 }
 
 impl std::fmt::Debug for Error {
@@ -61,7 +61,7 @@ impl From<std::ffi::NulError> for Error {
 impl<T> From<num_enum::TryFromPrimitiveError<T>> for Error
 where
     T: num_enum::TryFromPrimitive,
-    T::Primitive: Into<u32>,
+    T::Primitive: Into<i64>,
 {
     fn from(value: num_enum::TryFromPrimitiveError<T>) -> Self {
         Self::EnumFromPrivitive {

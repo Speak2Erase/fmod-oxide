@@ -1,9 +1,39 @@
 use std::path::PathBuf;
 
-fn main() {
-    let fmod_dir = std::env::var_os("FMOD_SYS_FMOD_DIRECTORY")
+#[cfg(windows)]
+fn find_fmod_directory() -> PathBuf {
+    for drive in ["C", "D"] {
+        let test_path = PathBuf::from(format!(
+            "{drive}:/Program Files (x86)/FMOD SoundSystem/FMOD Studio API Windows"
+        ));
+        if test_path.exists() {
+            return test_path;
+        }
+    }
+
+    for path in ["./FMOD Studio API Windows", "./FMOD SoundSystem"] {
+        let path = PathBuf::from(path)
+            .canonicalize()
+            .expect("failed to canonicalize fmod path");
+        if path.exists() {
+            return path;
+        }
+    }
+
+    std::env::var_os("FMOD_SYS_FMOD_DIRECTORY")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fmod"));
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fmod"))
+}
+
+#[cfg(not(windows))]
+fn find_fmod_directory() -> PathBuf {
+    std::env::var_os("FMOD_SYS_FMOD_DIRECTORY")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fmod"))
+}
+
+fn main() {
+    let fmod_dir = find_fmod_directory();
     let api_dir = fmod_dir.join("api");
 
     assert!(fmod_dir.exists(), "fmod directory not present");
@@ -25,8 +55,10 @@ fn main() {
 
     #[cfg(target_arch = "x86")]
     let target_arch = "x86";
-    #[cfg(target_arch = "x86_64")]
+    #[cfg(all(target_arch = "x86_64", not(windows)))]
     let target_arch = "x86_64";
+    #[cfg(all(target_arch = "x86_64", windows))]
+    let target_arch = "x64";
 
     let include_debug = cfg!(any(debug_assertions, feature = "force-debug"));
     let debug_char = if include_debug { "L" } else { "" };
@@ -38,6 +70,11 @@ fn main() {
     {
         println!("cargo:rustc-link-lib=fmod{debug_char}");
         println!("cargo:rustc-link-lib=fmodstudio{debug_char}");
+    }
+    #[cfg(target_os = "windows")]
+    {
+        println!("cargo:rustc-link-lib=fmod{debug_char}_vc");
+        println!("cargo:rustc-link-lib=fmodstudio{debug_char}_vc");
     }
 
     let bindings = bindgen.generate().expect("failed to generate bindings");
