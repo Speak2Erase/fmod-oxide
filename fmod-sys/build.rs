@@ -88,11 +88,23 @@ fn main() {
     println!("cargo:rerun-if-changed=\"src/channel_control.h\"");
 
     // wrapper does not use the stdlib
-    cc::Build::new()
+    let mut build = cc::Build::new();
+
+    build
         .cpp(true)
         .cpp_link_stdlib(None)
         .cpp_set_stdlib(None)
         .include(format!("{api_dir_display}/core/inc"))
-        .file("src/channel_control.cpp")
-        .compile("channel_control_wrapper");
+        .file("src/channel_control.cpp");
+    #[cfg(target_os = "windows")]
+    {
+        #[cfg(target_arch = "x86_64")]
+        let target = "x86_64-pc-windows-msvc";
+        #[cfg(target_arch = "x86")]
+        let target = "i686-pc-windows-msvc";
+        let tool = cc::windows_registry::find_tool(target, "cl.exe").expect("failed to find cl");
+        build.compiler(tool.path());
+    }
+
+    build.compile("channel_control_wrapper");
 }

@@ -7,7 +7,13 @@
 #define FMOD_CHANNEL_CONTROL_H
 
 #include <fmod.h>
+#ifndef _WIN32
 #include <stdbool.h>
+#else
+#ifndef __cplusplus
+typedef _Bool bool;
+#endif
+#endif
 
 // interface with the c++ fmod bindings that adds c function definitions of
 // ChannelControl functions

@@ -6,7 +6,13 @@
 
 #include "channel_control.h"
 #include <fmod.hpp>
+#ifndef _WIN32
 #include <stdbool.h>
+#else
+#ifndef __cplusplus
+typedef _Bool bool;
+#endif
+#endif
 
 using namespace FMOD;
 
