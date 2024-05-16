@@ -11,7 +11,7 @@ use lanyard::{Utf8CStr, Utf8CString};
 
 use crate::{get_string, Sound, TimeUnit};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct SyncPoint {
     pub(crate) inner: *mut FMOD_SYNCPOINT,

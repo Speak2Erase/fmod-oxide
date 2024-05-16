@@ -10,7 +10,7 @@ mod general;
 mod loading;
 mod lookups; // general lookups that are too small to be their own module
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Bank {
     pub(crate) inner: *mut FMOD_STUDIO_BANK,

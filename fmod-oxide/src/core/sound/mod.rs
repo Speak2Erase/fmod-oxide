@@ -14,7 +14,7 @@ mod music;
 mod relationship;
 mod synchronization;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Sound {
     pub(crate) inner: *mut FMOD_SOUND,

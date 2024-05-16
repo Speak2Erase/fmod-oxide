@@ -14,7 +14,7 @@ mod parameter;
 mod sample_data;
 mod user_property;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct EventDescription {
     pub(crate) inner: *mut FMOD_STUDIO_EVENTDESCRIPTION,

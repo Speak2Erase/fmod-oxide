@@ -12,7 +12,7 @@ use lanyard::Utf8CString;
 use crate::Guid;
 
 /// Represents a global mixer VCA.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Vca {
     pub(crate) inner: *mut FMOD_STUDIO_VCA,

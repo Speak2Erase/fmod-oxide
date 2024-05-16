@@ -10,7 +10,7 @@ mod general;
 mod group;
 mod sound;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct SoundGroup {
     pub(crate) inner: *mut FMOD_SOUNDGROUP,

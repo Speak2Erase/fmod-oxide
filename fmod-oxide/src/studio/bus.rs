@@ -16,7 +16,7 @@ use crate::{core::ChannelGroup, Guid};
 
 use super::{MemoryUsage, StopMode};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Bus {
     pub(crate) inner: *mut FMOD_STUDIO_BUS,

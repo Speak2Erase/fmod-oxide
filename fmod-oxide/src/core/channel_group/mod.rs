@@ -13,7 +13,7 @@ mod channel_management;
 mod general;
 mod group_management;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct ChannelGroup {
     pub(crate) inner: *mut FMOD_CHANNELGROUP,

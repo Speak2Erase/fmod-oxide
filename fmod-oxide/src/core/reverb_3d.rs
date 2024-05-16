@@ -13,7 +13,7 @@ use fmod_sys::*;
 
 use crate::{ReverbProperties, Vector};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Reverb3D {
     pub(crate) inner: *mut FMOD_REVERB3D,

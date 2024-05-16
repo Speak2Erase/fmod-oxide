@@ -16,7 +16,7 @@ mod playback_properties;
 pub(crate) use callback::event_callback_impl;
 pub use callback::EventInstanceCallback;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct EventInstance {
     pub(crate) inner: *mut FMOD_STUDIO_EVENTINSTANCE,

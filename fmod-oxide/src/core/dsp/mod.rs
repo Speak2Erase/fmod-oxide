@@ -13,7 +13,7 @@ mod metering;
 mod parameters;
 mod processing;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Dsp {
     pub(crate) inner: *mut FMOD_DSP,

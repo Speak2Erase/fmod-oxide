@@ -22,7 +22,7 @@ mod setup;
 pub use builder::SystemBuilder;
 pub use setup::RolloffCallback;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct System {
     pub(crate) inner: *mut FMOD_SYSTEM,

@@ -11,7 +11,7 @@ mod general;
 mod playback;
 mod query;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct CommandReplay {
     pub(crate) inner: *mut FMOD_STUDIO_COMMANDREPLAY,

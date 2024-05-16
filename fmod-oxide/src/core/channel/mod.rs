@@ -12,7 +12,7 @@ use crate::ChannelControl;
 mod information;
 mod playback_control;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Channel {
     pub(crate) inner: *mut FMOD_CHANNEL,

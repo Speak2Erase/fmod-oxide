@@ -26,7 +26,7 @@ pub use callback::SystemCallback;
 /// Initializing the FMOD Studio System object will also initialize the core System object.
 ///
 /// Created with [`SystemBuilder`], which handles initialization for you.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)] // TODO: should this logically be copy?
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)] // TODO: should this logically be copy?
 #[repr(transparent)] // so we can transmute between types
 pub struct System {
     pub(crate) inner: *mut FMOD_STUDIO_SYSTEM,

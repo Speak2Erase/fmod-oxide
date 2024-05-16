@@ -9,7 +9,7 @@ use fmod_sys::*;
 mod general;
 mod mix_properties;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct DspConnection {
     pub(crate) inner: *mut FMOD_DSPCONNECTION,
