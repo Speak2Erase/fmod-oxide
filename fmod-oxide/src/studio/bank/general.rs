@@ -5,6 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use fmod_sys::*;
+use lanyard::Utf8CString;
 use std::ffi::c_void;
 use std::mem::MaybeUninit;
 
@@ -25,7 +26,7 @@ impl Bank {
     }
 
     /// Retrieves the path.
-    pub fn get_path(&self) -> Result<String> {
+    pub fn get_path(&self) -> Result<Utf8CString> {
         let mut string_len = 0;
 
         // retrieve the length of the string.
@@ -60,7 +61,7 @@ impl Bank {
 
             // all public fmod apis return UTF-8 strings. this should be safe.
             // if i turn out to be wrong, perhaps we should add extra error types?
-            let path = String::from_utf8_unchecked(path);
+            let path = Utf8CString::from_utf8_with_nul_unchecked(path);
 
             Ok(path)
         }

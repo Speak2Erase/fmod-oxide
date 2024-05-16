@@ -7,6 +7,7 @@
 use std::{ffi::c_float, mem::MaybeUninit};
 
 use fmod_sys::*;
+use lanyard::Utf8CString;
 
 use crate::Guid;
 
@@ -71,7 +72,7 @@ impl Vca {
     ///
     /// The strings bank must be loaded prior to calling this function, otherwise [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned.
     // TODO: convert into possible macro for the sake of reusing code
-    pub fn get_path(&self) -> Result<String> {
+    pub fn get_path(&self) -> Result<Utf8CString> {
         let mut string_len = 0;
 
         // retrieve the length of the string.
@@ -106,7 +107,7 @@ impl Vca {
 
             // all public fmod apis return UTF-8 strings. this should be safe.
             // if i turn out to be wrong, perhaps we should add extra error types?
-            let path = String::from_utf8_unchecked(path);
+            let path = Utf8CString::from_utf8_with_nul_unchecked(path);
 
             Ok(path)
         }

@@ -5,7 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use fmod_sys::*;
-use lanyard::Utf8CStr;
+use lanyard::{Utf8CStr, Utf8CString};
 use std::{ffi::c_int, mem::MaybeUninit};
 
 use crate::studio::{EventDescription, ParameterDescription, ParameterID};
@@ -86,7 +86,7 @@ impl EventDescription {
         &self,
         name: &Utf8CStr,
         label_index: c_int,
-    ) -> Result<String> {
+    ) -> Result<Utf8CString> {
         let mut string_len = 0;
 
         // retrieve the length of the string.
@@ -129,14 +129,18 @@ impl EventDescription {
 
             // all public fmod apis return UTF-8 strings. this should be safe.
             // if i turn out to be wrong, perhaps we should add extra error types?
-            let path = String::from_utf8_unchecked(path);
+            let path = Utf8CString::from_utf8_with_nul_unchecked(path);
 
             Ok(path)
         }
     }
 
     /// Retrieves an event parameter label by ID.
-    pub fn get_parameter_label_by_id(&self, id: ParameterID, label_index: c_int) -> Result<String> {
+    pub fn get_parameter_label_by_id(
+        &self,
+        id: ParameterID,
+        label_index: c_int,
+    ) -> Result<Utf8CString> {
         let mut string_len = 0;
 
         // retrieve the length of the string.
@@ -179,7 +183,7 @@ impl EventDescription {
 
             // all public fmod apis return UTF-8 strings. this should be safe.
             // if i turn out to be wrong, perhaps we should add extra error types?
-            let path = String::from_utf8_unchecked(path);
+            let path = Utf8CString::from_utf8_with_nul_unchecked(path);
 
             Ok(path)
         }
@@ -188,7 +192,11 @@ impl EventDescription {
     /// Retrieves an event parameter label by index.
     ///
     /// May be used in combination with [`EventDescription::parameter_description_count`] to enumerate event parameters.
-    pub fn get_parameter_label_by_index(&self, index: c_int, label_index: c_int) -> Result<String> {
+    pub fn get_parameter_label_by_index(
+        &self,
+        index: c_int,
+        label_index: c_int,
+    ) -> Result<Utf8CString> {
         let mut string_len = 0;
 
         // retrieve the length of the string.
@@ -231,7 +239,7 @@ impl EventDescription {
 
             // all public fmod apis return UTF-8 strings. this should be safe.
             // if i turn out to be wrong, perhaps we should add extra error types?
-            let path = String::from_utf8_unchecked(path);
+            let path = Utf8CString::from_utf8_with_nul_unchecked(path);
 
             Ok(path)
         }

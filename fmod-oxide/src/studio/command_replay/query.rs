@@ -5,13 +5,16 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use fmod_sys::*;
-use lanyard::Utf8CStr;
+use lanyard::{Utf8CStr, Utf8CString};
 use std::{
     ffi::{c_float, c_int},
     mem::MaybeUninit,
 };
 
-use crate::studio::{CommandInfo, CommandReplay, System};
+use crate::{
+    get_string,
+    studio::{CommandInfo, CommandReplay, System},
+};
 
 impl CommandReplay {
     /// Sets a path substition that will be used when loading banks with this replay.
@@ -56,39 +59,17 @@ impl CommandReplay {
     }
 
     /// Retrieves the string representation of a command.
-    pub fn get_command_string(&self, index: c_int) -> Result<String> {
-        unsafe {
-            let mut buffer = vec![0; 32];
-
-            // run this once (best case) before we fall into the loop
-            let mut result = FMOD_Studio_CommandReplay_GetCommandString(
+    pub fn get_command_string(&self, index: c_int) -> Result<Utf8CString> {
+        let string = get_string(|buffer| unsafe {
+            FMOD_Studio_CommandReplay_GetCommandString(
                 self.inner,
                 index,
                 buffer.as_mut_ptr().cast::<i8>(),
                 buffer.len() as c_int,
-            );
+            )
+        })?;
 
-            // this function behaves differently to every other fmod function? strange
-            // we copy what the c# bindings do, loop until the string fits
-            while let FMOD_RESULT::FMOD_ERR_TRUNCATED = result {
-                buffer.resize(buffer.len() + 32, 0);
-                result = FMOD_Studio_CommandReplay_GetCommandString(
-                    self.inner,
-                    index,
-                    buffer.as_mut_ptr().cast::<i8>(),
-                    buffer.len() as c_int,
-                );
-            }
-            result.to_result()?;
-
-            // all public fmod apis return UTF-8 strings. this should be safe.
-            // if i turn out to be wrong, perhaps we should add extra error types?
-            let mut string = String::from_utf8_unchecked(buffer);
-            // shrink the string to avoid wasting memory
-            string.shrink_to_fit();
-
-            Ok(string)
-        }
+        Ok(string)
     }
 
     /// Retrieves the total playback time.

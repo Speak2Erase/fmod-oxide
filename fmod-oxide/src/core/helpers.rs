@@ -25,9 +25,10 @@ pub(crate) fn get_string(
         "fmod-oxide expected a null-terminated string but did not get one! THIS IS A VERY BAD BUG!",
     );
     // Resize to make sure we don't waste memory.
-    buffer.truncate(len);
+    // We add 1 to include the null terminator.
+    buffer.truncate(len + 1);
     buffer.shrink_to_fit();
-    let string = unsafe { Utf8CString::from_utf8_unchecked(buffer) };
+    let string = unsafe { Utf8CString::from_utf8_with_nul_unchecked(buffer) };
     Ok(string)
 }
 

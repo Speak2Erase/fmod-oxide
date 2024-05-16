@@ -356,6 +356,7 @@ pub struct Tag {
     pub updated: bool,
 }
 
+// FIXME: these strings are most likely null-terminated
 pub enum TagData {
     Binary(Vec<u8>),
     Integer(i64),

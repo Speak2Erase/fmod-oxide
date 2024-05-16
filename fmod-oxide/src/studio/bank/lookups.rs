@@ -9,6 +9,7 @@ use std::{ffi::c_int, mem::MaybeUninit};
 use crate::studio::{Bank, Bus, EventDescription, Vca};
 use crate::Guid;
 use fmod_sys::*;
+use lanyard::Utf8CString;
 
 impl Bank {
     /// Retrieves the number of buses in the bank.
@@ -99,8 +100,7 @@ impl Bank {
     /// Retrieves a string table entry.
     ///
     /// May be used in conjunction with [`Bank::string_count`] to enumerate the string table in a bank.
-
-    pub fn get_string_info(&self, index: c_int) -> Result<(Guid, String)> {
+    pub fn get_string_info(&self, index: c_int) -> Result<(Guid, Utf8CString)> {
         let mut string_len = 0;
 
         // retrieve the length of the string.
@@ -146,7 +146,7 @@ impl Bank {
             let guid = guid.assume_init().into();
             // all public fmod apis return UTF-8 strings. this should be safe.
             // if i turn out to be wrong, perhaps we should add extra error types?
-            let path = String::from_utf8_unchecked(path);
+            let path = Utf8CString::from_utf8_with_nul_unchecked(path);
 
             Ok((guid, path))
         }

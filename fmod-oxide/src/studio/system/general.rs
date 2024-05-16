@@ -5,7 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use fmod_sys::*;
-use lanyard::Utf8CStr;
+use lanyard::{Utf8CStr, Utf8CString};
 use std::mem::MaybeUninit;
 
 use crate::studio::System;
@@ -40,7 +40,7 @@ impl System {
     /// Retrieves the path for a bank, event, snapshot, bus or VCA.
     ///
     /// The strings bank must be loaded prior to calling this function, otherwise [`FMOD_RESULT::FMOD_ERR_EVENT_NOTFOUND`] is returned.
-    pub fn lookup_path(&self, id: Guid) -> Result<String> {
+    pub fn lookup_path(&self, id: Guid) -> Result<Utf8CString> {
         let mut string_len = 0;
 
         // retrieve the length of the string.
@@ -81,7 +81,7 @@ impl System {
 
             // all public fmod apis return UTF-8 strings. this should be safe.
             // if i turn out to be wrong, perhaps we should add extra error types?
-            let path = String::from_utf8_unchecked(path);
+            let path = Utf8CString::from_utf8_with_nul_unchecked(path);
 
             Ok(path)
         }
