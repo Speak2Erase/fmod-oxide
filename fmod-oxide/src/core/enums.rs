@@ -13,8 +13,8 @@ use fmod_sys::*;
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum SpeakerMode {
     Default = FMOD_SPEAKERMODE_DEFAULT,
     Raw = FMOD_SPEAKERMODE_RAW,
@@ -34,8 +34,8 @@ pub enum SpeakerMode {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum OutputType {
     AutoDetect = FMOD_OUTPUTTYPE_AUTODETECT,
     Unknown = FMOD_OUTPUTTYPE_UNKNOWN,
@@ -67,8 +67,8 @@ pub enum OutputType {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum ThreadType {
     Mixer = FMOD_THREAD_TYPE_MIXER,
     Feeder = FMOD_THREAD_TYPE_FEEDER,
@@ -133,8 +133,8 @@ pub enum Speaker {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum PluginType {
     Output = FMOD_PLUGINTYPE_OUTPUT,
     Codec = FMOD_PLUGINTYPE_CODEC,
@@ -148,8 +148,8 @@ pub enum PluginType {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum DspType {
     Unknown = FMOD_DSP_TYPE_UNKNOWN,
     Mixer = FMOD_DSP_TYPE_MIXER,
@@ -197,8 +197,8 @@ pub enum DspType {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum PortType {
     Music = FMOD_PORT_TYPE_MUSIC,
     CopyrightMusic = FMOD_PORT_TYPE_COPYRIGHT_MUSIC,
@@ -216,8 +216,8 @@ pub enum PortType {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum SoundGroupBehavior {
     Fail = FMOD_SOUNDGROUP_BEHAVIOR_FAIL,
     Mute = FMOD_SOUNDGROUP_BEHAVIOR_MUTE,
@@ -231,8 +231,8 @@ pub enum SoundGroupBehavior {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum DspConnectionType {
     Standard = FMOD_DSPCONNECTION_TYPE_STANDARD,
     Sidechain = FMOD_DSPCONNECTION_TYPE_SIDECHAIN,
@@ -260,8 +260,8 @@ pub enum DspParameterDataType {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum SoundType {
     Unknown = FMOD_SOUND_TYPE_UNKNOWN,
     AIFF = FMOD_SOUND_TYPE_AIFF,
@@ -297,8 +297,8 @@ pub enum SoundType {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum SoundFormat {
     None = FMOD_SOUND_FORMAT_NONE,
     PCM8 = FMOD_SOUND_FORMAT_PCM8,
@@ -316,8 +316,8 @@ pub enum SoundFormat {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum TagType {
     Unknown = FMOD_TAGTYPE_UNKNOWN,
     ID3V1 = FMOD_TAGTYPE_ID3V1,
@@ -334,8 +334,8 @@ pub enum TagType {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum OpenState {
     Ready = FMOD_OPENSTATE_READY,
     Loading = FMOD_OPENSTATE_LOADING,

@@ -10,8 +10,8 @@ use std::ffi::{c_float, c_int};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum LoadingState {
     Unloading = FMOD_STUDIO_LOADING_STATE_UNLOADING,
     Unloaded = FMOD_STUDIO_LOADING_STATE_UNLOADED,
@@ -45,8 +45,8 @@ impl LoadingState {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum StopMode {
     AllowFadeout = FMOD_STUDIO_STOP_ALLOWFADEOUT,
     Immediate = FMOD_STUDIO_STOP_IMMEDIATE,
@@ -59,8 +59,8 @@ pub enum StopMode {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum ParameterKind {
     GameControlled = FMOD_STUDIO_PARAMETER_GAME_CONTROLLED,
     AutomaticDistance = FMOD_STUDIO_PARAMETER_AUTOMATIC_DISTANCE,
@@ -89,8 +89,8 @@ pub enum UserPropertyKind {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum PlaybackState {
     Playing = FMOD_STUDIO_PLAYBACK_PLAYING,
     Sustaining = FMOD_STUDIO_PLAYBACK_SUSTAINING,
@@ -106,8 +106,8 @@ pub enum PlaybackState {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum EventProperty {
     ChannelPriority = FMOD_STUDIO_EVENT_PROPERTY_CHANNELPRIORITY,
     ScheduleDelay = FMOD_STUDIO_EVENT_PROPERTY_SCHEDULE_DELAY,
@@ -124,8 +124,8 @@ pub enum EventProperty {
     num_enum::UnsafeFromPrimitive
 )]
 // stupid enum repr hack
-#[cfg_attr(target_os = "windows", repr(i32))]
-#[cfg_attr(target_os = "linux", repr(u32))]
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
 pub enum InstanceType {
     None = FMOD_STUDIO_INSTANCETYPE_NONE,
     System = FMOD_STUDIO_INSTANCETYPE_SYSTEM,
