@@ -15,6 +15,7 @@ mod playback;
 mod scheduling;
 mod spatialization;
 mod volume;
+pub use callback::{ChannelControlCallback, ChannelControlType};
 
 // FMOD's C API provides two versions of functions for channels: one that takes a `*mut FMOD_CHANNEL` and one that takes a `*mut FMOD_CHANNELGROUP`.
 // The C++ API provides a base class `ChannelControl` that `Channel` and `ChannelGroup` inherits from.

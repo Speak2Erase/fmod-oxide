@@ -13,6 +13,7 @@ mod information;
 mod music;
 mod relationship;
 mod synchronization;
+pub use synchronization::SyncPoint;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
