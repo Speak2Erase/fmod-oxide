@@ -46,7 +46,7 @@ impl System {
                 &mut replay,
             )
             .to_result()?;
-            Ok(CommandReplay::from_ffi(replay))
+            Ok(CommandReplay::from(replay))
         }
     }
 }

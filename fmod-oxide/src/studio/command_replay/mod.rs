@@ -20,13 +20,9 @@ pub struct CommandReplay {
 unsafe impl Send for CommandReplay {}
 unsafe impl Sync for CommandReplay {}
 
-impl CommandReplay {
-    /// Create a System instance from its FFI equivalent.
-    ///
-    /// # Safety
-    /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_COMMANDREPLAY`] will not have the right userdata type.
-    pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_COMMANDREPLAY) -> Self {
-        CommandReplay { inner: value }
+impl From<*mut FMOD_STUDIO_COMMANDREPLAY> for CommandReplay {
+    fn from(inner: *mut FMOD_STUDIO_COMMANDREPLAY) -> Self {
+        Self { inner }
     }
 }
 

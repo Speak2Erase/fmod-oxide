@@ -24,23 +24,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Increase the file buffer size a little bit to account for Internet lag.
     system.set_stream_buffer_size(64 * 1024, fmod::TimeUnit::RawBytes)?;
 
-    let mut ex_info: fmod::ffi::FMOD_CREATESOUNDEXINFO = unsafe {
-        let ex_info = std::mem::MaybeUninit::zeroed();
-        ex_info.assume_init()
-    };
+    let builder = fmod::SoundBuilder::open_file(fmod::c!(
+        "http://live-radio01.mediahubaustralia.com/2TJW/mp3/"
+    ))
+    .with_mode(fmod::Mode::CREATE_SAMPLE | fmod::Mode::NONBLOCKING)
+    .with_file_buffer_size(1024 * 16);
 
-    // FMOD permits zero-initialization of FMOD_CREATESOUNDEXINFO.
-    ex_info.cbsize = std::mem::size_of::<fmod::ffi::FMOD_CREATESOUNDEXINFO>() as _;
-    // Increase the default file chunk size to handle seeking inside large playlist files that may be over 2kb.
-    ex_info.filebuffersize = 1024 * 16;
-
-    let mut sound = unsafe {
-        system.create_sound(
-            fmod::c!("http://live-radio01.mediahubaustralia.com/2TJW/mp3/").as_ptr(),
-            fmod::Mode::CREATE_STREAM | fmod::Mode::NONBLOCKING,
-            Some(&mut ex_info),
-        )?
-    };
+    let mut sound = system.create_sound(builder)?;
 
     // use alternate screen
     let mut stdout = std::io::stdout();
@@ -91,13 +81,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     sound.release()?;
 
                     let url = fmod::Utf8CString::new(text)?;
-                    sound = unsafe {
-                        system.create_sound(
-                            url.as_ptr(),
-                            fmod::Mode::CREATE_STREAM | fmod::Mode::NONBLOCKING,
-                            None,
-                        )?
-                    };
+                    let builder = fmod::SoundBuilder::open_file(&url)
+                        .with_mode(fmod::Mode::CREATE_SAMPLE | fmod::Mode::NONBLOCKING)
+                        .with_file_buffer_size(1024 * 16);
+
+                    sound = system.create_sound(builder)?;
                 }
             } else if matches!(tag.kind, fmod::TagType::Fmod) {
                 // When a song changes, the sample rate may also change, so compensate here.

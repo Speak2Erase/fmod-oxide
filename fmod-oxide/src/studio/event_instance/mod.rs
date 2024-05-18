@@ -25,13 +25,9 @@ pub struct EventInstance {
 unsafe impl Send for EventInstance {}
 unsafe impl Sync for EventInstance {}
 
-impl EventInstance {
-    /// Create a System instance from its FFI equivalent.
-    ///
-    /// # Safety
-    /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_EVENTINSTANCE`] will not have the right userdata type.
-    pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_EVENTINSTANCE) -> Self {
-        EventInstance { inner: value }
+impl From<*mut FMOD_STUDIO_EVENTINSTANCE> for EventInstance {
+    fn from(value: *mut FMOD_STUDIO_EVENTINSTANCE) -> Self {
+        Self { inner: value }
     }
 }
 

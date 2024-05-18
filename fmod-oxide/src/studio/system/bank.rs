@@ -38,7 +38,7 @@ impl System {
                 &mut bank,
             )
             .to_result()?;
-            Ok(Bank::from_ffi(bank))
+            Ok(Bank::from(bank))
         }
     }
 
@@ -71,7 +71,7 @@ impl System {
                 &mut bank,
             )
             .to_result()?;
-            Ok(Bank::from_ffi(bank))
+            Ok(Bank::from(bank))
         }
     }
 
@@ -112,7 +112,7 @@ impl System {
                 &mut bank,
             )
             .to_result()?;
-            Ok(Bank::from_ffi(bank))
+            Ok(Bank::from(bank))
         }
     }
 
@@ -130,7 +130,7 @@ impl System {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetBank(self.inner, path_or_id.as_ptr(), &mut bank).to_result()?;
-            Ok(Bank::from_ffi(bank))
+            Ok(Bank::from(bank))
         }
     }
 
@@ -139,7 +139,7 @@ impl System {
         let mut bank = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetBankByID(self.inner, &id.into(), &mut bank).to_result()?;
-            Ok(Bank::from_ffi(bank))
+            Ok(Bank::from(bank))
         }
     }
 

@@ -14,7 +14,7 @@ impl EventInstance {
         let mut description = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_EventInstance_GetDescription(self.inner, &mut description).to_result()?;
-            Ok(EventDescription::from_ffi(description))
+            Ok(EventDescription::from(description))
         }
     }
 

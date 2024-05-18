@@ -19,13 +19,9 @@ pub struct Bank {
 unsafe impl Send for Bank {}
 unsafe impl Sync for Bank {}
 
-impl Bank {
-    /// Create a System instance from its FFI equivalent.
-    ///
-    /// # Safety
-    /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_BANK`] will not have the right userdata type.
-    pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_BANK) -> Self {
-        Bank { inner: value }
+impl From<*mut FMOD_STUDIO_BANK> for Bank {
+    fn from(value: *mut FMOD_STUDIO_BANK) -> Self {
+        Self { inner: value }
     }
 }
 

@@ -50,7 +50,7 @@ impl System {
         let mut event = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetEvent(self.inner, path_or_id.as_ptr(), &mut event).to_result()?;
-            Ok(EventDescription::from_ffi(event))
+            Ok(EventDescription::from(event))
         }
     }
 
@@ -61,7 +61,7 @@ impl System {
         let mut event = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_System_GetEventByID(self.inner, &id.into(), &mut event).to_result()?;
-            Ok(EventDescription::from_ffi(event))
+            Ok(EventDescription::from(event))
         }
     }
 

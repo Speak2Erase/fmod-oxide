@@ -67,7 +67,7 @@ unsafe extern "C" fn callback_impl<C: SystemCallback>(
     userdata: *mut c_void,
 ) -> FMOD_RESULT {
     // FIXME handle panics
-    let system = unsafe { System::from_ffi(system) };
+    let system = System::from(system);
 
     #[cfg(feature = "userdata-abstraction")]
     let userdata = get_userdata(userdata.into());
@@ -76,7 +76,7 @@ unsafe extern "C" fn callback_impl<C: SystemCallback>(
         FMOD_STUDIO_SYSTEM_CALLBACK_PREUPDATE => C::preupdate(system, userdata),
         FMOD_STUDIO_SYSTEM_CALLBACK_POSTUPDATE => C::postupdate(system, userdata),
         FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD => {
-            let bank = unsafe { Bank::from_ffi(command_data.cast()) };
+            let bank = Bank::from(command_data.cast());
             C::bank_unload(system, bank, userdata)
         }
         FMOD_STUDIO_SYSTEM_CALLBACK_LIVEUPDATE_CONNECTED => {

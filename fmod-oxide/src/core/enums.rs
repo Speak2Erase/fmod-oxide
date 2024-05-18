@@ -367,3 +367,21 @@ impl OpenState {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    num_enum::TryFromPrimitive,
+    num_enum::IntoPrimitive,
+    num_enum::UnsafeFromPrimitive
+)]
+// stupid enum repr hack
+#[cfg_attr(target_env = "msvc", repr(i32))]
+#[cfg_attr(not(target_env = "msvc"), repr(u32))]
+pub enum ChannelOrder {
+    Default = FMOD_CHANNELORDER_DEFAULT,
+    WaveFormat = FMOD_CHANNELORDER_WAVEFORMAT,
+    ProTools = FMOD_CHANNELORDER_PROTOOLS,
+    AllMono = FMOD_CHANNELORDER_ALLMONO,
+    AllStereo = FMOD_CHANNELORDER_ALLSTEREO,
+    Alsa = FMOD_CHANNELORDER_ALSA,
+}

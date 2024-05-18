@@ -32,13 +32,9 @@ pub struct System {
     pub(crate) inner: *mut FMOD_STUDIO_SYSTEM,
 }
 
-impl System {
-    /// Create a System instance from its FFI equivalent.
-    ///
-    /// # Safety
-    /// This operation is unsafe because it's possible that the [`FMOD_STUDIO_SYSTEM`] will not have the right userdata type.
-    pub unsafe fn from_ffi(value: *mut FMOD_STUDIO_SYSTEM) -> Self {
-        System { inner: value }
+impl From<*mut FMOD_STUDIO_SYSTEM> for System {
+    fn from(inner: *mut FMOD_STUDIO_SYSTEM) -> Self {
+        Self { inner }
     }
 }
 

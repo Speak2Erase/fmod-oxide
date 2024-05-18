@@ -37,18 +37,19 @@ impl EventInstanceCallback for Callback {
             .unwrap();
         let context = context.lock().unwrap();
 
-        let mut sound_info = context
+        let sound_info = context
             .studio_system
             .get_sound_info(context.dialogue_string)?;
-        let sound = unsafe {
-            context.core_system.create_sound(
-                sound_info.name_or_data,
-                fmod::Mode::LOOP_NORMAL
-                    | fmod::Mode::CREATE_COMPRESSED_SAMPLE
-                    | fmod::Mode::NONBLOCKING,
-                Some(&mut sound_info.ex_info),
-            )?
+        let builder = unsafe {
+            fmod::SoundBuilder::open_file(Utf8CStr::from_ptr_unchecked(sound_info.name_or_data))
+                .with_mode(
+                    fmod::Mode::LOOP_NORMAL
+                        | fmod::Mode::CREATE_COMPRESSED_SAMPLE
+                        | fmod::Mode::NONBLOCKING,
+                )
+                .with_raw_ex_info(sound_info.ex_info)
         };
+        let sound = context.core_system.create_sound(builder)?;
 
         *sound_props.sound = sound;
         *sound_props.subsound_index = sound_info.subsound_index;

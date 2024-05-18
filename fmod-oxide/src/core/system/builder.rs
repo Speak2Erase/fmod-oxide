@@ -12,6 +12,9 @@ pub struct SystemBuilder {
     pub(crate) system: *mut FMOD_SYSTEM,
 }
 
+unsafe impl Send for SystemBuilder {}
+unsafe impl Sync for SystemBuilder {}
+
 impl SystemBuilder {
     /// Creates a new [`SystemBuilder`].
     ///

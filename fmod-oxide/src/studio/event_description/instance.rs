@@ -21,7 +21,7 @@ impl EventDescription {
         let mut instance = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_EventDescription_CreateInstance(self.inner, &mut instance).to_result()?;
-            Ok(EventInstance::from_ffi(instance))
+            Ok(EventInstance::from(instance))
         }
     }
 

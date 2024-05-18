@@ -19,6 +19,9 @@ pub struct SystemBuilder {
     core_builder: crate::SystemBuilder,
 }
 
+unsafe impl Send for SystemBuilder {}
+unsafe impl Sync for SystemBuilder {}
+
 impl SystemBuilder {
     /// Creates a new [`SystemBuilder`].
     ///

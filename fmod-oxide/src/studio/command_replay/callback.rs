@@ -47,8 +47,8 @@ unsafe extern "C" fn create_instance_impl<C: CreateInstanceCallback>(
     let userdata = get_userdata(userdata.into());
 
     unsafe {
-        let replay = CommandReplay::from_ffi(replay);
-        let description = EventDescription::from_ffi(event_description);
+        let replay = CommandReplay::from(replay);
+        let description = EventDescription::from(event_description);
         let result = C::create_instance_callback(replay, command_index, description, userdata);
         match result {
             Ok(Some(instance)) => {
@@ -90,7 +90,7 @@ unsafe extern "C" fn frame_impl<C: FrameCallback>(
     #[cfg(feature = "userdata-abstraction")]
     let userdata = get_userdata(userdata.into());
 
-    let replay = unsafe { CommandReplay::from_ffi(replay) };
+    let replay = CommandReplay::from(replay);
     C::frame_callback(replay, command_index, current_time, userdata).into()
 }
 
@@ -130,7 +130,7 @@ unsafe extern "C" fn load_bank_impl<C: LoadBankCallback>(
     #[cfg(feature = "userdata-abstraction")]
     let userdata = get_userdata(userdata.into());
 
-    let replay = unsafe { CommandReplay::from_ffi(replay) };
+    let replay = CommandReplay::from(replay);
     let flags = LoadBankFlags::from(flags);
     let guid = if guid.is_null() {
         None

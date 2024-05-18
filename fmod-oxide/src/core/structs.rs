@@ -4,14 +4,19 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 use std::{
+    f32::consts::E,
     ffi::{c_float, c_int, c_short, c_uchar, c_uint, c_ushort},
+    marker::PhantomData,
     mem::MaybeUninit,
 };
 
 use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
 
-use crate::{string_from_utf16_be, string_from_utf16_le, DspParameterDataType, TagType};
+use crate::{
+    string_from_utf16_be, string_from_utf16_le, ChannelOrder, DspParameterDataType, Mode,
+    SoundFormat, SoundGroup, SoundType, TagType, TimeUnit,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Default)]
 // force this type to have the exact same layout as FMOD_STUDIO_PARAMETER_ID so we can safely transmute between them.
@@ -436,5 +441,205 @@ impl Tag {
             data,
             updated,
         }
+    }
+}
+
+pub struct SoundBuilder<'a> {
+    pub(crate) mode: FMOD_MODE,
+    pub(crate) create_sound_ex_info: FMOD_CREATESOUNDEXINFO,
+    pub(crate) name_or_data: *const i8,
+    pub(crate) _phantom: PhantomData<&'a ()>,
+}
+
+impl<'a> SoundBuilder<'a> {
+    pub fn open_file(filename: &'a Utf8CStr) -> Self {
+        // FMOD_CREATESOUNDEXINFO is supposed to be zero initialized
+        let mut ex_info: FMOD_CREATESOUNDEXINFO =
+            unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
+        ex_info.cbsize = std::mem::size_of::<FMOD_CREATESOUNDEXINFO>() as c_int;
+        Self {
+            mode: FMOD_DEFAULT,
+            create_sound_ex_info: ex_info,
+            name_or_data: filename.as_ptr(),
+            _phantom: PhantomData,
+        }
+    }
+
+    // TODO open_user
+
+    /// # Safety
+    ///
+    /// The slice must remain valid until the sound has been loaded.
+    /// See the [`Mode`] docs for more information.
+    pub unsafe fn open_memory(data: &'a [u8]) -> Self {
+        // FMOD_CREATESOUNDEXINFO is supposed to be zero initialized
+        let mut ex_info: FMOD_CREATESOUNDEXINFO =
+            unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
+        ex_info.cbsize = std::mem::size_of::<FMOD_CREATESOUNDEXINFO>() as c_int;
+        ex_info.length = data.len() as c_uint;
+        Self {
+            mode: FMOD_OPENMEMORY,
+            create_sound_ex_info: ex_info,
+            name_or_data: data.as_ptr().cast(),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// # Safety
+    ///
+    /// The slice must remain valid until the sound has been released.
+    /// Unlike [`Self::open_memory`] this function does not copy the data, so it is even more unsafe!
+    pub unsafe fn open_memory_point(data: &'a [u8]) -> Self {
+        // FMOD_CREATESOUNDEXINFO is supposed to be zero initialized
+        let mut ex_info: FMOD_CREATESOUNDEXINFO =
+            unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
+        ex_info.cbsize = std::mem::size_of::<FMOD_CREATESOUNDEXINFO>() as c_int;
+        ex_info.length = data.len() as c_uint;
+        Self {
+            mode: FMOD_OPENMEMORY_POINT,
+            create_sound_ex_info: ex_info,
+            name_or_data: data.as_ptr().cast(),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// # Safety
+    ///
+    /// The [`FMOD_CREATESOUNDEXINFO`] must be valid.
+    #[must_use]
+    pub unsafe fn with_raw_ex_info(mut self, ex_info: FMOD_CREATESOUNDEXINFO) -> Self {
+        self.create_sound_ex_info = ex_info;
+        self
+    }
+
+    #[must_use]
+    pub fn with_file_offset(mut self, file_offset: c_uint) -> Self {
+        self.create_sound_ex_info.fileoffset = file_offset;
+        self
+    }
+
+    #[must_use]
+    pub fn with_open_raw(
+        mut self,
+        channel_count: c_int,
+        default_frequency: c_int,
+        format: SoundFormat,
+    ) -> Self {
+        self.mode |= FMOD_OPENRAW;
+        self.create_sound_ex_info.numchannels = channel_count;
+        self.create_sound_ex_info.defaultfrequency = default_frequency;
+        self.create_sound_ex_info.format = format.into();
+        self
+    }
+
+    #[must_use]
+    pub fn with_mode(mut self, mode: Mode) -> Self {
+        let mode =
+            mode ^ (Mode::OPEN_MEMORY | Mode::OPEN_MEMORY_POINT | Mode::OPEN_USER | Mode::OPEN_RAW);
+        let mode: FMOD_MODE = mode.into();
+        self.mode |= mode;
+        self
+    }
+
+    #[must_use]
+    pub fn with_decode_buffer_size(mut self, size: c_uint) -> Self {
+        self.create_sound_ex_info.decodebuffersize = size;
+        self
+    }
+
+    #[must_use]
+    pub fn with_initial_subsound(mut self, initial_subsound: c_int) -> Self {
+        self.create_sound_ex_info.initialsubsound = initial_subsound;
+        self
+    }
+
+    #[must_use]
+    pub fn with_subsound_count(mut self, count: c_int) -> Self {
+        self.create_sound_ex_info.numsubsounds = count;
+        self
+    }
+
+    // TODO: check if this is safe
+    #[must_use]
+    pub fn with_inclusion_list(mut self, list: &'a mut [c_int]) -> Self {
+        self.create_sound_ex_info.inclusionlist = list.as_mut_ptr();
+        self.create_sound_ex_info.inclusionlistnum = list.len() as c_int;
+        self
+    }
+
+    // TODO check safety
+    #[must_use]
+    pub fn with_dls_name(mut self, dls_name: &'a Utf8CStr) -> Self {
+        self.create_sound_ex_info.dlsname = dls_name.as_ptr();
+        self
+    }
+
+    // TODO check safety
+    #[must_use]
+    pub fn with_encryption_key(mut self, key: &'a Utf8CStr) -> Self {
+        self.create_sound_ex_info.encryptionkey = key.as_ptr();
+        self
+    }
+
+    #[must_use]
+    pub fn with_max_polyphony(mut self, max_polyphony: c_int) -> Self {
+        self.create_sound_ex_info.maxpolyphony = max_polyphony;
+        self
+    }
+
+    #[must_use]
+    pub fn with_suggested_sound_type(mut self, sound_type: SoundType) -> Self {
+        self.create_sound_ex_info.suggestedsoundtype = sound_type.into();
+        self
+    }
+
+    #[must_use]
+    pub fn with_file_buffer_size(mut self, size: c_int) -> Self {
+        self.create_sound_ex_info.filebuffersize = size;
+        self
+    }
+
+    #[must_use]
+    pub fn with_channel_order(mut self, order: ChannelOrder) -> Self {
+        self.create_sound_ex_info.channelorder = order.into();
+        self
+    }
+
+    #[must_use]
+    pub fn with_initial_sound_group(mut self, group: SoundGroup) -> Self {
+        self.create_sound_ex_info.initialsoundgroup = group.into();
+        self
+    }
+
+    #[must_use]
+    pub fn with_initial_seek_position(mut self, position: c_uint, unit: TimeUnit) -> Self {
+        self.create_sound_ex_info.initialseekposition = position;
+        self.create_sound_ex_info.initialseekpostype = unit.into();
+        self
+    }
+
+    #[must_use]
+    pub fn with_ignore_set_filesystem(mut self, ignore: bool) -> Self {
+        self.create_sound_ex_info.ignoresetfilesystem = ignore.into();
+        self
+    }
+
+    #[must_use]
+    pub fn with_min_midi_granularity(mut self, granularity: c_uint) -> Self {
+        self.create_sound_ex_info.minmidigranularity = granularity;
+        self
+    }
+
+    #[must_use]
+    pub fn with_non_block_thread_id(mut self, id: c_int) -> Self {
+        self.create_sound_ex_info.nonblockthreadid = id;
+        self
+    }
+
+    // TODO check safety
+    #[must_use]
+    pub fn with_fsb_guid(mut self, guid: &'a mut Guid) -> Self {
+        self.create_sound_ex_info.fsbguid = std::ptr::from_mut(guid).cast();
+        self
     }
 }

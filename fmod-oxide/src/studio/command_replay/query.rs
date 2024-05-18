@@ -86,7 +86,7 @@ impl CommandReplay {
         let mut system = std::ptr::null_mut();
         unsafe {
             FMOD_Studio_CommandReplay_GetSystem(self.inner, &mut system).to_result()?;
-            Ok(System::from_ffi(system))
+            Ok(System::from(system))
         }
     }
 

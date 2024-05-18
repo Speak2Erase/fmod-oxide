@@ -8,75 +8,69 @@ use fmod_sys::*;
 use lanyard::Utf8CStr;
 use std::ffi::{c_char, c_int};
 
-use crate::{Channel, ChannelGroup, Dsp, DspType, Mode, Reverb3D, Sound, SoundGroup, System};
+use crate::{
+    Channel, ChannelGroup, Dsp, DspType, Mode, Reverb3D, Sound, SoundBuilder, SoundGroup, System,
+};
 
 impl System {
-    /// WARNING: At the moment this function has no guardrails and WILL cause undefined behaviour if used incorrectly.
-    /// The [`FMOD_CREATESOUNDEXINFO`] API is *really* complicated and I felt it was better to provide an (unsafe) way to use it until I can figure out a better way to handle it.
-    ///
     /// Loads a sound into memory, opens it for streaming or sets it up for callback based sounds.
     ///
-    /// [`SoundMode::CREATE_SAMPLE`] will try to load and decompress the whole sound into memory, use [`SoundMode::CREATE_STREAM`] to open it as a stream and have it play back in realtime from disk or another medium.
-    /// [`SoundMode::CREATE_COMPRESSED_SAMPLE`] can also be used for certain formats to play the sound directly in its compressed format from the mixer.
-    /// - To open a file or URL as a stream, so that it decompresses / reads at runtime, instead of loading / decompressing into memory all at the time of this call, use the [`SoundMode::CREATE_STREAM`] flag.
-    /// - To open a file or URL as a compressed sound effect that is not streamed and is not decompressed into memory at load time, use [`SoundMode::CREATE_COMPRESSED_SAMPLE`].
+    /// [`Mode::CREATE_SAMPLE`] will try to load and decompress the whole sound into memory, use [`Mode::CREATE_STREAM`] to open it as a stream and have it play back in realtime from disk or another medium.
+    /// [`Mode::CREATE_COMPRESSED_SAMPLE`] can also be used for certain formats to play the sound directly in its compressed format from the mixer.
+    /// - To open a file or URL as a stream, so that it decompresses / reads at runtime, instead of loading / decompressing into memory all at the time of this call, use the [`Mode::CREATE_STREAM`] flag.
+    /// - To open a file or URL as a compressed sound effect that is not streamed and is not decompressed into memory at load time, use [`Mode::CREATE_COMPRESSED_SAMPLE`].
     /// This is supported with MPEG (mp2/mp3), ADPCM/FADPCM, XMA, AT9 and FSB Vorbis files only. This is useful for those who want realtime compressed soundeffects, but not the overhead of disk access.
-    /// - To open a sound as 2D, so that it is not affected by 3D processing, use the [`SoundMode::D2`] flag. 3D sound commands will be ignored on these types of sounds.
-    /// - To open a sound as 3D, so that it is treated as a 3D sound, use the [`SoundMode::D3`] flag.
+    /// - To open a sound as 2D, so that it is not affected by 3D processing, use the [`Mode::D2`] flag. 3D sound commands will be ignored on these types of sounds.
+    /// - To open a sound as 3D, so that it is treated as a 3D sound, use the [`Mode::D3`] flag.
     ///
-    /// Note that [`SoundMode::OPEN_RAW`], [`SoundMode::OPEN_MEMORY`], [`SoundMode::OPEN_MEMORY_POINT`] and [`SoundMode::OPEN_USER`] will not work here without the exinfo structure present, as more information is needed.
+    /// Note that [`Mode::OPEN_RAW`], [`Mode::OPEN_MEMORY`], [`Mode::OPEN_MEMORY_POINT`] and [`Mode::OPEN_USER`] will not work here without the exinfo structure present, as more information is needed.
     ///
-    /// Use [`SoundMode::NONBLOCKING`] to have the sound open or load in the background.
+    /// Use [`Mode::NONBLOCKING`] to have the sound open or load in the background.
     /// You can use Sound::getOpenState to determine if it has finished loading / opening or not. While it is loading (not ready), sound functions are not accessible for that sound.
-    /// Do not free memory provided with [`SoundMode::OPEN_MEMORY`] if the sound is not in a ready state, as it will most likely lead to a crash.
+    /// Do not free memory provided with [`Mode::OPEN_MEMORY`] if the sound is not in a ready state, as it will most likely lead to a crash.
     ///
     /// To account for slow media that might cause buffer underrun (skipping / stuttering / repeating blocks of audio) with sounds created with [`FMOD_CREATESTREAM`],
     /// use System::setStreamBufferSize to increase read ahead.
     ///
-    /// As using [`SoundMode::OPEN_USER`] causes FMOD to ignore whatever is passed as the first argument `name_or_data`, recommended practice is to pass None.
+    /// As using [`Mode::OPEN_USER`] causes FMOD to ignore whatever is passed as the first argument `name_or_data`, recommended practice is to pass None.
     ///
-    /// Specifying [`SoundMode::OPEN_MEMORY_POINT`] will POINT to your memory rather allocating its own sound buffers and duplicating it internally,
+    /// Specifying [`Mode::OPEN_MEMORY_POINT`] will POINT to your memory rather allocating its own sound buffers and duplicating it internally,
     /// this means you cannot free the memory while FMOD is using it, until after Sound::release is called.
     ///
-    /// With [`SoundMode::OPEN_MEMORY_POINT`], only PCM formats and compressed formats using [`SoundMode::CREATE_COMPRESSED_SAMPLE`] are supported.
-    // FIXME: SAFE SOUNDINFO!!!!!!!
-    pub unsafe fn create_sound(
-        &self,
-        name_or_data: *const c_char,
-        mode: Mode,
-        ex_info: Option<&mut FMOD_CREATESOUNDEXINFO>,
-    ) -> Result<Sound> {
-        let ex_info = ex_info.map_or(std::ptr::null_mut(), std::ptr::from_mut);
+    /// With [`Mode::OPEN_MEMORY_POINT`], only PCM formats and compressed formats using [`Mode::CREATE_COMPRESSED_SAMPLE`] are supported.
+    pub fn create_sound(&self, mut builder: SoundBuilder<'_>) -> Result<Sound> {
         let mut sound = std::ptr::null_mut();
         unsafe {
-            FMOD_System_CreateSound(self.inner, name_or_data, mode.into(), ex_info, &mut sound)
-                .to_result()?;
+            FMOD_System_CreateSound(
+                self.inner,
+                builder.name_or_data,
+                builder.mode,
+                &mut builder.create_sound_ex_info,
+                &mut sound,
+            )
+            .to_result()?;
         }
         Ok(sound.into())
     }
 
-    /// WARNING: At the moment this function has no guardrails and WILL cause undefined behaviour if used incorrectly.
-    /// The [`FMOD_CREATESOUNDEXINFO`] API is *really* complicated and I felt it was better to provide an (unsafe) way to use it until I can figure out a better way to handle it.
-    ///
     /// Opens a sound for streaming.
     ///
-    /// This is a convenience function for [`System::create_sound`] with the [`SoundMode::CREATE_STREAM`] flag added.
+    /// This is a convenience function for [`System::create_sound`] with the [`Mode::CREATE_STREAM`] flag added.
     ///
     /// A stream only has one decode buffer and file handle, and therefore can only be played once.
     /// It cannot play multiple times at once because it cannot share a stream buffer if the stream is playing at different positions.
     /// Open multiple streams to have them play concurrently.
-    pub fn create_stream(
-        &self,
-        name_or_data: Option<&[u8]>,
-        mode: Mode,
-        ex_info: Option<&mut FMOD_CREATESOUNDEXINFO>,
-    ) -> Result<Sound> {
-        let name_or_data = name_or_data.map_or(std::ptr::null(), <[u8]>::as_ptr).cast();
-        let ex_info = ex_info.map_or(std::ptr::null_mut(), std::ptr::from_mut);
+    pub fn create_stream(&self, mut builder: SoundBuilder<'_>) -> Result<Sound> {
         let mut sound = std::ptr::null_mut();
         unsafe {
-            FMOD_System_CreateStream(self.inner, name_or_data, mode.into(), ex_info, &mut sound)
-                .to_result()?;
+            FMOD_System_CreateStream(
+                self.inner,
+                builder.name_or_data,
+                builder.mode,
+                &mut builder.create_sound_ex_info,
+                &mut sound,
+            )
+            .to_result()?;
         }
         Ok(sound.into())
     }
@@ -199,7 +193,7 @@ impl System {
     ///
     /// When a sound is played, it will use the sound's default frequency and priority. See Sound::setDefaults.
     ///
-    /// A sound defined as [`SoundMode::D3`] will by default play at the 3D position of the listener.
+    /// A sound defined as [`Mode::D3`] will by default play at the 3D position of the listener.
     /// To set the 3D position of the Channel before the sound is audible, start the Channel paused by setting the paused parameter to true, and call ChannelControl::set3DAttributes.
     ///
     /// Specifying a channelgroup as part of playSound is more efficient than using Channel::setChannelGroup after playSound, and could avoid audible glitches if the playSound is not in a paused state.
