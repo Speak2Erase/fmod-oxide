@@ -204,7 +204,7 @@ impl System {
     }
 
     /// Retrieves the global doppler scale, distance factor and roll-off scale for all 3D sounds.
-    pub fn get_rd_settings(&self) -> Result<(c_float, c_float, c_float)> {
+    pub fn get_3d_settings(&self) -> Result<(c_float, c_float, c_float)> {
         let mut doppler_scale = 0.0;
         let mut distance_factor = 0.0;
         let mut rolloff_scale = 0.0;
