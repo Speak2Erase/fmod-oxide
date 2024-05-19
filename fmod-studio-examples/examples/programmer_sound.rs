@@ -37,9 +37,11 @@ impl EventInstanceCallback for Callback {
             .unwrap();
         let context = context.lock().unwrap();
 
-        let sound_info = context
-            .studio_system
-            .get_sound_info(context.dialogue_string)?;
+        let sound_info = unsafe {
+            context
+                .studio_system
+                .get_sound_info(context.dialogue_string)?
+        };
         let sound = context.core_system.create_sound(&sound_info.builder)?;
         eprintln!("{:#?}", sound_info);
 
