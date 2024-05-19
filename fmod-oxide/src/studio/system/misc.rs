@@ -116,8 +116,11 @@ impl System {
     /// When the banks have been loaded via [`System::load_bank_memory`], the mode will be returned as [`FMOD_OPENMEMORY_POINT`].
     /// This won't work with the default [`FMOD_CREATESAMPLE`] mode.
     /// For memory banks, you should add in the [`FMOD_CREATECOMPRESSEDSAMPLE`] or [`FMOD_CREATESTREAM`] flag, or remove [`FMOD_OPENMEMORY_POINT`] and add [`FMOD_OPENMEMORY`] to decompress the sample into a new allocation.
-    // TODO flags
-    pub fn get_sound_info(&self, key: &Utf8CStr) -> Result<SoundInfo<'_>> {
+    ///
+    /// # Safety
+    ///
+    /// The returned [`SoundInfo`] structure has an unbounded lifetime as it is hard to represent. You MUST constrain its lifetime as quickly as possible.
+    pub unsafe fn get_sound_info<'a>(&self, key: &Utf8CStr) -> Result<SoundInfo<'a>> {
         let mut sound_info = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_System_GetSoundInfo(self.inner, key.as_ptr(), sound_info.as_mut_ptr())
