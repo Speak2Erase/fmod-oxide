@@ -136,6 +136,15 @@ impl FMOD_BOOL {
     pub const TRUE: Self = Self(1);
 }
 
+impl Default for FMOD_CREATESOUNDEXINFO {
+    fn default() -> Self {
+        Self {
+            cbsize: std::mem::size_of::<Self>() as _,
+            ..unsafe { std::mem::MaybeUninit::zeroed().assume_init() }
+        }
+    }
+}
+
 #[allow(non_snake_case)]
 pub const fn error_code_to_str(result: FMOD_RESULT) -> &'static str {
     match result

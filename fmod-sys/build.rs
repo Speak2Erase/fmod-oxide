@@ -50,6 +50,11 @@ fn main() {
         .newtype_enum("FMOD_RESULT")
         .must_use_type("FMOD_RESULT")
         .new_type_alias("FMOD_BOOL")
+        .derive_partialeq(true)
+        .derive_eq(true)
+        .impl_partialeq(true)
+        .derive_hash(true)
+        .derive_default(true)
         .prepend_enum_name(false) // fmod already does this
         .header("src/wrapper.h");
 

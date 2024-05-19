@@ -40,12 +40,16 @@ impl System {
     /// With [`Mode::OPEN_MEMORY_POINT`], only PCM formats and compressed formats using [`Mode::CREATE_COMPRESSED_SAMPLE`] are supported.
     pub fn create_sound(&self, mut builder: SoundBuilder<'_>) -> Result<Sound> {
         let mut sound = std::ptr::null_mut();
+        let ex_info = builder
+            .ex_info_is_empty()
+            .then_some(std::ptr::null_mut())
+            .unwrap_or(std::ptr::addr_of_mut!(builder.create_sound_ex_info));
         unsafe {
             FMOD_System_CreateSound(
                 self.inner,
                 builder.name_or_data,
                 builder.mode,
-                &mut builder.create_sound_ex_info,
+                ex_info,
                 &mut sound,
             )
             .to_result()?;
@@ -62,12 +66,16 @@ impl System {
     /// Open multiple streams to have them play concurrently.
     pub fn create_stream(&self, mut builder: SoundBuilder<'_>) -> Result<Sound> {
         let mut sound = std::ptr::null_mut();
+        let ex_info = builder
+            .ex_info_is_empty()
+            .then_some(std::ptr::null_mut())
+            .unwrap_or(std::ptr::addr_of_mut!(builder.create_sound_ex_info));
         unsafe {
             FMOD_System_CreateStream(
                 self.inner,
                 builder.name_or_data,
                 builder.mode,
-                &mut builder.create_sound_ex_info,
+                ex_info,
                 &mut sound,
             )
             .to_result()?;

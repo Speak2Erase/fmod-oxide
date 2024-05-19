@@ -24,10 +24,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Increase the file buffer size a little bit to account for Internet lag.
     system.set_stream_buffer_size(64 * 1024, fmod::TimeUnit::RawBytes)?;
 
-    let builder = fmod::SoundBuilder::open_file(fmod::c!(
+    let builder = fmod::SoundBuilder::open(fmod::c!(
         "http://live-radio01.mediahubaustralia.com/2TJW/mp3/"
     ))
-    .with_mode(fmod::Mode::CREATE_SAMPLE | fmod::Mode::NONBLOCKING)
+    .with_mode(fmod::Mode::CREATE_STREAM | fmod::Mode::NONBLOCKING)
     .with_file_buffer_size(1024 * 16);
 
     let mut sound = system.create_sound(builder)?;
@@ -81,7 +81,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     sound.release()?;
 
                     let url = fmod::Utf8CString::new(text)?;
-                    let builder = fmod::SoundBuilder::open_file(&url)
+                    let builder = fmod::SoundBuilder::open(&url)
                         .with_mode(fmod::Mode::CREATE_SAMPLE | fmod::Mode::NONBLOCKING)
                         .with_file_buffer_size(1024 * 16);
 
@@ -168,7 +168,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         channel.stop()?;
     }
 
-    while sound.get_open_state()?.0 != fmod::OpenState::Ready {
+    let (mut open_state, _, _, _) = sound.get_open_state()?;
+    while !matches!(
+        open_state,
+        fmod::OpenState::Ready | fmod::OpenState::Error(_)
+    ) {
         execute!(stdout, Clear(ClearType::All), MoveTo(0, 0))?;
         crossterm::terminal::disable_raw_mode()?;
 
@@ -179,6 +183,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stdout.flush()?;
         std::thread::sleep(std::time::Duration::from_millis(50));
         system.update()?;
+
+        (open_state, _, _, _) = sound.get_open_state()?;
     }
 
     // reset terminal

@@ -41,7 +41,7 @@ impl EventInstanceCallback for Callback {
             .studio_system
             .get_sound_info(context.dialogue_string)?;
         let builder = unsafe {
-            fmod::SoundBuilder::open_file(Utf8CStr::from_ptr_unchecked(sound_info.name_or_data))
+            fmod::SoundBuilder::open(Utf8CStr::from_ptr_unchecked(sound_info.name_or_data))
                 .with_mode(
                     fmod::Mode::LOOP_NORMAL
                         | fmod::Mode::CREATE_COMPRESSED_SAMPLE

@@ -4,7 +4,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 use std::{
-    f32::consts::E,
     ffi::{c_float, c_int, c_short, c_uchar, c_uint, c_ushort},
     marker::PhantomData,
     mem::MaybeUninit,
@@ -444,6 +443,7 @@ impl Tag {
     }
 }
 
+#[derive(Debug)]
 pub struct SoundBuilder<'a> {
     pub(crate) mode: FMOD_MODE,
     pub(crate) create_sound_ex_info: FMOD_CREATESOUNDEXINFO,
@@ -451,15 +451,18 @@ pub struct SoundBuilder<'a> {
     pub(crate) _phantom: PhantomData<&'a ()>,
 }
 
+const EMPTY_EXINFO: FMOD_CREATESOUNDEXINFO = unsafe {
+    FMOD_CREATESOUNDEXINFO {
+        cbsize: std::mem::size_of::<FMOD_CREATESOUNDEXINFO>() as c_int,
+        ..std::mem::MaybeUninit::zeroed().assume_init()
+    }
+};
+
 impl<'a> SoundBuilder<'a> {
-    pub fn open_file(filename: &'a Utf8CStr) -> Self {
-        // FMOD_CREATESOUNDEXINFO is supposed to be zero initialized
-        let mut ex_info: FMOD_CREATESOUNDEXINFO =
-            unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
-        ex_info.cbsize = std::mem::size_of::<FMOD_CREATESOUNDEXINFO>() as c_int;
+    pub const fn open(filename: &'a Utf8CStr) -> Self {
         Self {
-            mode: FMOD_DEFAULT,
-            create_sound_ex_info: ex_info,
+            mode: 0,
+            create_sound_ex_info: EMPTY_EXINFO,
             name_or_data: filename.as_ptr(),
             _phantom: PhantomData,
         }
@@ -471,15 +474,13 @@ impl<'a> SoundBuilder<'a> {
     ///
     /// The slice must remain valid until the sound has been loaded.
     /// See the [`Mode`] docs for more information.
-    pub unsafe fn open_memory(data: &'a [u8]) -> Self {
-        // FMOD_CREATESOUNDEXINFO is supposed to be zero initialized
-        let mut ex_info: FMOD_CREATESOUNDEXINFO =
-            unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
-        ex_info.cbsize = std::mem::size_of::<FMOD_CREATESOUNDEXINFO>() as c_int;
-        ex_info.length = data.len() as c_uint;
+    pub const unsafe fn open_memory(data: &'a [u8]) -> Self {
         Self {
             mode: FMOD_OPENMEMORY,
-            create_sound_ex_info: ex_info,
+            create_sound_ex_info: FMOD_CREATESOUNDEXINFO {
+                length: data.len() as c_uint,
+                ..EMPTY_EXINFO
+            },
             name_or_data: data.as_ptr().cast(),
             _phantom: PhantomData,
         }
@@ -489,15 +490,13 @@ impl<'a> SoundBuilder<'a> {
     ///
     /// The slice must remain valid until the sound has been released.
     /// Unlike [`Self::open_memory`] this function does not copy the data, so it is even more unsafe!
-    pub unsafe fn open_memory_point(data: &'a [u8]) -> Self {
-        // FMOD_CREATESOUNDEXINFO is supposed to be zero initialized
-        let mut ex_info: FMOD_CREATESOUNDEXINFO =
-            unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
-        ex_info.cbsize = std::mem::size_of::<FMOD_CREATESOUNDEXINFO>() as c_int;
-        ex_info.length = data.len() as c_uint;
+    pub const unsafe fn open_memory_point(data: &'a [u8]) -> Self {
         Self {
             mode: FMOD_OPENMEMORY_POINT,
-            create_sound_ex_info: ex_info,
+            create_sound_ex_info: FMOD_CREATESOUNDEXINFO {
+                length: data.len() as c_uint,
+                ..EMPTY_EXINFO
+            },
             name_or_data: data.as_ptr().cast(),
             _phantom: PhantomData,
         }
@@ -507,19 +506,19 @@ impl<'a> SoundBuilder<'a> {
     ///
     /// The [`FMOD_CREATESOUNDEXINFO`] must be valid.
     #[must_use]
-    pub unsafe fn with_raw_ex_info(mut self, ex_info: FMOD_CREATESOUNDEXINFO) -> Self {
+    pub const unsafe fn with_raw_ex_info(mut self, ex_info: FMOD_CREATESOUNDEXINFO) -> Self {
         self.create_sound_ex_info = ex_info;
         self
     }
 
     #[must_use]
-    pub fn with_file_offset(mut self, file_offset: c_uint) -> Self {
+    pub const fn with_file_offset(mut self, file_offset: c_uint) -> Self {
         self.create_sound_ex_info.fileoffset = file_offset;
         self
     }
 
     #[must_use]
-    pub fn with_open_raw(
+    pub const fn with_open_raw(
         mut self,
         channel_count: c_int,
         default_frequency: c_int,
@@ -528,55 +527,59 @@ impl<'a> SoundBuilder<'a> {
         self.mode |= FMOD_OPENRAW;
         self.create_sound_ex_info.numchannels = channel_count;
         self.create_sound_ex_info.defaultfrequency = default_frequency;
-        self.create_sound_ex_info.format = format.into();
+        self.create_sound_ex_info.format = format as _;
         self
     }
 
     #[must_use]
-    pub fn with_mode(mut self, mode: Mode) -> Self {
-        let mode =
-            mode ^ (Mode::OPEN_MEMORY | Mode::OPEN_MEMORY_POINT | Mode::OPEN_USER | Mode::OPEN_RAW);
-        let mode: FMOD_MODE = mode.into();
+    pub const fn with_mode(mut self, mode: Mode) -> Self {
+        const DISABLE_MODES: Mode = Mode::OPEN_MEMORY
+            .union(Mode::OPEN_MEMORY_POINT)
+            .union(Mode::OPEN_USER)
+            .union(Mode::OPEN_RAW);
+
+        let mode = mode.difference(DISABLE_MODES); // these modes are not allowed to be set by the user, so we unset them
+        let mode: FMOD_MODE = mode.bits();
         self.mode |= mode;
         self
     }
 
     #[must_use]
-    pub fn with_decode_buffer_size(mut self, size: c_uint) -> Self {
+    pub const fn with_decode_buffer_size(mut self, size: c_uint) -> Self {
         self.create_sound_ex_info.decodebuffersize = size;
         self
     }
 
     #[must_use]
-    pub fn with_initial_subsound(mut self, initial_subsound: c_int) -> Self {
+    pub const fn with_initial_subsound(mut self, initial_subsound: c_int) -> Self {
         self.create_sound_ex_info.initialsubsound = initial_subsound;
         self
     }
 
     #[must_use]
-    pub fn with_subsound_count(mut self, count: c_int) -> Self {
+    pub const fn with_subsound_count(mut self, count: c_int) -> Self {
         self.create_sound_ex_info.numsubsounds = count;
         self
     }
 
     // TODO: check if this is safe
     #[must_use]
-    pub fn with_inclusion_list(mut self, list: &'a mut [c_int]) -> Self {
-        self.create_sound_ex_info.inclusionlist = list.as_mut_ptr();
+    pub const fn with_inclusion_list(mut self, list: &'a [c_int]) -> Self {
+        self.create_sound_ex_info.inclusionlist = list.as_ptr().cast_mut().cast();
         self.create_sound_ex_info.inclusionlistnum = list.len() as c_int;
         self
     }
 
     // TODO check safety
     #[must_use]
-    pub fn with_dls_name(mut self, dls_name: &'a Utf8CStr) -> Self {
+    pub const fn with_dls_name(mut self, dls_name: &'a Utf8CStr) -> Self {
         self.create_sound_ex_info.dlsname = dls_name.as_ptr();
         self
     }
 
     // TODO check safety
     #[must_use]
-    pub fn with_encryption_key(mut self, key: &'a Utf8CStr) -> Self {
+    pub const fn with_encryption_key(mut self, key: &'a Utf8CStr) -> Self {
         self.create_sound_ex_info.encryptionkey = key.as_ptr();
         self
     }
@@ -588,20 +591,20 @@ impl<'a> SoundBuilder<'a> {
     }
 
     #[must_use]
-    pub fn with_suggested_sound_type(mut self, sound_type: SoundType) -> Self {
-        self.create_sound_ex_info.suggestedsoundtype = sound_type.into();
+    pub const fn with_suggested_sound_type(mut self, sound_type: SoundType) -> Self {
+        self.create_sound_ex_info.suggestedsoundtype = sound_type as _;
         self
     }
 
     #[must_use]
-    pub fn with_file_buffer_size(mut self, size: c_int) -> Self {
+    pub const fn with_file_buffer_size(mut self, size: c_int) -> Self {
         self.create_sound_ex_info.filebuffersize = size;
         self
     }
 
     #[must_use]
-    pub fn with_channel_order(mut self, order: ChannelOrder) -> Self {
-        self.create_sound_ex_info.channelorder = order.into();
+    pub const fn with_channel_order(mut self, order: ChannelOrder) -> Self {
+        self.create_sound_ex_info.channelorder = order as _;
         self
     }
 
@@ -612,9 +615,9 @@ impl<'a> SoundBuilder<'a> {
     }
 
     #[must_use]
-    pub fn with_initial_seek_position(mut self, position: c_uint, unit: TimeUnit) -> Self {
+    pub const fn with_initial_seek_position(mut self, position: c_uint, unit: TimeUnit) -> Self {
         self.create_sound_ex_info.initialseekposition = position;
-        self.create_sound_ex_info.initialseekpostype = unit.into();
+        self.create_sound_ex_info.initialseekpostype = unit as _;
         self
     }
 
@@ -625,21 +628,25 @@ impl<'a> SoundBuilder<'a> {
     }
 
     #[must_use]
-    pub fn with_min_midi_granularity(mut self, granularity: c_uint) -> Self {
-        self.create_sound_ex_info.minmidigranularity = granularity;
+    pub const fn with_min_midi_granularity(mut self, granularity: c_uint) -> Self {
+        self.create_sound_ex_info.minmidigranularity = granularity as _;
         self
     }
 
     #[must_use]
-    pub fn with_non_block_thread_id(mut self, id: c_int) -> Self {
-        self.create_sound_ex_info.nonblockthreadid = id;
+    pub const fn with_non_block_thread_id(mut self, id: c_int) -> Self {
+        self.create_sound_ex_info.nonblockthreadid = id as _;
         self
     }
 
     // TODO check safety
     #[must_use]
-    pub fn with_fsb_guid(mut self, guid: &'a mut Guid) -> Self {
-        self.create_sound_ex_info.fsbguid = std::ptr::from_mut(guid).cast();
+    pub const fn with_fsb_guid(mut self, guid: &'a Guid) -> Self {
+        self.create_sound_ex_info.fsbguid = std::ptr::from_ref(guid).cast_mut().cast();
         self
+    }
+
+    pub(crate) fn ex_info_is_empty(&self) -> bool {
+        self.create_sound_ex_info == EMPTY_EXINFO
     }
 }
