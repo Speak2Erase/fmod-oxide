@@ -34,8 +34,6 @@ impl System {
         unsafe { FMOD_System_UnlockDSP(self.inner).to_result() }
     }
 
-    // TODO callbacks
-
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_raw_userdata(&self, userdata: *mut c_void) -> Result<()> {
         unsafe { FMOD_System_SetUserData(self.inner, userdata).to_result() }

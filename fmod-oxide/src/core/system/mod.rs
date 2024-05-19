@@ -7,6 +7,7 @@
 use fmod_sys::*;
 
 mod builder;
+mod callback;
 mod creation;
 mod device_selection;
 mod filesystem;
@@ -20,6 +21,7 @@ mod recording;
 mod runtime_control;
 mod setup;
 pub use builder::SystemBuilder;
+pub use callback::{ErrorCallbackInfo, Instance, SystemCallback, SystemCallbackMask};
 pub use setup::RolloffCallback;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
