@@ -27,7 +27,7 @@
 - [ ] FMOD_System_AttachFileSystem
 - [ ] FMOD_System_SetAdvancedSettings
 - [ ] FMOD_System_GetAdvancedSettings
-- [ ] FMOD_System_SetCallback
+- [x] FMOD_System_SetCallback
 - [x] FMOD_System_SetPluginPath
 - [x] FMOD_System_LoadPlugin
 - [x] FMOD_System_UnloadPlugin
