@@ -6,10 +6,10 @@
 
 use fmod_sys::*;
 use lanyard::Utf8CStr;
-use std::ffi::{c_char, c_int};
+use std::ffi::c_int;
 
 use crate::{
-    Channel, ChannelGroup, Dsp, DspType, Mode, Reverb3D, Sound, SoundBuilder, SoundGroup, System,
+    Channel, ChannelGroup, Dsp, DspType, Reverb3D, Sound, SoundBuilder, SoundGroup, System,
 };
 
 impl System {
@@ -38,12 +38,14 @@ impl System {
     /// this means you cannot free the memory while FMOD is using it, until after Sound::release is called.
     ///
     /// With [`Mode::OPEN_MEMORY_POINT`], only PCM formats and compressed formats using [`Mode::CREATE_COMPRESSED_SAMPLE`] are supported.
-    pub fn create_sound(&self, mut builder: SoundBuilder<'_>) -> Result<Sound> {
+    pub fn create_sound(&self, builder: &SoundBuilder<'_>) -> Result<Sound> {
         let mut sound = std::ptr::null_mut();
-        let ex_info = builder
-            .ex_info_is_empty()
-            .then_some(std::ptr::null_mut())
-            .unwrap_or(std::ptr::addr_of_mut!(builder.create_sound_ex_info));
+        // FIXME is casting to mut correct?
+        let ex_info = if builder.ex_info_is_empty() {
+            std::ptr::null_mut()
+        } else {
+            std::ptr::addr_of!(builder.create_sound_ex_info).cast_mut()
+        };
         unsafe {
             FMOD_System_CreateSound(
                 self.inner,
@@ -64,12 +66,14 @@ impl System {
     /// A stream only has one decode buffer and file handle, and therefore can only be played once.
     /// It cannot play multiple times at once because it cannot share a stream buffer if the stream is playing at different positions.
     /// Open multiple streams to have them play concurrently.
-    pub fn create_stream(&self, mut builder: SoundBuilder<'_>) -> Result<Sound> {
+    pub fn create_stream(&self, builder: &SoundBuilder<'_>) -> Result<Sound> {
         let mut sound = std::ptr::null_mut();
-        let ex_info = builder
-            .ex_info_is_empty()
-            .then_some(std::ptr::null_mut())
-            .unwrap_or(std::ptr::addr_of_mut!(builder.create_sound_ex_info));
+        // FIXME is casting to mut correct?
+        let ex_info = if builder.ex_info_is_empty() {
+            std::ptr::null_mut()
+        } else {
+            std::ptr::addr_of!(builder.create_sound_ex_info).cast_mut()
+        };
         unsafe {
             FMOD_System_CreateStream(
                 self.inner,

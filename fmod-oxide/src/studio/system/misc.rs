@@ -117,7 +117,7 @@ impl System {
     /// This won't work with the default [`FMOD_CREATESAMPLE`] mode.
     /// For memory banks, you should add in the [`FMOD_CREATECOMPRESSEDSAMPLE`] or [`FMOD_CREATESTREAM`] flag, or remove [`FMOD_OPENMEMORY_POINT`] and add [`FMOD_OPENMEMORY`] to decompress the sample into a new allocation.
     // TODO flags
-    pub fn get_sound_info(&self, key: &Utf8CStr) -> Result<SoundInfo> {
+    pub fn get_sound_info(&self, key: &Utf8CStr) -> Result<SoundInfo<'_>> {
         let mut sound_info = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_System_GetSoundInfo(self.inner, key.as_ptr(), sound_info.as_mut_ptr())

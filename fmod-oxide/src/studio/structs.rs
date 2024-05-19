@@ -7,12 +7,12 @@
 use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
 use num_enum::UnsafeFromPrimitive;
-use std::ffi::{c_char, c_float, c_int, c_uint};
+use std::ffi::{c_float, c_int, c_uint};
 
 use super::{InstanceType, ParameterFlags, ParameterKind, UserPropertyKind};
 use crate::{
     core::{Dsp, Sound},
-    Guid, Mode,
+    Guid, SoundBuilder,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -331,37 +331,33 @@ impl From<CpuUsage> for FMOD_STUDIO_CPU_USAGE {
 }
 
 #[derive(Debug)]
-pub struct SoundInfo {
-    pub name_or_data: *const c_char,
-    pub mode: Mode, // FIXME ffi types
-    pub ex_info: FMOD_CREATESOUNDEXINFO,
+pub struct SoundInfo<'a> {
+    pub builder: SoundBuilder<'a>,
     pub subsound_index: c_int,
 }
 
-impl SoundInfo {
+impl<'a> SoundInfo<'a> {
     /// Create a safe [`SoundInfo`] struct from the FFI equivalent.
     ///
     /// # Safety
     ///
-    /// All string values from the FFI struct must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
-    ///
-    /// See [`Utf8CStr::from_ptr_unchecked`] for more information.
+    /// See [`SoundBuilder::from_ffi`] for more information.
     pub unsafe fn from_ffi(value: FMOD_STUDIO_SOUND_INFO) -> Self {
         SoundInfo {
-            name_or_data: value.name_or_data,
-            mode: value.mode.into(),
-            ex_info: value.exinfo,
+            builder: unsafe {
+                SoundBuilder::from_ffi(value.name_or_data, value.mode, value.exinfo)
+            },
             subsound_index: value.subsoundindex,
         }
     }
 }
 
-impl From<&SoundInfo> for FMOD_STUDIO_SOUND_INFO {
-    fn from(value: &SoundInfo) -> Self {
+impl From<&SoundInfo<'_>> for FMOD_STUDIO_SOUND_INFO {
+    fn from(value: &SoundInfo<'_>) -> Self {
         FMOD_STUDIO_SOUND_INFO {
-            name_or_data: value.name_or_data,
-            mode: value.mode.into(),
-            exinfo: value.ex_info,
+            name_or_data: value.builder.name_or_data,
+            mode: value.builder.mode,
+            exinfo: value.builder.create_sound_ex_info,
             subsoundindex: value.subsound_index,
         }
     }

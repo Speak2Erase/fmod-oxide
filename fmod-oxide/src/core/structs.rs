@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 use std::{
-    ffi::{c_float, c_int, c_short, c_uchar, c_uint, c_ushort},
+    ffi::{c_char, c_float, c_int, c_short, c_uchar, c_uint, c_ushort},
     marker::PhantomData,
     mem::MaybeUninit,
 };
@@ -447,7 +447,7 @@ impl Tag {
 pub struct SoundBuilder<'a> {
     pub(crate) mode: FMOD_MODE,
     pub(crate) create_sound_ex_info: FMOD_CREATESOUNDEXINFO,
-    pub(crate) name_or_data: *const i8,
+    pub(crate) name_or_data: *const c_char,
     pub(crate) _phantom: PhantomData<&'a ()>,
 }
 
@@ -458,6 +458,7 @@ const EMPTY_EXINFO: FMOD_CREATESOUNDEXINFO = unsafe {
     }
 };
 
+// setters
 impl<'a> SoundBuilder<'a> {
     pub const fn open(filename: &'a Utf8CStr) -> Self {
         Self {
@@ -648,5 +649,186 @@ impl<'a> SoundBuilder<'a> {
 
     pub(crate) fn ex_info_is_empty(&self) -> bool {
         self.create_sound_ex_info == EMPTY_EXINFO
+    }
+}
+
+// getters
+impl<'a> SoundBuilder<'a> {
+    pub const fn mode(&self) -> Mode {
+        Mode::from_bits_truncate(self.mode)
+    }
+
+    pub const fn raw_ex_info(&self) -> FMOD_CREATESOUNDEXINFO {
+        self.create_sound_ex_info
+    }
+
+    pub const fn raw_name_or_data(&self) -> *const c_char {
+        self.name_or_data
+    }
+
+    pub fn name_or_url(&self) -> Option<&Utf8CStr> {
+        if self
+            .mode()
+            .intersects(Mode::OPEN_MEMORY | Mode::OPEN_MEMORY_POINT | Mode::OPEN_USER)
+        {
+            None
+        } else {
+            Some(unsafe { Utf8CStr::from_ptr_unchecked(self.name_or_data) })
+        }
+    }
+
+    pub fn data(&self) -> Option<&[u8]> {
+        if self
+            .mode()
+            .intersects(Mode::OPEN_MEMORY | Mode::OPEN_MEMORY_POINT)
+        {
+            Some(unsafe {
+                std::slice::from_raw_parts(
+                    self.name_or_data.cast(),
+                    self.create_sound_ex_info.length as usize,
+                )
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn length(&self) -> c_uint {
+        self.create_sound_ex_info.length
+    }
+
+    pub fn file_offset(&self) -> c_uint {
+        self.create_sound_ex_info.fileoffset
+    }
+
+    pub fn num_channels(&self) -> c_int {
+        self.create_sound_ex_info.numchannels
+    }
+
+    pub fn default_frequency(&self) -> c_int {
+        self.create_sound_ex_info.defaultfrequency
+    }
+
+    pub fn format(&self) -> SoundFormat {
+        self.create_sound_ex_info.format.try_into().unwrap()
+    }
+
+    pub fn decode_buffer_size(&self) -> c_uint {
+        self.create_sound_ex_info.decodebuffersize
+    }
+
+    pub fn initial_subsound(&self) -> c_int {
+        self.create_sound_ex_info.initialsubsound
+    }
+
+    pub fn subsound_count(&self) -> c_int {
+        self.create_sound_ex_info.numsubsounds
+    }
+
+    pub fn inclusion_list(&self) -> Option<&'a [c_int]> {
+        if self.create_sound_ex_info.inclusionlist.is_null() {
+            None
+        } else {
+            Some(unsafe {
+                std::slice::from_raw_parts(
+                    self.create_sound_ex_info.inclusionlist.cast(),
+                    self.create_sound_ex_info.inclusionlistnum as usize,
+                )
+            })
+        }
+    }
+
+    pub fn dls_name(&self) -> Option<&Utf8CStr> {
+        if self.create_sound_ex_info.dlsname.is_null() {
+            None
+        } else {
+            Some(unsafe { Utf8CStr::from_ptr_unchecked(self.create_sound_ex_info.dlsname) })
+        }
+    }
+
+    pub fn encryption_key(&self) -> Option<&Utf8CStr> {
+        if self.create_sound_ex_info.encryptionkey.is_null() {
+            None
+        } else {
+            Some(unsafe { Utf8CStr::from_ptr_unchecked(self.create_sound_ex_info.encryptionkey) })
+        }
+    }
+
+    pub fn max_polyphony(&self) -> c_int {
+        self.create_sound_ex_info.maxpolyphony
+    }
+
+    pub fn suggested_sound_type(&self) -> SoundType {
+        self.create_sound_ex_info
+            .suggestedsoundtype
+            .try_into()
+            .unwrap()
+    }
+
+    pub fn file_buffer_size(&self) -> c_int {
+        self.create_sound_ex_info.filebuffersize
+    }
+
+    pub fn channel_order(&self) -> ChannelOrder {
+        self.create_sound_ex_info.channelorder.try_into().unwrap()
+    }
+
+    pub fn initial_sound_group(&self) -> SoundGroup {
+        SoundGroup::from(self.create_sound_ex_info.initialsoundgroup)
+    }
+
+    pub fn initial_seek_position(&self) -> (c_uint, TimeUnit) {
+        (
+            self.create_sound_ex_info.initialseekposition,
+            self.create_sound_ex_info
+                .initialseekpostype
+                .try_into()
+                .unwrap(),
+        )
+    }
+
+    pub fn ignore_set_filesystem(&self) -> bool {
+        self.create_sound_ex_info.ignoresetfilesystem > 0
+    }
+
+    pub fn min_midi_granularity(&self) -> c_uint {
+        self.create_sound_ex_info.minmidigranularity
+    }
+
+    pub fn non_block_thread_id(&self) -> c_int {
+        self.create_sound_ex_info.nonblockthreadid
+    }
+
+    pub fn fsb_guid(&self) -> Option<Guid> {
+        if self.create_sound_ex_info.fsbguid.is_null() {
+            None
+        } else {
+            Some(unsafe { *(self.create_sound_ex_info.fsbguid.cast()) })
+        }
+    }
+}
+
+impl<'a> SoundBuilder<'a> {
+    /// # Safety
+    ///
+    /// The mode must match the required fields of the [`FMOD_CREATESOUNDEXINFO`] struct.
+    /// The [`FMOD_CREATESOUNDEXINFO`] struct's cbsize field must be set to the size of the struct.
+    ///
+    /// If the mode is not [`Mode::OPEN_MEMORY`] or [`Mode::OPEN_MEMORY_POINT`] name_or_data pointer must be valid for reads of bytes up to and including the nul terminator.
+    ///
+    /// If the mode is [`Mode::OPEN_MEMORY`] or [`Mode::OPEN_MEMORY_POINT`] the data pointer must be valid for reads of bytes up to [`FMOD_CREATESOUNDEXINFO::length`].
+    ///
+    /// The lifetime of the builder is unbounded and MUST be constrained!
+    pub unsafe fn from_ffi(
+        name_or_data: *const c_char,
+        mode: FMOD_MODE,
+        create_sound_ex_info: FMOD_CREATESOUNDEXINFO,
+    ) -> Self {
+        Self {
+            mode,
+            create_sound_ex_info,
+            name_or_data,
+            _phantom: PhantomData,
+        }
     }
 }
