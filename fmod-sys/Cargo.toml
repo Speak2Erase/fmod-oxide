@@ -2,6 +2,10 @@
 name = "fmod-sys"
 version = "2.2.20"
 edition = "2021"
+description = "ffi bindings to FMOD and FMOD Studio"
+repository = "https://github.com/Speak2Erase/fmod-oxide"
+keywords = ["gamedev", "audio", "sound", "fmod"]
+categories = ["ffi", "api-bindings", "game-development", "multimedia::audio"]
 
 build = "build.rs"
 
