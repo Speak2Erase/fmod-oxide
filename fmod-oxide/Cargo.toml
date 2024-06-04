@@ -1,7 +1,13 @@
 [package]
 name = "fmod-oxide"
-version = "2.2.0"
+version = "2.2.0-pre.1"
 edition = "2021"
+license = "MPLv2"
+description = "Zero cost bindings to FMOD and FMOD Studio"
+repository = "https://github.com/Speak2Erase/fmod-oxide"
+keywords = ["gamedev", "audio", "sound", "fmod"]
+categories = ["ffi", "api-bindings", "game-development", "multimedia::audio"]
+readme = "../README.md"
 
 [lib]
 name = "fmod"
