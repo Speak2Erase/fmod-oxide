@@ -298,6 +298,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fmod-audio-sys"
+version = "2.2.20"
+dependencies = [
+ "bindgen",
+ "cc",
+ "num_enum",
+]
+
+[[package]]
 name = "fmod-examples"
 version = "1.0.0"
 dependencies = [
@@ -310,7 +319,7 @@ name = "fmod-oxide"
 version = "2.2.0-pre.1"
 dependencies = [
  "bitflags",
- "fmod-sys",
+ "fmod-audio-sys",
  "lanyard",
  "num_enum",
  "once_cell",
@@ -323,15 +332,6 @@ version = "1.0.0"
 dependencies = [
  "crossterm",
  "fmod-oxide",
-]
-
-[[package]]
-name = "fmod-sys"
-version = "2.2.20"
-dependencies = [
- "bindgen",
- "cc",
- "num_enum",
 ]
 
 [[package]]
