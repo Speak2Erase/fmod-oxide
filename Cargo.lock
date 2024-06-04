@@ -307,7 +307,7 @@ dependencies = [
 
 [[package]]
 name = "fmod-oxide"
-version = "2.2.0"
+version = "2.2.0-pre.1"
 dependencies = [
  "bitflags",
  "fmod-sys",

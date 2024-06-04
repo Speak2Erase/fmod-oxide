@@ -5,5 +5,5 @@ edition = "2021"
 publish = true
 
 [dependencies]
-fmod-oxide = { version = "2.2.0", path = "../fmod-oxide/" }
+fmod-oxide = { version = "2.2.0-pre.1", path = "../fmod-oxide/" }
 crossterm = "0.27.0"
