@@ -10,6 +10,7 @@ mod callback;
 mod general;
 mod playback;
 mod query;
+pub use callback::{CreateInstanceCallback, FrameCallback, LoadBankCallback};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(transparent)] // so we can transmute between types
