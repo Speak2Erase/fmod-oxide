@@ -7,10 +7,11 @@ description = "ffi bindings to FMOD and FMOD Studio"
 repository = "https://github.com/Speak2Erase/fmod-oxide"
 keywords = ["gamedev", "audio", "sound", "fmod"]
 categories = ["ffi", "api-bindings", "game-development", "multimedia::audio"]
+readme = "README.md"
 
 build = "build.rs"
 
-include = ["docs/documentation.rs"]
+include = ["docs/documentation.rs", "src/*", "build.rs"]
 
 [lib]
 name = "fmod_sys"
