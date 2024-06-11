@@ -39,10 +39,10 @@
 #![doc(html_favicon_url = "https://www.fmod.com/assets/fmod-logo.svg")]
 #![doc(html_logo_url = "https://www.fmod.com/assets/fmod-logo.svg")]
 
-#[cfg(docsrs)]
+#[cfg(any(docsrs, feature = "force-docs-bindings"))]
 include!("../docs/documentation.rs");
 
-#[cfg(not(docsrs))]
+#[cfg(not(any(docsrs, feature = "force-docs-bindings")))]
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 #[derive(Clone, PartialEq, Eq)]

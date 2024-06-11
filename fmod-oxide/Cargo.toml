@@ -1,6 +1,6 @@
 [package]
 name = "fmod-oxide"
-version = "2.2.0-pre.2"
+version = "2.2.0-pre.3"
 edition = "2021"
 license = "MPL-2.0"
 description = "Zero cost bindings to FMOD and FMOD Studio"
@@ -16,7 +16,7 @@ name = "fmod"
 
 [dependencies]
 bitflags = "2.4.2"
-fmod-audio-sys = { version = "2.*", path = "../fmod-sys" }
+fmod-audio-sys = { version = "2.220.1", path = "../fmod-sys" }
 lanyard = { version = "0.1.0", path = "../lanyard/" }
 num_enum = "0.7.2"
 
@@ -29,3 +29,11 @@ once_cell = "1.19"
 [features]
 userdata-abstraction = ["once_cell", "slotmap"]
 default = ["userdata-abstraction"]
+
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu" # crate is published from this platform
+targets = []
+
+rustc-args = ["--cfg", "use_docs_bindings"]
+
+features = ["fmod-audio-sys/force-docs-bindings"]

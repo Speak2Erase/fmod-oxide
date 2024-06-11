@@ -40,9 +40,12 @@ fn find_fmod_directory() -> PathBuf {
 }
 
 fn main() {
+    // skip generating bindings in docs.rs, as we use the packaged "documentation.rs" instead
     if std::env::var("DOCS_RS").is_ok() {
-        return; // skip generating bindings in docs.rs, as we use the packaged "documentation.rs" instead
+        return;
     }
+    #[cfg(feature = "force-docs-bindings")]
+    return;
 
     let fmod_dir = find_fmod_directory();
     let api_dir = fmod_dir.join("api");
