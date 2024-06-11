@@ -26,7 +26,7 @@ pub use cstr::*;
 #[cfg(feature = "alloc")]
 pub use cstring::*;
 
-/// Create a const <code>&'static [`CStr8`]</code> from a string literal.
+/// Create a const <code>&'static [`Utf8CStr`]</code> from a string literal.
 ///
 /// # Example
 ///

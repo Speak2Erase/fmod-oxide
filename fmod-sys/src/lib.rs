@@ -1,9 +1,48 @@
+//! Low level bindings to the FMOD sound engine.
+//!
+//! Due to licensing restrictions, the FMOD API cannot be distributed with this crate.
+//! docs.rs documention is provided for the FMOD API but the actual API is not available without the FMOD library.
+//!
+//! Currently, this crate provides both core and studio bindings (no fsbank bindings).
+//!
+//! # Configuration
+//! In debug builds this crate will link against the logging version of the FMOD library.
+//! In release builds this crate will link against the release version of the FMOD library.
+//! You can force the debug version of the library by enabling the `force-debug` feature.
+//!
+//! By default, this crate will search for an FMOD installation directory in the following places:
+//!
+//! (On windows)
+//! - `C:/Program Files (x86)/FMOD SoundSystem/FMOD Studio API Windows`
+//! - `D:/Program Files (x86)/FMOD SoundSystem/FMOD Studio API Windows`
+//! - `$OUT_DIR/FMOD Studio API Windows`
+//! - `$OUT_DIR/FMOD SoundSystem`
+//!
+//! (On all platforms)
+//! - `$CARGO_MANIFEST_DIR/fmod`
+//! - `$OUT_DIR/fmod`
+//! - `$FMOD_SYS_FMOD_DIRECTORY`
+//!
+//! This installation is expected to follow the standard FMOD directory structure.
+//!
+//! fmod:
+//!  - api:
+//!    - core:
+//!      - inc
+//!      - lib (contains architecture specific directories)
+//!    - studio:
+//!      - inc
+//!      - lib (contains architecture specific directories)
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![doc(html_favicon_url = "https://www.fmod.com/assets/fmod-logo.svg")]
 #![doc(html_logo_url = "https://www.fmod.com/assets/fmod-logo.svg")]
 
+#[cfg(docsrs)]
+include!("docs/documentation.rs");
+
+#[cfg(not(docsrs))]
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 #[derive(Clone, PartialEq, Eq)]

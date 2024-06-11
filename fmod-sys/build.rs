@@ -11,10 +11,11 @@ fn find_fmod_directory() -> PathBuf {
         }
     }
 
-    for path in ["./FMOD Studio API Windows", "./FMOD SoundSystem"] {
-        let path = PathBuf::from(path)
-            .canonicalize()
-            .expect("failed to canonicalize fmod path");
+    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    for path in [
+        out_dir.join("FMOD Studio API Windows"),
+        out_dir.join("FMOD SoundSystem"),
+    ] {
         if path.exists() {
             return path;
         }
@@ -27,12 +28,21 @@ fn find_fmod_directory() -> PathBuf {
 
 #[cfg(not(windows))]
 fn find_fmod_directory() -> PathBuf {
+    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    let out_path = out_dir.join("fmod");
+    if out_path.exists() {
+        return out_path;
+    }
+
     std::env::var_os("FMOD_SYS_FMOD_DIRECTORY")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fmod"))
 }
 
 fn main() {
+    #[cfg(docsrs)]
+    return; // skip generating bindings in docs.rs, as we use the packaged "documentation.rs" instead
+
     let fmod_dir = find_fmod_directory();
     let api_dir = fmod_dir.join("api");
 
@@ -87,6 +97,13 @@ fn main() {
 
     bindings
         .write_to_file(out_path)
+        .expect("failed to write bindings");
+
+    let docs_path = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap())
+        .join("docs/documentation.rs");
+
+    bindings
+        .write_to_file(docs_path)
         .expect("failed to write bindings");
 
     println!("cargo:rerun-if-changed=\"src/channel_control.cpp\"");

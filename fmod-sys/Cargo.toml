@@ -1,6 +1,6 @@
 [package]
 name = "fmod-audio-sys"
-version = "2.2.20"
+version = "2.220.0"
 edition = "2021"
 license = "MPL-2.0"
 description = "ffi bindings to FMOD and FMOD Studio"
@@ -9,6 +9,8 @@ keywords = ["gamedev", "audio", "sound", "fmod"]
 categories = ["ffi", "api-bindings", "game-development", "multimedia::audio"]
 
 build = "build.rs"
+
+include = ["docs/documentation.rs"]
 
 [lib]
 name = "fmod_sys"
@@ -24,3 +26,7 @@ cc = "1.0"
 
 [features]
 force-debug = []
+
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu" # crate is published from this platform
+targets = []

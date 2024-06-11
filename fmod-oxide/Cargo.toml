@@ -1,6 +1,6 @@
 [package]
 name = "fmod-oxide"
-version = "2.2.0-pre.1"
+version = "2.2.0-pre.2"
 edition = "2021"
 license = "MPL-2.0"
 description = "Zero cost bindings to FMOD and FMOD Studio"
@@ -16,7 +16,7 @@ name = "fmod"
 
 [dependencies]
 bitflags = "2.4.2"
-fmod-audio-sys = { version = "2.2.*", path = "../fmod-sys" }
+fmod-audio-sys = { version = "2.*", path = "../fmod-sys" }
 lanyard = { version = "0.1.0", path = "../lanyard/" }
 num_enum = "0.7.2"
 

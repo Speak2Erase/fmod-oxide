@@ -13,10 +13,7 @@ All FMOD objects are Copy, Clone, Send and Sync because it's possible to have mu
 There are a lot of use-cases where you may want to fetch something (like a bank) and never use it again.
 Implementing `Drop` to automatically release things would go against that particular use-case, so this crate opts to have manual `release()` methods instead.
 
-*Most* types FMOD will prevent use-after-frees because it returns handles. There are a few times where that is not the case though.
-<!-- TODO investigate what is and isnt safe to release -->
-This is a bit like the `magnus` crate, where there are a lot of unsafe invariants related to the Ruby GC that should be marked as unsafe but would result in almost every single interaction with Ruby being unsafe.
-I've elected to mark release as safe but it's up to you to ensure that you're not using an object after it's been released.
+This crate does not currently guard against use-after-frees, although it's something I have planned.
 
 # String types
 fmod-oxide aims to be as zero-cost as possible, and as such, it uses UTF-8 C strings from the `lanyard` crate as its string type.
@@ -33,7 +30,7 @@ When converting from an FFI struct to something like `AdvancedSettings`, the C s
 *This is unsafe* as there are no guarantees that the pointer is valid or that the string is null-terminated and UTF-8.
 Luckily all FMOD functions return UTF-8 strings so this isn't really a problem in practice.
 
-# Undefine Behaviour and unsafe fns
+# Undefined Behaviour and unsafe fns
 
 I'm trying to make these bindings as safe as possible, if you find UB please report it!
 There are a couple cases related to thread safety (You can initialize FMOD to be thread unsafe) and panics that I am aware of and actively trying to fix.

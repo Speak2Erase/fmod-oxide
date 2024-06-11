@@ -7,11 +7,52 @@
 //! Most documentation is copied directly from the FMOD docs, however some information (such as parameter values) are excluded.
 //! Please refer to the FMOD documentation for more usage information.
 //!
+//! Please see the `fmod-sys` crate (or the [`ffi`] re-export) documentation for more information on the raw bindings,
+//! and where to place the FMOD libraries. This crate does not distribute the FMOD libraries or headers!
+//!
+//! # Basic example
+//! ```ignore
+//! // System creation is unsafe and must be performed prior to any other FMOD operations.
+//! let mut builder = unsafe { fmod::studio::SystemBuilder::new() }?;
+//! let system = builder.build()?;
+//!
+//! // Load a bank
+//! let bank = system.load_bank_file("path/to/bank.bank", fmod::studio::LoadBankFlags::NORMAL)?;
+//! // Query all events in the bank
+//! for event in bank.get_event_list().unwrap() {
+//!     println!("Event: {}", event.get_path()?);
+//! }
+//!
+//! // Releasing Systems is unsafe because it cannot be called concurrently, and all FMOD objects are rendered invalid.
+//! unsafe { system.release() };
+//! ```
+//!
 //! # Memory management & Copy types
-//! TODO
+//!
+//! All FMOD objects are `Copy`, `Clone`, `Send` and `Sync` because it's possible to have multiple references to the same object. (e.g. loading a bank and then retrieving it by its path)
+//! There are a lot of use-cases where you may want to fetch something (like a bank) and never use it again.
+//! Implementing `Drop` to automatically release things would go against that particular use-case, so this crate opts to have manual `release()` methods instead.
+//!
+//! This crate does not currently guard against use-after-frees, although it's something I have planned.
+//!
+//! # String types
+//! `fmod-oxide` aims to be as zero-cost as possible, and as such, it uses UTF-8 C strings from the `lanyard` crate as its string type.
+//! This means that all FMOD functions take a `&Utf8CStr` instead of a `&str` or `&CStr`.
+//! `&Utf8CStr` is pretty cheap to construct (and can even be done statically with the `c!` macro), so this should not be a problem.
+//!
+//! When FMOD returns a string, it will always return a `Utf8CString` (the owned version of `Utf8CStr`) because it's difficult to encode lifetime requirements of FMOD strings.
+//!
+//! This applies to structs like `fmod::studio::AdvancedSettings` which store C strings.
+//! Converting structs like `AdvancedSettings` to their FFI equivalents is done by reference as to not pass ownership of the string to FMOD.
 //!
 //! # Userdata
-//! TODO
+//!
+//! Right now this crate stores userdata in a global slotmap alongside its owner, and every so often will remove userdata with invalid owners.
+//! This solution works best with a mark and sweep GC, which Rust does not have. We could somewhat solve this issue by doing this check in `System::update`.
+//! That would make `System::update` expensive- it would have an additional `O(n)` complexity added to it, which goes against the purpose of this crate.
+//!
+//! It's difficult to associate userdata with an individual system in this system though- so we have to clear the slotmap whenever any system is released.
+//! Releasing a system is performed at the end of execution generally so this probably won't be an issue.
 
 #![warn(rust_2018_idioms, clippy::pedantic)]
 #![allow(
