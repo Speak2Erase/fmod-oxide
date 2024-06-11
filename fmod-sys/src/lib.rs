@@ -40,7 +40,7 @@
 #![doc(html_logo_url = "https://www.fmod.com/assets/fmod-logo.svg")]
 
 #[cfg(docsrs)]
-include!("docs/documentation.rs");
+include!("../docs/documentation.rs");
 
 #[cfg(not(docsrs))]
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));

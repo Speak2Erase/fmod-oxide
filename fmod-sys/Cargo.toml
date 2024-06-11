@@ -1,6 +1,6 @@
 [package]
 name = "fmod-audio-sys"
-version = "2.220.0"
+version = "2.220.1"
 edition = "2021"
 license = "MPL-2.0"
 description = "ffi bindings to FMOD and FMOD Studio"
