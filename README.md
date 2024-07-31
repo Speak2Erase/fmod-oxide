@@ -4,6 +4,15 @@ Safe rust bindings to the FMOD sound engine.
 This crate tries to be as rusty and low-cost as possible, without comprimising on any APIs.
 Certain APIs, such as loading banks from a pointer, are marked as unsafe, but are still available for use.
 
+#### Currently in BETA.
+
+I'm currently developing this crate in tandem with another game, which means most of the real world testing of this crate comes from one source and only on a Windows/Linux system.
+This means that for some functions/use cases I haven't gotten the API down quite yet. (Custom Filesystems, Mix Matrices, Mac Support, etc)
+Almost all of the crate is feature complete though. 
+I need to fix some issues with API documentation, add support for more FMOD versions, and double check the safety of everything before I'm confident releasing this as anything but a beta.
+
+### Docs
+
 Most documentation is copied directly from the FMOD docs, however some information (such as parameter values) are excluded.
 Please refer to the FMOD documentation for more usage information.
 
@@ -65,8 +74,8 @@ If there was an easy way to enforce that a `T` is pointer sized and needs no `Dr
 (See [this commit](https://github.com/Speak2Erase/fmod-oxide/tree/a14876da32ce5df5b14673c118f09da6fec17544).)
 
 # Differences to other crates
-[libfmod](https://github.com/lebedec/libfmod) is automatically generated from the FMOD documentation and is full of mistakes. (Wrong parameter types in functions, accepting &str instead of &[u8], etc)
-It also does not provide an abstraction over userdata or callbacks.
+[libfmod](https://github.com/lebedec/libfmod) is similar to this crate, but its major difference is that it is automatically generated from the FMOD documentation instead of using handwritten bindings like this crate.
+Because it's automatically generated, it has a much faster release schedule than this crate will, but the API is closer to the C API.
 
 [rust-fmod](https://github.com/GuillaumeGomez/rust-fmod) is outdated, has no studio bindings, and has major safety holes (userdata takes an `&'a mut T` and does no type checking, System creation functions are not marked as unsafe, etc)
 
