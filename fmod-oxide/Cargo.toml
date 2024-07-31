@@ -1,6 +1,6 @@
 [package]
 name = "fmod-oxide"
-version = "2.2.0-pre.3"
+version = "2.2.0-pre.4"
 edition = "2021"
 license = "MPL-2.0"
 description = "Zero cost bindings to FMOD and FMOD Studio"
