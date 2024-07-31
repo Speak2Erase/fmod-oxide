@@ -75,7 +75,7 @@ If there was an easy way to enforce that a `T` is pointer sized and needs no `Dr
 
 # Differences to other crates
 [libfmod](https://github.com/lebedec/libfmod) is similar to this crate, but its major difference is that it is automatically generated from the FMOD documentation instead of using handwritten bindings like this crate.
-Because it's automatically generated, it has a much faster release schedule than this crate will, but the API is closer to the C API.
+Because it's automatically generated, it has a much faster release schedule than this crate will, but the API is closer to the C API. If you don't like my crate, it's a pretty decent alternative!
 
 [rust-fmod](https://github.com/GuillaumeGomez/rust-fmod) is outdated, has no studio bindings, and has major safety holes (userdata takes an `&'a mut T` and does no type checking, System creation functions are not marked as unsafe, etc)
 
