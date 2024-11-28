@@ -5,7 +5,7 @@
 //! UTF-8 equivalents of `std`'s C string types.
 //!
 //! `lanyard` is an extension of the `std::ffi` module that adds new [`Utf8CStr`] and [`Utf8CString`] types.
-//! They are like the standard library's [`CStr`] and [`CString`] types, except they are guaranteed to be valid UTF-8.
+//! They are like the standard library's [`std::ffi::CStr`] and [`std::ffi::CString`] types, except they are guaranteed to be valid UTF-8.
 //!
 //! Therefore they allow the ability to losslessly convert into strings, they implement `Display`, etc, etc.
 //! The `std::ffi` types are not guaranteed to be valid UTF-8, which is the right decision for the standard library.

@@ -10,6 +10,9 @@ use fmod_sys::*;
 
 use crate::{ChannelControl, Mode};
 
+#[cfg(doc)]
+use crate::{Channel, ChannelGroup};
+
 impl ChannelControl {
     /// Retrieves the playing state.
     ///

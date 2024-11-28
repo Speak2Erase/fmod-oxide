@@ -10,6 +10,9 @@ use fmod_sys::*;
 
 use crate::studio::EventDescription;
 
+#[cfg(doc)]
+use crate::studio::EventInstance;
+
 impl EventDescription {
     /// Retrieves the event's 3D status.
     ///

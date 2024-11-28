@@ -11,6 +11,9 @@ use std::ffi::c_int;
 use crate::studio::{Bank, LoadBankFlags, System};
 use crate::Guid;
 
+#[cfg(doc)]
+use crate::studio::AdvancedSettings;
+
 impl System {
     // TODO: load bank with callbacks
     pub fn load_bank_custom(&self) -> Result<Bank> {

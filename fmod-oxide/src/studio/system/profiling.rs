@@ -9,6 +9,9 @@ use std::mem::MaybeUninit;
 
 use crate::studio::{BufferUsage, CpuUsage, MemoryUsage, System};
 
+#[cfg(doc)]
+use crate::studio::SystemBuilder;
+
 impl System {
     /// Retrieves buffer usage information.
     ///

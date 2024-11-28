@@ -86,7 +86,7 @@ impl Geometry {
 
     /// Retrieves the position of a vertex.
     ///
-    /// Vertices are relative to the position of the object. See [`Geometry::set_osition`].
+    /// Vertices are relative to the position of the object. See [`Geometry::set_position`].
     pub fn get_polygon_vertex(&self, index: c_int, vertex_index: c_int) -> Result<Vector> {
         let mut vertex = MaybeUninit::uninit();
         unsafe {

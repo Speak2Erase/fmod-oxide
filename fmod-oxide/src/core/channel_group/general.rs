@@ -10,6 +10,9 @@ use std::ffi::c_int;
 
 use crate::{get_string, ChannelGroup};
 
+#[cfg(doc)]
+use crate::Channel;
+
 impl ChannelGroup {
     /// Retrieves the name set when the group was created.
     pub fn get_name(&self) -> Result<Utf8CString> {

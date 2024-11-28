@@ -9,6 +9,9 @@ use std::ffi::{c_float, c_int, c_uint};
 
 use crate::{Mode, Sound, TimeUnit, Vector};
 
+#[cfg(doc)]
+use crate::{Channel, ChannelGroup};
+
 impl Sound {
     /// Sets the angles and attenuation levels of a 3D cone shape, for simulated occlusion which is based on direction.
     ///
@@ -50,9 +53,9 @@ impl Sound {
 
     /// Sets a custom roll-off shape for 3D distance attenuation.
     ///
-    /// Must be used in conjunction with [`Mode::CUSTOM_ROLLOFF`] flag to be activated.
+    /// Must be used in conjunction with [`Mode::CUSTOM_ROLLOFF_3D`] flag to be activated.
     ///
-    /// If [`Mode::CUSTOM_ROLLOFF`] is set and the roll-off shape is not set, FMOD will revert to [`Mode::INVERSE_ROLLOFF`] roll-off mode.
+    /// If [`Mode::CUSTOM_ROLLOFF_3D`] is set and the roll-off shape is not set, FMOD will revert to [`Mode::INVERSE_ROLLOFF_3D`] roll-off mode.
     ///
     /// When a custom roll-off is specified a [`Channel`] or [`ChannelGroup`]'s 3D 'minimum' and 'maximum' distances are ignored.
     ///

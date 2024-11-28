@@ -9,6 +9,9 @@ use std::ffi::c_int;
 
 use crate::studio::{EventDescription, EventInstance};
 
+#[cfg(doc)]
+use crate::studio::Bank;
+
 impl EventDescription {
     /// Creates a playable instance.
     ///
@@ -16,7 +19,7 @@ impl EventDescription {
     ///
     /// Use [`EventDescription::get_sample_loading_state`] to check the loading status.
     ///
-    /// Sample data can be loaded ahead of time with [`EventDescription::load_sample_data`] or [`super::Bank::load_sample_data`]. See Sample Data Loading for more information.
+    /// Sample data can be loaded ahead of time with [`EventDescription::load_sample_data`] or [`Bank::load_sample_data`]. See Sample Data Loading for more information.
     pub fn create_instance(&self) -> Result<EventInstance> {
         let mut instance = std::ptr::null_mut();
         unsafe {

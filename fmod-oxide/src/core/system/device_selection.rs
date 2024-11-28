@@ -10,6 +10,9 @@ use std::{ffi::c_int, mem::MaybeUninit};
 
 use crate::{get_string, Guid, OutputType, SpeakerMode, System};
 
+#[cfg(doc)]
+use crate::SystemBuilder;
+
 impl System {
     #[allow(clippy::doc_markdown)]
     /// Sets the type of output interface used to run the mixer.

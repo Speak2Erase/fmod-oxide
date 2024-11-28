@@ -10,6 +10,9 @@ use fmod_sys::*;
 
 use crate::{ChannelControl, Vector};
 
+#[cfg(doc)]
+use crate::{Channel, ChannelGroup, Mode};
+
 impl ChannelControl {
     /// Sets the 3D position and velocity used to apply panning, attenuation and doppler.
     ///
@@ -135,9 +138,9 @@ impl ChannelControl {
 
     /// Sets a custom roll-off shape for 3D distance attenuation.
     ///
-    /// Must be used in conjunction with [`Mode::CUSTOM_ROLLOFF`] flag to be activated.
+    /// Must be used in conjunction with [`Mode::CUSTOM_ROLLOFF_3D`] flag to be activated.
     ///
-    /// If [`Mode::CUSTOM_ROLLOFF`] is set and the roll-off shape is not set, FMOD will revert to [`Mode::INVERSE_ROLLOFF`] roll-off mode.
+    /// If [`Mode::CUSTOM_ROLLOFF_3D`] is set and the roll-off shape is not set, FMOD will revert to [`Mode::INVERSE_ROLLOFF_3D`] roll-off mode.
     ///
     /// When a custom roll-off is specified a [`Channel`] or [`ChannelGroup`]'s 3D 'minimum' and 'maximum' distances are ignored.
     ///

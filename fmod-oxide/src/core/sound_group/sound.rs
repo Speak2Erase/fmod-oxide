@@ -9,6 +9,9 @@ use std::ffi::c_int;
 
 use crate::{Sound, SoundGroup};
 
+#[cfg(doc)]
+use crate::Channel;
+
 impl SoundGroup {
     /// Retrieves the current number of sounds in this sound group.
     pub fn get_sound_count(&self) -> Result<c_int> {

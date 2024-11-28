@@ -9,6 +9,9 @@ use std::{ffi::c_int, mem::MaybeUninit};
 
 use crate::{ChannelGroup, PortType, ReverbProperties, System, Vector};
 
+#[cfg(doc)]
+use crate::{Dsp, OutputType};
+
 impl System {
     /// Sets the position, velocity and orientation of the specified 3D sound listener.
     ///

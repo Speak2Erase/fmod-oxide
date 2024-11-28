@@ -11,6 +11,9 @@ use lanyard::Utf8CStr;
 
 use crate::studio::{EventInstance, ParameterID};
 
+#[cfg(doc)]
+use crate::studio::{ParameterKind, PlaybackState};
+
 impl EventInstance {
     /// Sets a parameter value by name.
     ///

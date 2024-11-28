@@ -8,8 +8,11 @@ use fmod_sys::*;
 
 use crate::studio::{Bank, LoadingState};
 
+#[cfg(doc)]
+use crate::studio::{EventDescription, LoadBankFlags, System};
+
 impl Bank {
-    /// This function may be used to check the loading state of a bank which has been loaded asynchronously using the [`super::LoadBankFlags::NONBLOCKING`] flag,
+    /// This function may be used to check the loading state of a bank which has been loaded asynchronously using the [`LoadBankFlags::NONBLOCKING`] flag,
     /// or is pending unload following a call to [`Bank::unload`].
     ///
     /// If an asynchronous load failed due to a file error state will contain [`LoadingState::Error`] and the return code from this function will be the error code of the bank load function.
@@ -23,7 +26,7 @@ impl Bank {
 
     /// Use this function to preload sample data ahead of time so that the events in the bank can play immediately when started.
     ///
-    /// This function is equivalent to calling [`super::EventDescription::load_sample_data`] for all events in the bank, including referenced events.
+    /// This function is equivalent to calling [`EventDescription::load_sample_data`] for all events in the bank, including referenced events.
     pub fn load_sample_data(&self) -> Result<()> {
         unsafe { FMOD_Studio_Bank_LoadSampleData(self.inner).to_result() }
     }
@@ -52,7 +55,7 @@ impl Bank {
     ///
     /// This will destroy all objects created from the bank, unload all sample data inside the bank, and invalidate all API handles referring to the bank.
     ///
-    /// If the bank was loaded from user-managed memory, e.g. by [`super::System::load_bank_pointer`], then the memory must not be freed until the unload has completed.
+    /// If the bank was loaded from user-managed memory, e.g. by [`System::load_bank_pointer`], then the memory must not be freed until the unload has completed.
     /// Poll the loading state using [`Bank::get_loading_state`] or use the [`FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD`] system callback to determine when it is safe to free the memory.
     pub fn unload(self) -> Result<()> {
         // we don't deallocate userdata here because the system callback will take care of that for us

@@ -9,6 +9,9 @@ use std::ffi::{c_float, c_int};
 
 use crate::studio::{CommandReplay, PlaybackState};
 
+#[cfg(doc)]
+use crate::studio::CommandReplayFlags;
+
 impl CommandReplay {
     /// Begins playback.
     ///

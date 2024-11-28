@@ -64,9 +64,9 @@ impl From<MemoryFlags> for FMOD_MEMORY_TYPE {
 ///
 /// If you specify a fixed size pool that is too small, FMOD will return [`FMOD_RESULT::FMOD_ERR_MEMORY`] when the limit of the fixed size pool is exceeded.
 /// At this point, it's possible that FMOD may become unstable. To maintain stability, do not allow FMOD to run out of memory.
-/// To find out the required fixed size call [`memory_initialize`] with an overly large pool size (or no pool) and find out the maximum RAM usage at any one time with [`memory_get_stats`].
+/// To find out the required fixed size call [`initialize`] with an overly large pool size (or no pool) and find out the maximum RAM usage at any one time with [`memory_get_stats`].
 /// The size of the pool is limited to [`c_int::MAX`].
-pub unsafe fn memory_initialize(memory_type: MemoryType, flags: MemoryFlags) -> Result<()> {
+pub unsafe fn initialize(memory_type: MemoryType, flags: MemoryFlags) -> Result<()> {
     match memory_type {
         MemoryType::Pool(pool) => unsafe {
             FMOD_Memory_Initialize(
@@ -102,7 +102,7 @@ pub unsafe fn memory_initialize(memory_type: MemoryType, flags: MemoryFlags) -> 
 /// This information is byte accurate and counts all allocs and frees internally.
 /// This is useful for determining a fixed memory size to make FMOD work within for fixed memory machines such as consoles.
 ///
-/// Note that if using [`memory_initialize`], the memory usage will be slightly higher than without it, as FMOD has to have a small amount of memory overhead to manage the available memory.
+/// Note that if using [`initialize`], the memory usage will be slightly higher than without it, as FMOD has to have a small amount of memory overhead to manage the available memory.
 pub fn memory_get_stats(blocking: bool) -> Result<(c_int, c_int)> {
     let mut current = 0;
     let mut max = 0;

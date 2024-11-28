@@ -9,6 +9,9 @@ use std::ffi::{c_float, c_int};
 
 use crate::studio::{EventInstance, EventProperty};
 
+#[cfg(doc)]
+use crate::studio::EventDescription;
+
 impl EventInstance {
     /// Sets the pitch multiplier.
     ///

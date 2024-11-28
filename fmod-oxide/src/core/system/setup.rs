@@ -20,6 +20,9 @@ unsafe extern "C" fn rolloff_callback_impl<C: RolloffCallback>(
     C::rolloff(channel_control, distance)
 }
 
+#[cfg(doc)]
+use crate::{Channel, Mode, SystemBuilder};
+
 impl System {
     /// Retrieves the maximum number of software mixed Channels possible.
     ///
@@ -80,9 +83,9 @@ impl System {
     /// Larger values will consume more memory, whereas smaller values may cause buffer under-run / starvation / stuttering caused by large delays in disk access (ie netstream),
     /// or CPU usage in slow machines, or by trying to play too many streams at once.
     ///
-    /// Does not affect streams created with [`SoundMoude::OpenUser`], as the buffer size is specified in [`System::create_sound`].
+    /// Does not affect streams created with [`Mode::OPEN_USER`], as the buffer size is specified in [`System::create_sound`].
     ///
-    /// Does not affect latency of playback. All streams are pre-buffered (unless opened with [`SoundMode::OpenOnly`]), so they will always start immediately.
+    /// Does not affect latency of playback. All streams are pre-buffered (unless opened with [`Mode::OPEN_ONLY`]), so they will always start immediately.
     ///
     /// Seek and Play operations can sometimes cause a reflush of this buffer.
     ///

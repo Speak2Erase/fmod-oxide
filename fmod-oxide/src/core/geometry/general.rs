@@ -19,7 +19,7 @@ impl Geometry {
     /// Polygons cannot be added if already at the maximum number of polygons or if the addition of their verticies would result in exceeding the maximum number of vertices.
     ///
     /// Vertices of an object are in object space, not world space, and so are relative to the position, or center of the object.
-    /// See [`Geometry::setP_psition`].
+    /// See [`Geometry::set_position`].
     pub fn add_polygon(
         &self,
         direct_occlusion: c_float,

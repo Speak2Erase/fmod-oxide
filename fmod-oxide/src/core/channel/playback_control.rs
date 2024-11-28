@@ -9,12 +9,15 @@ use std::ffi::{c_float, c_int, c_uint};
 
 use crate::{Channel, ChannelGroup, TimeUnit};
 
+#[cfg(doc)]
+use crate::{ChannelControl, Mode, System};
+
 impl Channel {
     /// Sets the frequency or playback rate.
     ///
     /// Default frequency is determined by the audio format of the Sound or DSP.
     ///
-    /// Sounds opened as [`SoundMode::CreateSample`] (not [`SoundMode::CreateStream`] or [`SoundMode::CreateCompressedSample`]) can be played backwards by giving a negative frequency.
+    /// Sounds opened as [`Mode::CREATE_SAMPLE`] (not [`Mode::CREATE_STREAM`] or [`Mode::CREATE_COMPRESSED_SAMPLE`]) can be played backwards by giving a negative frequency.
     pub fn set_frequency(&self, frequency: c_float) -> Result<()> {
         unsafe { FMOD_Channel_SetFrequency(self.inner, frequency).to_result() }
     }
@@ -52,13 +55,13 @@ impl Channel {
     /// Certain [`TimeUnit`] types are always available: [`TimeUnit::PCM`], [`TimeUnit::PCMBytes`] and [`TimeUnit::MS`].
     /// The others are format specific such as [`TimeUnit::ModOrder`] / [`TimeUnit::ModRow`] / [`TimeUnit::ModPattern`] which is specific to files of type MOD / S3M / XM / IT.
     ///
-    /// If playing a Sound created with [`System::create_stream`] or [`SoundMode::CreateStream`] changing the position may cause a slow reflush operation while the file seek and decode occurs.
-    /// You can avoid this by creating the stream with [`SoundMode::Nonblocking`].
+    /// If playing a Sound created with [`System::create_stream`] or [`Mode::CREATE_STREAM`] changing the position may cause a slow reflush operation while the file seek and decode occurs.
+    /// You can avoid this by creating the stream with [`Mode::NONBLOCKING`].
     /// This will cause the stream to go into `FMOD_OPENSTATE_SETPOSITION` state (see `Sound::getOpenState`) and Sound commands will return [`FMOD_RESULT::FMOD_ERR_NOTREADY`].
     /// [`Channel::get_position`] will also not update until this non-blocking set position operation has completed.
     ///
     /// Using a VBR source that does not have an associated seek table or seek information (such as MP3 or MOD/S3M/XM/IT) may cause inaccurate seeking if you specify [`TimeUnit::MS`] or [`TimeUnit::PCM`].
-    /// If you want FMOD to create a PCM vs bytes seek table so that seeking is accurate, you will have to specify [`SoundMode::AccurrateTime`] when loading or opening the sound.
+    /// If you want FMOD to create a PCM vs bytes seek table so that seeking is accurate, you will have to specify [`Mode::ACCURATE_TIME`] when loading or opening the sound.
     /// This means there is a slight delay as FMOD scans the whole file when loading the sound to create this table.
     pub fn set_position(&self, position: c_uint, time_unit: TimeUnit) -> Result<()> {
         unsafe { FMOD_Channel_SetPosition(self.inner, position, time_unit.into()).to_result() }
@@ -98,7 +101,7 @@ impl Channel {
 
     /// Sets the number of times to loop before stopping.
     ///
-    /// The 'mode' of the Sound or Channel must be [`SoundMode::LoopNormal`] or [`SoundMode::LoopBidi`] for this function to work.
+    /// The 'mode' of the Sound or Channel must be [`Mode::LOOP_NORMAL`] or [`Mode::LOOP_BIDI`] for this function to work.
     pub fn set_loop_count(&self, loop_count: c_int) -> Result<()> {
         unsafe { FMOD_Channel_SetLoopCount(self.inner, loop_count).to_result() }
     }
@@ -120,7 +123,7 @@ impl Channel {
     /// Valid [`TimeUnit`] types are [`TimeUnit::PCM`], [`TimeUnit::MS`], [`TimeUnit::PCMBytes`]. Any other time units return [`FMOD_RESULT::FMOD_ERR_FORMAT`].
     /// If [`TimeUnit::MS`] or [`TimeUnit::PCMBytes`], the value is internally converted to [`TimeUnit::PCM`].
     ///
-    /// The Channel's mode must be set to [`SoundMode::LoopNormal`] or [`SoundMode::LoopBidi`] for loop points to affect playback.
+    /// The Channel's mode must be set to [`Mode::LOOP_NORMAL`] or [`Mode::LOOP_BIDI`] for loop points to affect playback.
     pub fn set_loop_points(
         &self,
         start: c_uint,

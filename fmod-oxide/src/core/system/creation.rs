@@ -12,6 +12,9 @@ use crate::{
     Channel, ChannelGroup, Dsp, DspType, Reverb3D, Sound, SoundBuilder, SoundGroup, System,
 };
 
+#[cfg(doc)]
+use crate::Mode;
+
 impl System {
     /// Loads a sound into memory, opens it for streaming or sets it up for callback based sounds.
     ///

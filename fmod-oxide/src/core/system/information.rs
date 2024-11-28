@@ -13,6 +13,9 @@ use std::{
 
 use crate::{CpuUsage, SpeakerMode, System};
 
+#[cfg(doc)]
+use crate::OutputType;
+
 impl System {
     /// Retrieves the FMOD version number.
     ///

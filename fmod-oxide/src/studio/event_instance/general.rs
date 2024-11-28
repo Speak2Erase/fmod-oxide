@@ -8,6 +8,9 @@ use fmod_sys::*;
 
 use crate::studio::{EventDescription, EventInstance};
 
+#[cfg(doc)]
+use crate::studio::PlaybackState;
+
 impl EventInstance {
     /// Retrieves the event description.
     pub fn get_description(&self) -> Result<EventDescription> {

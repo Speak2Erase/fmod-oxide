@@ -14,6 +14,9 @@ use lanyard::Utf8CString;
 
 use crate::{get_string, DriverState, Guid, Sound, SpeakerMode, System};
 
+#[cfg(doc)]
+use crate::Mode;
+
 impl System {
     /// Retrieves the number of recording devices available for this output mode.
     /// Use this to enumerate all recording devices possible so that the user can select one.
@@ -85,7 +88,7 @@ impl System {
     ///
     /// Will return [`FMOD_RESULT::FMOD_ERR_RECORD_DISCONNECTED`] if the driver is unplugged.
     ///
-    /// Sound must be created as [`SoundMode::CREATE_SAMPLE`].
+    /// Sound must be created as [`Mode::CREATE_SAMPLE`].
     /// Raw PCM data can be accessed with `Sound::lock`, `Sound::unlock` and [`System::get_record_position`].
     ///
     /// Recording from the same driver a second time will stop the first recording.

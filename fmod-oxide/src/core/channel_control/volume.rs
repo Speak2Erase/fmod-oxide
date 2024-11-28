@@ -9,6 +9,9 @@ use std::ffi::c_float;
 
 use crate::ChannelControl;
 
+#[cfg(doc)]
+use crate::Channel;
+
 impl ChannelControl {
     /// Retrieves an estimation of the output volume.
     ///

@@ -8,6 +8,9 @@ use fmod_sys::*;
 
 use crate::{InitFlags, System, SystemBuilder};
 
+#[cfg(doc)]
+use crate::{Channel, OutputType, Sound};
+
 impl System {
     /// A convenience function over [`SystemBuilder`] with sane defaults.
     ///

@@ -15,12 +15,15 @@ pub struct SystemBuilder {
 unsafe impl Send for SystemBuilder {}
 unsafe impl Sync for SystemBuilder {}
 
+#[cfg(doc)]
+use crate::{debug, memory};
+
 impl SystemBuilder {
     /// Creates a new [`SystemBuilder`].
     ///
     /// # Safety
     ///
-    /// This must be called first to create an FMOD System object before any other API calls (except for [`memory_initialize`](crate::memory_initialize) and [`debug_initialize`](crate::debug_initialize)).
+    /// This must be called first to create an FMOD System object before any other API calls (except for [`memory::initialize`] and [`debug::initialize`]).
     /// Use this function to create 1 or multiple instances of FMOD System objects.
     ///
     /// Calls to [`SystemBuilder::new`] and [`System::release`] are not thread-safe.
