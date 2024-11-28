@@ -31,19 +31,8 @@ impl System {
     /// The FMOD Studio API attempts to protect against stale handles and pointers being used with a different Studio System object but this protection cannot be guaranteed and attempting to use stale handles or pointers may cause undefined behavior.
     ///
     /// This function is not safe to be called at the same time across multiple threads.
-    #[cfg_attr(
-        feature = "userdata-abstraction",
-        doc = "\n#### Note: ALL userdata, even accross multiple systems, will be dropped after this function is called.
-        \nThis means that even userdata assocaited with an unrealeased system will be dropped!
-        \nIf your userdata drop code relies on accessing potentially invalid owners, you should handle this manually."
-    )]
     pub unsafe fn release(self) -> Result<()> {
-        unsafe { FMOD_Studio_System_Release(self.inner).to_result()? };
-
-        #[cfg(feature = "userdata-abstraction")]
-        crate::userdata::clear_userdata();
-
-        Ok(())
+        unsafe { FMOD_Studio_System_Release(self.inner).to_result() }
     }
 
     /// Update the FMOD Studio System.
@@ -55,17 +44,8 @@ impl System {
     ///
     /// When Studio is initialized with [`InitFlags::SYNCHRONOUS_UPDATE`] queued commands will be processed immediately when calling this function, the scheduling and update logic for the Studio system are executed and all callbacks are fired.
     /// This may block the calling thread for a substantial amount of time.
-    #[cfg_attr(
-        feature = "userdata-abstraction",
-        doc = "\n#### Note: This function will drop any associated userdata who's owner is no longer valid."
-    )]
     pub fn update(&self) -> Result<()> {
-        unsafe { FMOD_Studio_System_Update(self.inner) }.to_result()?;
-
-        #[cfg(feature = "userdata-abstraction")]
-        crate::userdata::cleanup_userdata();
-
-        Ok(())
+        unsafe { FMOD_Studio_System_Update(self.inner) }.to_result()
     }
 
     /// This function blocks the calling thread until all pending commands have been executed and all non-blocking bank loads have been completed.

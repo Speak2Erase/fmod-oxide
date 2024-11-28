@@ -11,18 +11,6 @@ use crate::studio::CommandReplay;
 impl CommandReplay {
     /// Releases the command replay.
     pub fn release(self) -> Result<()> {
-        #[cfg(feature = "userdata-abstraction")]
-        let userdata = self.get_raw_userdata()?;
-
-        unsafe {
-            FMOD_Studio_CommandReplay_Release(self.inner).to_result()?;
-        }
-
-        #[cfg(feature = "userdata-abstraction")]
-        if !userdata.is_null() {
-            crate::userdata::remove_userdata(userdata.into());
-        }
-
-        Ok(())
+        unsafe { FMOD_Studio_CommandReplay_Release(self.inner).to_result() }
     }
 }

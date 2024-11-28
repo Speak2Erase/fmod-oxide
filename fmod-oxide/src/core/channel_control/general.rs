@@ -13,11 +13,11 @@ impl ChannelControl {
     // TODO callback
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
-    pub fn set_raw_userdata(&self, userdata: *mut c_void) -> Result<()> {
+    pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
         unsafe { FMOD_ChannelControl_SetUserData(self.inner, userdata).to_result() }
     }
 
-    pub fn get_raw_userdata(&self) -> Result<*mut c_void> {
+    pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
             FMOD_ChannelControl_GetUserData(self.inner, &mut userdata).to_result()?;
@@ -29,29 +29,5 @@ impl ChannelControl {
         let mut system = std::ptr::null_mut();
         unsafe { FMOD_ChannelControl_GetSystemObject(self.inner, &mut system).to_result()? }
         Ok(system.into())
-    }
-}
-
-#[cfg(feature = "userdata-abstraction")]
-impl ChannelControl {
-    pub fn set_userdata(&self, userdata: crate::userdata::Userdata) -> Result<()> {
-        use crate::userdata::{insert_userdata, set_userdata};
-
-        let pointer = self.get_raw_userdata()?;
-        if pointer.is_null() {
-            let key = insert_userdata(userdata, *self);
-            self.set_raw_userdata(key.into())?;
-        } else {
-            set_userdata(pointer.into(), userdata);
-        }
-
-        Ok(())
-    }
-
-    pub fn get_userdata(&self) -> Result<Option<crate::userdata::Userdata>> {
-        use crate::userdata::get_userdata;
-
-        let pointer = self.get_raw_userdata()?;
-        Ok(get_userdata(pointer.into()))
     }
 }

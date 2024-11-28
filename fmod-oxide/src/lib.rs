@@ -47,12 +47,16 @@
 //!
 //! # Userdata
 //!
-//! Right now this crate stores userdata in a global slotmap alongside its owner, and every so often will remove userdata with invalid owners.
-//! This solution works best with a mark and sweep GC, which Rust does not have. We could somewhat solve this issue by doing this check in `System::update`.
-//! That would make `System::update` expensive- it would have an additional `O(n)` complexity added to it, which goes against the purpose of this crate.
+//! I've been thinking on this issue for a few months and I can't find a way to safely do it that doesn't involve significant overhead.
+//! My previous approach involved setting userdata to a slotmap index, and removing things from the slotmap when they were released or stopped being valid.
+//! This was quite jank to say the least and was not a solution I was happy with.
 //!
-//! It's difficult to associate userdata with an individual system in this system though- so we have to clear the slotmap whenever any system is released.
-//! Releasing a system is performed at the end of execution generally so this probably won't be an issue.
+//! After that, I tried fixing `release()`'s use-after-free issues by storing a `HashSet` of all the pointers FMOD returns from its API, and removing pointers from that `HashSet` when `release()` was called.
+//! This would've had similar issues to the slotmap approach but would drop userdata early and not handle the `EventDescription` issue, so I scrapped it.
+//!
+//! Ultimately I've decided to make userdata not the concern of this crate. Setting and fetching it is perfectly safe, *using* the pointer is what's unsafe.
+//! It's likely better this way- the semantics of userdata are just too flexible and its hard to cover every edge case.
+//! Userdata isn't super commonly used anyway- it is mainly used to pass data into callbacks, but it's easy enough to use a `static` to do that.
 
 #![warn(rust_2018_idioms, clippy::pedantic)]
 #![allow(
@@ -81,12 +85,6 @@ pub mod core;
 pub use core::*;
 
 pub mod studio;
-
-#[doc(hidden)]
-#[cfg(feature = "userdata-abstraction")]
-pub mod userdata;
-#[cfg(feature = "userdata-abstraction")]
-pub use userdata::Userdata;
 
 pub const VERSION: u32 = fmod_sys::FMOD_VERSION;
 pub const MAX_CHANNEL_WIDTH: u32 = fmod_sys::FMOD_MAX_CHANNEL_WIDTH;

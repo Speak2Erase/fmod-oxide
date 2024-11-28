@@ -9,7 +9,7 @@ Certain APIs, such as loading banks from a pointer, are marked as unsafe, but ar
 I'm currently developing this crate in tandem with another game, which means most of the real world testing of this crate comes from one source and only on a Windows/Linux system.
 This means that for some functions/use cases I haven't gotten the API down quite yet. (Custom Filesystems, Mix Matrices, Mac Support, etc)
 Almost all of the crate is feature complete though. 
-I need to fix some issues with API documentation, add support for more FMOD versions, and double check the safety of everything before I'm confident releasing this as anything but a beta.
+I need to add support for more FMOD versions, and double check the safety of everything before I'm confident releasing this as anything but a beta.
 
 ### Docs
 
@@ -22,7 +22,8 @@ All FMOD objects are Copy, Clone, Send and Sync because it's possible to have mu
 There are a lot of use-cases where you may want to fetch something (like a bank) and never use it again.
 Implementing `Drop` to automatically release things would go against that particular use-case, so this crate opts to have manual `release()` methods instead.
 
-This crate does not currently guard against use-after-frees, although it's something I have planned.
+This crate does not currently guard against use-after-frees, *however* using most of FMOD's types (especially FMOD Studio's types) after calling `release()` is safe.
+I'm still not 100% sure of what is and isn't safe and I'm actively trying to test this.
 
 # String types
 fmod-oxide aims to be as zero-cost as possible, and as such, it uses UTF-8 C strings from the `lanyard` crate as its string type.
@@ -46,7 +47,7 @@ There are a couple cases related to thread safety (You can initialize FMOD to be
 
 Right now there are a some fns marked as unsafe that I'm not sure how to get working safely. 
 System creation, initialization, and cleanup is a pretty big one- creating a system is really unsafe, and certain functions can only be called before or after system creation.
-Releasing a system is probably the most unsafe operation of all though, as it invalidates all FMOD handles associated with that system
+Releasing a system is probably the most unsafe operation of all though, as it invalidates all FMOD handles associated with that system!
 
 # Userdata
 
@@ -56,19 +57,16 @@ Unfortunately, there's quite a lot of cases where it's not possible to do that.
 You can also set up a callback when banks are unloaded as well to also clean up their userdata. 
 That callback would be a perfect place to clean up userdata on `EventDescription` *however* you can't access the `EventDescription`s of a bank when that callback is fired.
 
-Pretty much the only option here would be to either a) require the user to manually release userdata or b) leak memory.
-Neither of these are good.
+I've been thinking on this issue for a few months and I can't find a way to safely do it that doesn't involve significant overhead.
+My previous approach involved setting userdata to a slotmap index, and removing things from the slotmap when they were released or stopped being valid.
+This was quite jank to say the least and was not a solution I was happy with.
 
-Right now this crate stores userdata in a global slotmap alongside its owner, and every so often will remove userdata with invalid owners.
-This solution works best with a mark and sweep GC, which Rust does not have. We could somewhat solve this issue by doing this check in `System::update`.
-That would make `System::update` expensive- it would have an additional `O(n)` complexity added to it, which goes against the purpose of this crate.
+After that, I tried fixing `release()`'s use-after-free issues by storing a `HashSet` of all the pointers FMOD returns from its API, and removing pointers from that `HashSet` when `release()` was called.
+This would've had similar issues to the slotmap approach but would drop userdata early and not handle the `EventDescription` issue, so I scrapped it.
 
-It's difficult to associate userdata with an individual system in this system though- so we have to clear the slotmap whenever any system is released.
-Releasing a system is performed at the end of execution generally so this probably won't be an issue.
-The only other workaround would be to set the userdata pointer of any object returned to a hashmap that each system owns. 
-
-I'm still thinking on how to solve this issue, but I'll probably put this behind a feature gate and provide `*mut c_void` setters and getters as well.
-Not the approach I would *like*, but oh well.
+Ultimately I've decided to make userdata not the concern of this crate. Setting and fetching it is perfectly safe, *using* the pointer is what's unsafe. 
+It's likely better this way- the semantics of userdata are just too flexible and its hard to cover every edge case.
+Userdata isn't super commonly used anyway- it is mainly used to pass data into callbacks, but it's easy enough to use a `static` to do that.
 
 If there was an easy way to enforce that a `T` is pointer sized and needs no `Drop` (at compile time) then I could use the approach I was going for early on in this crate and just transmute the `T` to a `*mut c_void`.
 (See [this commit](https://github.com/Speak2Erase/fmod-oxide/tree/a14876da32ce5df5b14673c118f09da6fec17544).)

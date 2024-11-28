@@ -12,10 +12,7 @@ use crossterm::{
 };
 use fmod::c;
 use fmod::studio::{EventCallbackMask, EventInstanceCallback};
-use std::{
-    io::Write,
-    sync::{Arc, Mutex},
-};
+use std::{io::Write, sync::Mutex};
 
 #[derive(Default)]
 struct CallbackInfo {
@@ -29,11 +26,7 @@ impl EventInstanceCallback for Callback {
         event: fmod::studio::EventInstance,
         timeline_props: fmod::studio::TimelineMarkerProperties,
     ) -> fmod::Result<()> {
-        let callback_info = event
-            .get_userdata()?
-            .unwrap()
-            .downcast::<CallbackInfo>()
-            .unwrap();
+        let callback_info = unsafe { &*event.get_userdata()?.cast::<CallbackInfo>() };
         let mut entries = callback_info.entries.lock().unwrap();
 
         let name = timeline_props.name.to_string();
@@ -46,11 +39,7 @@ impl EventInstanceCallback for Callback {
         event: fmod::studio::EventInstance,
         timeline_beat: fmod::studio::TimelineBeatProperties,
     ) -> fmod::Result<()> {
-        let callback_info = event
-            .get_userdata()?
-            .unwrap()
-            .downcast::<CallbackInfo>()
-            .unwrap();
+        let callback_info = unsafe { &*event.get_userdata()?.cast::<CallbackInfo>() };
         let mut entries = callback_info.entries.lock().unwrap();
 
         entries.push(format!(
@@ -66,11 +55,7 @@ impl EventInstanceCallback for Callback {
     }
 
     fn sound_played(event: fmod::studio::EventInstance, sound: fmod::Sound) -> fmod::Result<()> {
-        let callback_info = event
-            .get_userdata()?
-            .unwrap()
-            .downcast::<CallbackInfo>()
-            .unwrap();
+        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
         let mut entries = callback_info.entries.lock().unwrap();
 
         let name = sound.get_name()?;
@@ -81,11 +66,7 @@ impl EventInstanceCallback for Callback {
     }
 
     fn sound_stopped(event: fmod::studio::EventInstance, sound: fmod::Sound) -> fmod::Result<()> {
-        let callback_info = event
-            .get_userdata()?
-            .unwrap()
-            .downcast::<CallbackInfo>()
-            .unwrap();
+        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
         let mut entries = callback_info.entries.lock().unwrap();
 
         let name = sound.get_name()?;
@@ -136,9 +117,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let event_description = system.get_event(c!("event:/Music/Level 01"))?;
     let event_instance = event_description.create_instance()?;
 
-    let callback_info = Arc::new(CallbackInfo::default());
+    let callback_info = CallbackInfo::default();
+    let callback_info = &callback_info; // borrow here to make working with callback_info somewhat safer
+    let userdata = std::ptr::from_ref(callback_info)
+        .cast::<std::ffi::c_void>()
+        .cast_mut();
 
-    event_instance.set_userdata(callback_info.clone())?;
+    event_instance.set_userdata(userdata)?;
     event_instance.set_callback::<Callback>(
         EventCallbackMask::TIMELINE_MARKER
             | EventCallbackMask::TIMELINE_BEAT
