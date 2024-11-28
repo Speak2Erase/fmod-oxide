@@ -54,7 +54,7 @@ impl Channel {
     ///
     /// If playing a Sound created with [`System::create_stream`] or [`SoundMode::CreateStream`] changing the position may cause a slow reflush operation while the file seek and decode occurs.
     /// You can avoid this by creating the stream with [`SoundMode::Nonblocking`].
-    /// This will cause the stream to go into FMOD_OPENSTATE_SETPOSITION state (see Sound::getOpenState) and Sound commands will return [`FMOD_RESULT::FMOD_ERR_NOTREADY`].
+    /// This will cause the stream to go into `FMOD_OPENSTATE_SETPOSITION` state (see `Sound::getOpenState`) and Sound commands will return [`FMOD_RESULT::FMOD_ERR_NOTREADY`].
     /// [`Channel::get_position`] will also not update until this non-blocking set position operation has completed.
     ///
     /// Using a VBR source that does not have an associated seek table or seek information (such as MP3 or MOD/S3M/XM/IT) may cause inaccurate seeking if you specify [`TimeUnit::MS`] or [`TimeUnit::PCM`].
@@ -115,7 +115,7 @@ impl Channel {
 
     /// Sets the loop start and end points.
     ///
-    /// Loop points may only be set on a Channel playing a Sound, not a Channel playing a DSP (See System::playDSP).
+    /// Loop points may only be set on a Channel playing a Sound, not a Channel playing a DSP (See `System::playDSP`).
     ///
     /// Valid [`TimeUnit`] types are [`TimeUnit::PCM`], [`TimeUnit::MS`], [`TimeUnit::PCMBytes`]. Any other time units return [`FMOD_RESULT::FMOD_ERR_FORMAT`].
     /// If [`TimeUnit::MS`] or [`TimeUnit::PCMBytes`], the value is internally converted to [`TimeUnit::PCM`].

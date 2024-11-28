@@ -14,7 +14,7 @@ impl Sound {
     /// Moves the sound from its existing [`SoundGroup`] to the specified sound group.
     ///
     /// By default, a sound is located in the 'master sound group'.
-    /// This can be retrieved with System::getMasterSoundGroup.
+    /// This can be retrieved with `System::getMasterSoundGroup`.
     pub fn set_sound_group(&self, group: SoundGroup) -> Result<()> {
         unsafe { FMOD_Sound_SetSoundGroup(self.inner, group.into()).to_result() }
     }
@@ -41,14 +41,14 @@ impl Sound {
 
     /// Retrieves a handle to a Sound object that is contained within the parent sound.
     ///
-    /// If the sound is a stream and FMOD_NONBLOCKING was not used,
+    /// If the sound is a stream and `FMOD_NONBLOCKING` was not used,
     /// then this call will perform a blocking seek/flush to the specified subsound.
     ///
-    /// If FMOD_NONBLOCKING was used to open this sound and the sound is a stream,
-    /// FMOD will do a non blocking seek/flush and set the state of the subsound to FMOD_OPENSTATE_SEEKING.
+    /// If `FMOD_NONBLOCKING` was used to open this sound and the sound is a stream,
+    /// FMOD will do a non blocking seek/flush and set the state of the subsound to `FMOD_OPENSTATE_SEEKING`.
     ///
-    /// The sound won't be ready to be used when FMOD_NONBLOCKING is used,
-    /// until the state of the sound becomes FMOD_OPENSTATE_READY or FMOD_OPENSTATE_ERROR.
+    /// The sound won't be ready to be used when `FMOD_NONBLOCKING` is used,
+    /// until the state of the sound becomes `FMOD_OPENSTATE_READY` or `FMOD_OPENSTATE_ERROR`.
     pub fn get_sub_sound(&self, index: c_int) -> Result<Sound> {
         let mut sound = std::ptr::null_mut();
         unsafe {

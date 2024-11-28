@@ -29,7 +29,7 @@ impl ChannelControl {
 
     /// Sets the volume level.
     ///
-    /// To define the volume per Sound use Sound::setDefaults.
+    /// To define the volume per Sound use `Sound::setDefaults`.
     ///
     /// Setting volume at a level higher than 1 can lead to distortion/clipping.
     pub fn set_volume(&self, volume: c_float) -> Result<()> {
@@ -67,8 +67,8 @@ impl ChannelControl {
     /// Mute is an additional control for volume, the effect of which is equivalent to setting the volume to zero.
     ///
     /// An individual mute state is kept for each object,
-    /// muting a parent ChannelGroup will effectively mute this object however when queried the individual mute state is returned.
-    /// ChannelControl::getAudibility can be used to calculate overall audibility for a Channel or ChannelGroup.
+    /// muting a parent `ChannelGroup` will effectively mute this object however when queried the individual mute state is returned.
+    /// `ChannelControl::getAudibility` can be used to calculate overall audibility for a Channel or `ChannelGroup`.
     pub fn set_mute(&self, mute: bool) -> Result<()> {
         unsafe { FMOD_ChannelControl_SetMute(self.inner, mute).to_result() }
     }
@@ -76,8 +76,8 @@ impl ChannelControl {
     /// Retrieves the mute state.
     ///
     /// An individual mute state is kept for each object,
-    /// muting a parent ChannelGroup will effectively mute this object however when queried the individual mute state is returned.
-    /// ChannelControl::getAudibility can be used to calculate overall audibility for a Channel or ChannelGroup.
+    /// muting a parent `ChannelGroup` will effectively mute this object however when queried the individual mute state is returned.
+    /// `ChannelControl::getAudibility` can be used to calculate overall audibility for a Channel or `ChannelGroup`.
     pub fn get_mute(&self) -> Result<bool> {
         let mut mute = false;
         unsafe {

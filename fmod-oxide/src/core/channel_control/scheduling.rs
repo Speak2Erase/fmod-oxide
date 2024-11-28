@@ -13,7 +13,7 @@ use crate::ChannelControl;
 impl ChannelControl {
     /// Retrieves the DSP clock values at this point in time.
     ///
-    /// To perform sample accurate scheduling in conjunction with ChannelControl::setDelay and ChannelControl::addFadePoint query the parentclock value.
+    /// To perform sample accurate scheduling in conjunction with `ChannelControl::setDelay` and `ChannelControl::addFadePoint` query the parentclock value.
     pub fn get_dsp_clock(&self) -> Result<(c_ulonglong, c_ulonglong)> {
         let mut dsp_clock = 0;
         let mut parent_clock = 0;
@@ -24,10 +24,10 @@ impl ChannelControl {
         Ok((dsp_clock, parent_clock))
     }
 
-    /// Sets a sample accurate start (and/or stop) time relative to the parent ChannelGroup DSP clock.
+    /// Sets a sample accurate start (and/or stop) time relative to the parent `ChannelGroup` DSP clock.
     ///
-    /// To perform sample accurate scheduling use ChannelControl::getDSPClock to query the parent clock value.
-    /// If a parent ChannelGroup changes its pitch, the start and stop times will still be correct as the parent clock rate is adjusted by that pitch.
+    /// To perform sample accurate scheduling use `ChannelControl::getDSPClock` to query the parent clock value.
+    /// If a parent `ChannelGroup` changes its pitch, the start and stop times will still be correct as the parent clock rate is adjusted by that pitch.
     pub fn set_delay(
         &self,
         start: c_ulonglong,
@@ -37,7 +37,7 @@ impl ChannelControl {
         unsafe { FMOD_ChannelControl_SetDelay(self.inner, start, end, stop_channels).to_result() }
     }
 
-    /// Retrieves a sample accurate start (and/or stop) time relative to the parent ChannelGroup DSP clock.
+    /// Retrieves a sample accurate start (and/or stop) time relative to the parent `ChannelGroup` DSP clock.
     pub fn get_delay(&self) -> Result<(c_ulonglong, c_ulonglong, bool)> {
         let mut dsp_start = 0;
         let mut dsp_end = 0;
@@ -54,12 +54,12 @@ impl ChannelControl {
         Ok((dsp_start, dsp_end, stop_channels))
     }
 
-    /// Adds a sample accurate fade point at a time relative to the parent ChannelGroup DSP clock.
+    /// Adds a sample accurate fade point at a time relative to the parent `ChannelGroup` DSP clock.
     ///
     /// Fade points are scaled against other volume settings and in-between each fade point the volume will be linearly ramped.
     ///
-    /// To perform sample accurate fading use ChannelControl::getDSPClock to query the parent clock value.
-    /// If a parent ChannelGroup changes its pitch, the fade points will still be correct as the parent clock rate is adjusted by that pitch.
+    /// To perform sample accurate fading use `ChannelControl::getDSPClock` to query the parent clock value.
+    /// If a parent `ChannelGroup` changes its pitch, the fade points will still be correct as the parent clock rate is adjusted by that pitch.
     ///
     /// ```rs
     /// // Example. Ramp from full volume to half volume over the next 4096 samples
@@ -75,7 +75,7 @@ impl ChannelControl {
     ///
     /// This is a convenience function that creates a scheduled 64 sample fade point ramp from the current volume level to volume arriving at `dsp_clock` time.
     ///
-    /// Can be use in conjunction with ChannelControl::SetDelay.
+    /// Can be use in conjunction with `ChannelControl::SetDelay`.
     ///
     /// All fade points after `dsp_clock` will be removed.
     pub fn set_fade_point_ramp(&self, dsp_clock: c_ulonglong, volume: f32) -> Result<()> {

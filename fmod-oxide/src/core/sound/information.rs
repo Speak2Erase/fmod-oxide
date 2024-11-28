@@ -17,7 +17,7 @@ use crate::{get_string, Sound, SoundFormat, SoundType, Tag, TimeUnit};
 impl Sound {
     /// Retrieves the name of a sound.
     ///
-    /// If FMOD_LOWMEM has been specified in System::createSound, this function will return "(null)".
+    /// If `FMOD_LOWMEM` has been specified in `System::createSound`, this function will return "(null)".
     pub fn get_name(&self) -> Result<Utf8CString> {
         get_string(|name| unsafe {
             FMOD_Sound_GetName(self.inner, name.as_mut_ptr().cast(), name.len() as c_int)
@@ -44,7 +44,7 @@ impl Sound {
     /// A length of `0xFFFFFFFF` means it is of unlimited length, such as an internet radio stream or MOD/S3M/XM/IT file which may loop forever.
     ///
     /// Note: Using a VBR (Variable Bit Rate) source that does not have metadata containing its accurate length (such as un-tagged MP3 or MOD/S3M/XM/IT) may return inaccurate length values.
-    /// For these formats, use FMOD_ACCURATETIME when creating the sound.
+    /// For these formats, use `FMOD_ACCURATETIME` when creating the sound.
     /// This will cause a slight delay and memory increase, as FMOD will scan the whole during creation to find the correct length.
     /// This flag also creates a seek table to enable sample accurate seeking.
     pub fn get_length(&self, unit: TimeUnit) -> Result<c_uint> {
@@ -74,15 +74,15 @@ impl Sound {
     ///
     /// 'Tags' are metadata stored within a sound file. These can be things like a song's name, composer etc.
     ///
-    /// The number of tags available can be found with Sound::getNumTags.
+    /// The number of tags available can be found with `Sound::getNumTags`.
     ///
     /// The way to display or retrieve tags can be done in 3 different ways:
-    /// - All tags can be continuously retrieved by looping from 0 to the numtags value in Sound::getNumTags - 1. Updated tags will refresh automatically, and the 'updated' member of the FMOD_TAG structure will be set to true if a tag has been updated, due to something like a netstream changing the song name for example.
-    /// - Tags can be retrieved by specifying -1 as the index and only updating tags that are returned. If all tags are retrieved and this function is called the function will return an error of FMOD_ERR_TAGNOTFOUND.
+    /// - All tags can be continuously retrieved by looping from 0 to the numtags value in `Sound::getNumTags` - 1. Updated tags will refresh automatically, and the 'updated' member of the `FMOD_TAG` structure will be set to true if a tag has been updated, due to something like a netstream changing the song name for example.
+    /// - Tags can be retrieved by specifying -1 as the index and only updating tags that are returned. If all tags are retrieved and this function is called the function will return an error of `FMOD_ERR_TAGNOTFOUND`.
     /// - Specific tags can be retrieved by specifying a name parameter. The index can be 0 based or -1 in the same fashion as described previously.
     ///
-    /// Note with netstreams an important consideration must be made between songs, a tag may occur that changes the playback rate of the song. It is up to the user to catch this and reset the playback rate with Channel::setFrequency.
-    /// A sample rate change will be signalled with a tag of type FMOD_TAGTYPE_FMOD.
+    /// Note with netstreams an important consideration must be made between songs, a tag may occur that changes the playback rate of the song. It is up to the user to catch this and reset the playback rate with `Channel::setFrequency`.
+    /// A sample rate change will be signalled with a tag of type `FMOD_TAGTYPE_FMOD`.
     ///```rs
     /// while let Ok(tag) = sound->getTag(None, -1)
     /// {

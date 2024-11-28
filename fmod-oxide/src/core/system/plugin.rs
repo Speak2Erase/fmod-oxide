@@ -18,7 +18,7 @@ impl System {
 
     /// Loads an FMOD (DSP, Output or Codec) plugin from file.
     ///
-    /// Once loaded DSP plugins can be used via System::createDSPByPlugin, output plugins can be use via System::setOutputByPlugin and codec plugins will be used automatically.
+    /// Once loaded DSP plugins can be used via `System::createDSPByPlugin`, output plugins can be use via `System::setOutputByPlugin` and codec plugins will be used automatically.
     ///
     /// When opening a file each codec tests whether it can support the file format in priority order.
     ///
@@ -135,9 +135,9 @@ impl System {
     /// A DSP object is a module that can be inserted into the mixing graph to allow sound filtering or sound generation.
     /// See the DSP architecture guide for more information.
     ///
-    /// A handle can come from a newly loaded plugin with System::loadPlugin or an existing plugin with System::getPluginHandle.
+    /// A handle can come from a newly loaded plugin with `System::loadPlugin` or an existing plugin with `System::getPluginHandle`.
     ///
-    /// DSPs must be attached to the DSP graph before they become active, either via ChannelControl::addDSP or DSP::addInput.
+    /// DSPs must be attached to the DSP graph before they become active, either via `ChannelControl::addDSP` or `DSP::addInput`.
     pub fn create_dsp_by_plugin(&self, handle: c_uint) -> Result<Dsp> {
         let mut dsp = std::ptr::null_mut();
         unsafe {
@@ -158,40 +158,40 @@ impl System {
 
     /// Register a Codec plugin description structure for later use.
     ///
-    /// To create an instances of this plugin use System::createSound and System::createStream.
+    /// To create an instances of this plugin use `System::createSound` and `System::createStream`.
     ///
     /// When opening a file each Codec tests whether it can support the file format in priority order.
-    /// The priority for each FMOD_SOUND_TYPE are as follows:
-    /// - FMOD_SOUND_TYPE_FSB : 250
-    /// - FMOD_SOUND_TYPE_XMA : 250
-    /// - FMOD_SOUND_TYPE_AT9 : 250
-    /// - FMOD_SOUND_TYPE_VORBIS : 250
-    /// - FMOD_SOUND_TYPE_OPUS : 250
-    /// - FMOD_SOUND_TYPE_FADPCM : 250
-    /// - FMOD_SOUND_TYPE_WAV : 600
-    /// - FMOD_SOUND_TYPE_OGGVORBIS : 800
-    /// - FMOD_SOUND_TYPE_AIFF : 1000
-    /// - FMOD_SOUND_TYPE_FLAC : 1100
-    /// - FMOD_SOUND_TYPE_MOD : 1200
-    /// - FMOD_SOUND_TYPE_S3M : 1300
-    /// - FMOD_SOUND_TYPE_XM : 1400
-    /// - FMOD_SOUND_TYPE_IT : 1500
-    /// - FMOD_SOUND_TYPE_MIDI : 1600
-    /// - FMOD_SOUND_TYPE_DLS : 1700
-    /// - FMOD_SOUND_TYPE_ASF : 1900
-    /// - FMOD_SOUND_TYPE_AUDIOQUEUE : 2200
-    /// - FMOD_SOUND_TYPE_MEDIACODEC : 2250
-    /// - FMOD_SOUND_TYPE_MPEG : 2400
-    /// - FMOD_SOUND_TYPE_PLAYLIST : 2450
-    /// - FMOD_SOUND_TYPE_RAW : 2500
-    /// - FMOD_SOUND_TYPE_USER : 2600
-    /// - FMOD_SOUND_TYPE_MEDIA_FOUNDATION : 2600
+    /// The priority for each `FMOD_SOUND_TYPE` are as follows:
+    /// - `FMOD_SOUND_TYPE_FSB` : 250
+    /// - `FMOD_SOUND_TYPE_XMA` : 250
+    /// - `FMOD_SOUND_TYPE_AT9` : 250
+    /// - `FMOD_SOUND_TYPE_VORBIS` : 250
+    /// - `FMOD_SOUND_TYPE_OPUS` : 250
+    /// - `FMOD_SOUND_TYPE_FADPCM` : 250
+    /// - `FMOD_SOUND_TYPE_WAV` : 600
+    /// - `FMOD_SOUND_TYPE_OGGVORBIS` : 800
+    /// - `FMOD_SOUND_TYPE_AIFF` : 1000
+    /// - `FMOD_SOUND_TYPE_FLAC` : 1100
+    /// - `FMOD_SOUND_TYPE_MOD` : 1200
+    /// - `FMOD_SOUND_TYPE_S3M` : 1300
+    /// - `FMOD_SOUND_TYPE_XM` : 1400
+    /// - `FMOD_SOUND_TYPE_IT` : 1500
+    /// - `FMOD_SOUND_TYPE_MIDI` : 1600
+    /// - `FMOD_SOUND_TYPE_DLS` : 1700
+    /// - `FMOD_SOUND_TYPE_ASF` : 1900
+    /// - `FMOD_SOUND_TYPE_AUDIOQUEUE` : 2200
+    /// - `FMOD_SOUND_TYPE_MEDIACODEC` : 2250
+    /// - `FMOD_SOUND_TYPE_MPEG` : 2400
+    /// - `FMOD_SOUND_TYPE_PLAYLIST` : 2450
+    /// - `FMOD_SOUND_TYPE_RAW` : 2500
+    /// - `FMOD_SOUND_TYPE_USER` : 2600
+    /// - `FMOD_SOUND_TYPE_MEDIA_FOUNDATION` : 2600
     ///
     /// XMA, AT9, Vorbis, Opus and FADPCM are supported through the FSB format, and therefore have the same priority as FSB.
     ///
     /// Media Foundation is supported through the User codec, and therefore has the same priority as User.
     ///
-    /// Raw and User are only accesible if FMOD_OPENRAW or FMOD_OPENUSER is specified as the mode in System::createSound.
+    /// Raw and User are only accesible if `FMOD_OPENRAW` or `FMOD_OPENUSER` is specified as the mode in `System::createSound`.
     ///
     /// # Safety
     ///
@@ -213,7 +213,7 @@ impl System {
 
     /// Register a DSP plugin description structure for later use.
     ///
-    /// To create an instances of this plugin use System::createDSPByPlugin.
+    /// To create an instances of this plugin use `System::createDSPByPlugin`.
     ///
     /// # Safety
     ///
@@ -233,7 +233,7 @@ impl System {
 
     /// Register an Output plugin description structure for later use.
     ///
-    /// To select this plugin for output use System::setOutputByPlugin.
+    /// To select this plugin for output use `System::setOutputByPlugin`.
     ///
     /// # Safety
     ///

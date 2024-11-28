@@ -12,12 +12,12 @@ use crate::{Mode, Sound, TimeUnit, Vector};
 impl Sound {
     /// Sets the angles and attenuation levels of a 3D cone shape, for simulated occlusion which is based on direction.
     ///
-    /// When ChannelControl::set3DConeOrientation is used and a 3D 'cone' is set up,
+    /// When `ChannelControl::set3DConeOrientation` is used and a 3D 'cone' is set up,
     /// attenuation will automatically occur for a sound based on the relative angle of the direction the cone is facing,
     /// vs the angle between the sound and the listener.
     /// - If the relative angle is within the `inside_angle`, the sound will not have any attenuation applied.
     /// - If the relative angle is between the `inside_angle` and `outside_angle`,
-    /// linear volume attenuation (between 1 and `outside_volume`) is applied between the two angles until it reaches the `outside_angle`.
+    ///   linear volume attenuation (between 1 and `outside_volume`) is applied between the two angles until it reaches the `outside_angle`.
     /// - If the relative angle is outside of the `outside_angle` the volume does not attenuate any further.
     pub fn set_3d_cone_settings(
         &self,
@@ -94,18 +94,18 @@ impl Sound {
     /// The distances are meant to simulate the 'size' of a sound. Reducing the min distance will mean the sound appears smaller in the world, and in some modes makes the volume attenuate faster as the listener moves away from the sound.
     /// Increasing the min distance simulates a larger sound in the world, and in some modes makes the volume attenuate slower as the listener moves away from the sound.
     ///
-    /// max will affect attenuation differently based on roll-off mode set in the mode parameter of System::createSound, System::createStream, Sound::setMode or ChannelControl::setMode.
+    /// max will affect attenuation differently based on roll-off mode set in the mode parameter of `System::createSound`, `System::createStream`, `Sound::setMode` or `ChannelControl::setMode`.
     ///
     /// For these modes the volume will attenuate to 0 volume (silence), when the distance from the sound is equal to or further than the max distance:
-    /// - FMOD_3D_LINEARROLLOFF
-    /// - FMOD_3D_LINEARSQUAREROLLOFF
+    /// - `FMOD_3D_LINEARROLLOFF`
+    /// - `FMOD_3D_LINEARSQUAREROLLOFF`
     ///
     /// For these modes the volume will stop attenuating at the point of the max distance, without affecting the rate of attenuation:
-    /// - FMOD_3D_INVERSEROLLOFF
-    /// - FMOD_3D_INVERSETAPEREDROLLOFF
+    /// - `FMOD_3D_INVERSEROLLOFF`
+    /// - `FMOD_3D_INVERSETAPEREDROLLOFF`
     ///
     /// For this mode the max distance is ignored:
-    /// - FMOD_3D_CUSTOMROLLOFF
+    /// - `FMOD_3D_CUSTOMROLLOFF`
     pub fn set_3d_min_max_distance(&self, min: c_float, max: c_float) -> Result<()> {
         unsafe { FMOD_Sound_Set3DMinMaxDistance(self.inner, min, max).to_result() }
     }
@@ -139,7 +139,7 @@ impl Sound {
 
     /// Sets or alters the mode of a sound.
     ///
-    /// When calling this function, note that it will only take effect when the sound is played again with System::playSound.
+    /// When calling this function, note that it will only take effect when the sound is played again with `System::playSound`.
     /// This is the default for when the sound next plays, not a mode that will suddenly change all currently playing instances of this sound.
     ///
     /// Flags supported:
@@ -167,7 +167,7 @@ impl Sound {
 
     /// Retrieves the mode of a sound.
     ///
-    /// The mode will be dependent on the mode set by a call to System::createSound, System::createStream or [`Sound::set_mode`].
+    /// The mode will be dependent on the mode set by a call to `System::createSound`, `System::createStream` or [`Sound::set_mode`].
     pub fn get_mode(&self) -> Result<Mode> {
         let mut mode = 0;
         unsafe {
@@ -185,7 +185,7 @@ impl Sound {
 
     /// Retrieves the sound's loop count.
     ///
-    /// Unlike the Channel loop count function, this function simply returns the value set with Sound::setLoopCount.
+    /// Unlike the Channel loop count function, this function simply returns the value set with `Sound::setLoopCount`.
     /// It does not decrement as it plays (especially seeing as one sound can be played multiple times).
     pub fn get_loop_count(&self) -> Result<c_int> {
         let mut loop_count = 0;

@@ -14,7 +14,7 @@ impl Dsp {
     ///
     /// If active is false, processing of this unit and its inputs are stopped.
     ///
-    /// When created a [`Dsp`] is inactive. If ChannelControl::addDSP is used it will automatically be activated, otherwise it must be set to active manually.
+    /// When created a [`Dsp`] is inactive. If `ChannelControl::addDSP` is used it will automatically be activated, otherwise it must be set to active manually.
     pub fn set_active(&self, active: bool) -> Result<()> {
         unsafe { FMOD_DSP_SetActive(self.inner, active.into()).to_result() }
     }
@@ -24,7 +24,7 @@ impl Dsp {
     /// If active is False, processing of this unit and its inputs are stopped.
     ///
     /// When created a [`Dsp`] is inactive.
-    /// If ChannelControl::addDSP is used it will automatically be activated, otherwise it must be set to active manually.
+    /// If `ChannelControl::addDSP` is used it will automatically be activated, otherwise it must be set to active manually.
     pub fn get_active(&self) -> Result<bool> {
         let mut active = FMOD_BOOL::FALSE;
         unsafe { FMOD_DSP_GetActive(self.inner, &mut active).to_result()? };

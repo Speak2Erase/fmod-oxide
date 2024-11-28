@@ -814,7 +814,7 @@ impl<'a> SoundBuilder<'a> {
     /// The mode must match the required fields of the [`FMOD_CREATESOUNDEXINFO`] struct.
     /// The [`FMOD_CREATESOUNDEXINFO`] struct's cbsize field must be set to the size of the struct.
     ///
-    /// If the mode is not [`Mode::OPEN_MEMORY`] or [`Mode::OPEN_MEMORY_POINT`] name_or_data pointer must be valid for reads of bytes up to and including the nul terminator.
+    /// If the mode is not [`Mode::OPEN_MEMORY`] or [`Mode::OPEN_MEMORY_POINT`] `name_or_data` pointer must be valid for reads of bytes up to and including the nul terminator.
     ///
     /// If the mode is [`Mode::OPEN_MEMORY`] or [`Mode::OPEN_MEMORY_POINT`] the data pointer must be valid for reads of bytes up to [`FMOD_CREATESOUNDEXINFO::length`].
     ///

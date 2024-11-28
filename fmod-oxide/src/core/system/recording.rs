@@ -86,11 +86,11 @@ impl System {
     /// Will return [`FMOD_RESULT::FMOD_ERR_RECORD_DISCONNECTED`] if the driver is unplugged.
     ///
     /// Sound must be created as [`SoundMode::CREATE_SAMPLE`].
-    /// Raw PCM data can be accessed with Sound::lock, Sound::unlock and [`System::get_record_position`].
+    /// Raw PCM data can be accessed with `Sound::lock`, `Sound::unlock` and [`System::get_record_position`].
     ///
     /// Recording from the same driver a second time will stop the first recording.
     ///
-    /// For lowest latency set the [`Sound`] sample rate to the rate returned by System::getRecordDriverInfo,
+    /// For lowest latency set the [`Sound`] sample rate to the rate returned by `System::getRecordDriverInfo`,
     /// otherwise a resampler will be allocated to handle the difference in frequencies, which adds latency.
     pub fn record_start(&self, id: c_int, sound: Sound, do_loop: bool) -> Result<()> {
         unsafe { FMOD_System_RecordStart(self.inner, id, sound.into(), do_loop.into()).to_result() }

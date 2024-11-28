@@ -96,7 +96,7 @@ impl System {
     /// To determine the actual memory usage of a stream, including sound buffer and other overhead, use [`crate::memory::memory_get_stats`] before and after creating a sound.
     ///
     /// Stream may still stutter if the codec uses a large amount of cpu time, which impacts the smaller, internal 'decode' buffer.
-    /// The decode buffer size is changeable via FMOD_CREATESOUNDEXINFO.
+    /// The decode buffer size is changeable via `FMOD_CREATESOUNDEXINFO`.
     pub fn set_stream_buffer_size(&self, file_buffer_size: c_uint, kind: TimeUnit) -> Result<()> {
         unsafe {
             FMOD_System_SetStreamBufferSize(self.inner, file_buffer_size, kind.into()).to_result()
@@ -147,7 +147,7 @@ impl System {
     /// Calling [`SystemBuilder::software_format`] will override any customization made with this function.
     ///
     /// Users of the Studio API should be aware this function does not affect the speaker positions used by the Spatializer DSPs,
-    /// it is purely for Core API spatialization via ChannelControl::set3DAttributes.
+    /// it is purely for Core API spatialization via `ChannelControl::set3DAttributes`.
     pub fn set_speaker_position(
         &self,
         speaker: Speaker,
@@ -186,10 +186,10 @@ impl System {
     /// Another way to put it is that it equates to "how many units per meter does your engine have".
     /// For example, if you are using feet then "scale" would equal 3.28.
     /// This only affects doppler. If you keep your min/max distance, custom roll-off curves, and positions in scale relative to each other, the volume roll-off will not change.
-    /// If you set this, the min_distance of a sound will automatically set itself to this value when it is created in case the user forgets to set the min_distance to match the new distance_factor.
+    /// If you set this, the `min_distance` of a sound will automatically set itself to this value when it is created in case the user forgets to set the `min_distance` to match the new `distance_factor`.
     ///
-    /// The `rolloff_scale` is a global factor applied to the roll-off of sounds using roll-off modes other than FMOD_3D_CUSTOMROLLOFF.
-    /// When a sound uses a roll-off mode other than FMOD_3D_CUSTOMROLLOFF and the distance is greater than the sound's minimum distance,
+    /// The `rolloff_scale` is a global factor applied to the roll-off of sounds using roll-off modes other than `FMOD_3D_CUSTOMROLLOFF`.
+    /// When a sound uses a roll-off mode other than `FMOD_3D_CUSTOMROLLOFF` and the distance is greater than the sound's minimum distance,
     /// the distance for the purposes of distance attenuation is calculated according to the formula `distance = (distance - min_distance) * rolloff_scale + min_distance`.
     pub fn set_3d_settings(
         &self,
@@ -243,7 +243,7 @@ impl System {
 
     /// Sets a callback to allow custom calculation of distance attenuation.
     ///
-    /// This function overrides FMOD_3D_INVERSEROLLOFF, FMOD_3D_LINEARROLLOFF, FMOD_3D_LINEARSQUAREROLLOFF, FMOD_3D_INVERSETAPEREDROLLOFF and FMOD_3D_CUSTOMROLLOFF.
+    /// This function overrides `FMOD_3D_INVERSEROLLOFF`, `FMOD_3D_LINEARROLLOFF`, `FMOD_3D_LINEARSQUAREROLLOFF`, `FMOD_3D_INVERSETAPEREDROLLOFF` and `FMOD_3D_CUSTOMROLLOFF`.
     pub fn set_3d_rolloff_callback<C: RolloffCallback>(&self) -> Result<()> {
         unsafe {
             FMOD_System_Set3DRolloffCallback(self.inner, Some(rolloff_callback_impl::<C>))

@@ -14,7 +14,7 @@ impl Dsp {
     ///
     /// Requesting metering information when it hasn't been enabled will result in [`FMOD_RESULT::FMOD_ERR_BADCOMMAND`].
     ///
-    /// FMOD_INIT_PROFILE_METER_ALL with System::init will automatically enable metering for all [`Dsp`] units.
+    /// `FMOD_INIT_PROFILE_METER_ALL` with `System::init` will automatically enable metering for all [`Dsp`] units.
     pub fn get_metering_info(&self) -> Result<(DspMeteringInfo, DspMeteringInfo)> {
         let mut input = MaybeUninit::zeroed();
         let mut output = MaybeUninit::zeroed();
@@ -33,7 +33,7 @@ impl Dsp {
     ///
     /// Enabled metering allows [`Dsp::get_metering_info`] to return metering information and allows FMOD profiling tools to visualize the levels.
     ///
-    /// FMOD_INIT_PROFILE_METER_ALL with System::init will automatically turn on metering for all [`Dsp`] units inside the mixer graph.
+    /// `FMOD_INIT_PROFILE_METER_ALL` with `System::init` will automatically turn on metering for all [`Dsp`] units inside the mixer graph.
     ///
     /// This function must have inputEnabled and outputEnabled set to true if being used by the FMOD Studio API,
     /// such as in the Unity or Unreal Engine integrations, in order to avoid conflict with FMOD Studio's live update feature.
@@ -50,7 +50,7 @@ impl Dsp {
     ///
     /// Enabled metering allows [`Dsp::get_metering_info`] to return metering information and allows FMOD profiling tools to visualize the levels.
     ///
-    /// FMOD_INIT_PROFILE_METER_ALL with System::init will automatically turn on metering for all [`Dsp`] units inside the mixer graph.
+    /// `FMOD_INIT_PROFILE_METER_ALL` with `System::init` will automatically turn on metering for all [`Dsp`] units inside the mixer graph.
     pub fn get_metering_enabled(&self) -> Result<(bool, bool)> {
         let mut input_enabled = FMOD_BOOL::FALSE;
         let mut output_enabled = FMOD_BOOL::FALSE;

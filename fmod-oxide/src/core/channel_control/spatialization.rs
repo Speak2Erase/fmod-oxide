@@ -89,7 +89,7 @@ impl ChannelControl {
     /// vs the angle between the sound and the listener.
     /// - If the relative angle is within the `inside_angle`, the sound will not have any attenuation applied.
     /// - If the relative angle is between the `inside_angle` and `outside_angle`,
-    /// linear volume attenuation (between 1 and `outside_volume`) is applied between the two angles until it reaches the `outside_angle`.
+    ///   linear volume attenuation (between 1 and `outside_volume`) is applied between the two angles until it reaches the `outside_angle`.
     /// - If the relative angle is outside of the `outside_angle` the volume does not attenuate any further.
     pub fn set_3d_cone_settings(
         &self,
@@ -115,7 +115,7 @@ impl ChannelControl {
     /// vs the angle between the sound and the listener.
     /// - If the relative angle is within the `inside_angle`, the sound will not have any attenuation applied.
     /// - If the relative angle is between the `inside_angle` and `outside_angle`,
-    /// linear volume attenuation (between 1 and `outside_volume`) is applied between the two angles until it reaches the `outside_angle`.
+    ///     linear volume attenuation (between 1 and `outside_volume`) is applied between the two angles until it reaches the `outside_angle`.
     /// - If the relative angle is outside of the `outside_angle` the volume does not attenuate any further.
     pub fn get_3d_cone_settings(&self) -> Result<(c_float, c_float, c_float)> {
         let mut inside_angle = 0.0;
@@ -180,9 +180,9 @@ impl ChannelControl {
     /// If distance filtering is enabled, by default the 3D engine will automatically attenuate frequencies using a lowpass and a highpass filter, based on 3D distance.
     /// This function allows the distance filter effect to be set manually, or to be set back to 'automatic' mode.
     ///
-    /// The FMOD_3D flag must be set on this object otherwise FMOD_ERR_NEEDS3D is returned.
+    /// The `FMOD_3D` flag must be set on this object otherwise `FMOD_ERR_NEEDS3D` is returned.
     ///
-    /// The System must be initialized with FMOD_INIT_CHANNEL_DISTANCEFILTER for this feature to work.
+    /// The System must be initialized with `FMOD_INIT_CHANNEL_DISTANCEFILTER` for this feature to work.
     ///
     /// #### NOTE: Currently only supported for [`Channel`], not [`ChannelGroup`].
     pub fn set_3d_distance_filter(
@@ -216,9 +216,9 @@ impl ChannelControl {
 
     /// Sets the amount by which doppler is scaled.
     ///
-    /// The FMOD_3D flag must be set on this object otherwise FMOD_ERR_NEEDS3D is returned.
+    /// The `FMOD_3D` flag must be set on this object otherwise `FMOD_ERR_NEEDS3D` is returned.
     ///
-    /// The doppler effect will disabled if System::set3DNumListeners is given a value greater than 1.
+    /// The doppler effect will disabled if `System::set3DNumListeners` is given a value greater than 1.
     ///
     /// #### NOTE: Currently only supported for [`Channel`], not [`ChannelGroup`].
     pub fn set_3d_doppler_level(&self, level: c_float) -> Result<()> {
@@ -234,40 +234,40 @@ impl ChannelControl {
 
     /// Sets the blend between 3D panning and 2D panning.
     ///
-    /// The FMOD_3D flag must be set on this object otherwise FMOD_ERR_NEEDS3D is returned.
+    /// The `FMOD_3D` flag must be set on this object otherwise `FMOD_ERR_NEEDS3D` is returned.
     ///
     /// 2D functions include:
     ///
-    /// - ChannelControl::setPan
-    /// - ChannelControl::setMixLevelsOutput
-    /// - ChannelControl::setMixLevelsInput
-    /// - ChannelControl::setMixMatrix
+    /// - `ChannelControl::setPan`
+    /// - `ChannelControl::setMixLevelsOutput`
+    /// - `ChannelControl::setMixLevelsInput`
+    /// - `ChannelControl::setMixMatrix`
     ///
     /// 3D functions include:
     ///
-    /// - ChannelControl::set3DAttributes
-    /// - ChannelControl::set3DConeOrientation
-    /// - ChannelControl::set3DCustomRolloff
+    /// - `ChannelControl::set3DAttributes`
+    /// - `ChannelControl::set3DConeOrientation`
+    /// - `ChannelControl::set3DCustomRolloff`
     pub fn set_3d_level(&self, level: c_float) -> Result<()> {
         unsafe { FMOD_ChannelControl_Set3DLevel(self.inner, level).to_result() }
     }
 
     /// Retrieves the blend between 3D panning and 2D panning.
     ///
-    /// The FMOD_3D flag must be set on this object otherwise FMOD_ERR_NEEDS3D is returned.
+    /// The `FMOD_3D` flag must be set on this object otherwise `FMOD_ERR_NEEDS3D` is returned.
     ///
     /// 2D functions include:
     ///
-    /// - ChannelControl::setPan
-    /// - ChannelControl::setMixLevelsOutput
-    /// - ChannelControl::setMixLevelsInput
-    /// - ChannelControl::setMixMatrix
+    /// - `ChannelControl::setPan`
+    /// - `ChannelControl::setMixLevelsOutput`
+    /// - `ChannelControl::setMixLevelsInput`
+    /// - `ChannelControl::setMixMatrix`
     ///
     /// 3D functions include:
     ///
-    /// - ChannelControl::set3DAttributes
-    /// - ChannelControl::set3DConeOrientation
-    /// - ChannelControl::set3DCustomRolloff
+    /// - `ChannelControl::set3DAttributes`
+    /// - `ChannelControl::set3DConeOrientation`
+    /// - `ChannelControl::set3DCustomRolloff`
     pub fn get_3d_level(&self) -> Result<c_float> {
         let mut level = 0.0;
         unsafe { FMOD_ChannelControl_Get3DLevel(self.inner, &mut level).to_result()? }
@@ -278,17 +278,17 @@ impl ChannelControl {
     ///
     /// When the listener is within the minimum distance of the sound source the 3D volume will be at its maximum. As the listener moves from the minimum distance to the maximum distance the sound will attenuate following the roll-off curve set. When outside the maximum distance the sound will no longer attenuate.
     ///
-    /// Attenuation in 3D space is controlled by the roll-off mode, these are FMOD_3D_INVERSEROLLOFF, FMOD_3D_LINEARROLLOFF, FMOD_3D_LINEARSQUAREROLLOFF, FMOD_3D_INVERSETAPEREDROLLOFF, FMOD_3D_CUSTOMROLLOFF.
+    /// Attenuation in 3D space is controlled by the roll-off mode, these are `FMOD_3D_INVERSEROLLOFF`, `FMOD_3D_LINEARROLLOFF`, `FMOD_3D_LINEARSQUAREROLLOFF`, `FMOD_3D_INVERSETAPEREDROLLOFF`, `FMOD_3D_CUSTOMROLLOFF`.
     ///
     /// Minimum distance is useful to give the impression that the sound is loud or soft in 3D space.
     /// A sound with a small 3D minimum distance in a typical (non custom) roll-off mode will make the sound appear small, and the sound will attenuate quickly.
     /// A sound with a large minimum distance will make the sound appear larger.
     ///
-    /// The FMOD_3D flag must be set on this object otherwise FMOD_ERR_NEEDS3D is returned.
+    /// The `FMOD_3D` flag must be set on this object otherwise `FMOD_ERR_NEEDS3D` is returned.
     ///
-    /// To define the min and max distance per Sound instead of Channel or ChannelGroup use Sound::set3DMinMaxDistance.
+    /// To define the min and max distance per Sound instead of Channel or `ChannelGroup` use `Sound::set3DMinMaxDistance`.
     ///
-    /// If FMOD_3D_CUSTOMROLLOFF has been set on this object these values are stored, but ignored in 3D processing.
+    /// If `FMOD_3D_CUSTOMROLLOFF` has been set on this object these values are stored, but ignored in 3D processing.
     pub fn set_3d_min_max_distance(&self, min: c_float, max: c_float) -> Result<()> {
         unsafe { FMOD_ChannelControl_Set3DMinMaxDistance(self.inner, min, max).to_result() }
     }
@@ -305,10 +305,10 @@ impl ChannelControl {
 
     /// Sets the 3D attenuation factors for the direct and reverb paths.
     ///
-    /// There is a reverb path/send when ChannelControl::setReverbProperties has been used, reverbocclusion controls its attenuation.
+    /// There is a reverb path/send when `ChannelControl::setReverbProperties` has been used, reverbocclusion controls its attenuation.
     ///
-    /// If the System has been initialized with FMOD_INIT_CHANNEL_DISTANCEFILTER or
-    /// FMOD_INIT_CHANNEL_LOWPASS the directocclusion is applied as frequency filtering rather than volume attenuation.
+    /// If the System has been initialized with `FMOD_INIT_CHANNEL_DISTANCEFILTER` or
+    /// `FMOD_INIT_CHANNEL_LOWPASS` the directocclusion is applied as frequency filtering rather than volume attenuation.
     pub fn set_3d_occlusion(&self, direct: c_float, reverb: c_float) -> Result<()> {
         unsafe { FMOD_ChannelControl_Set3DOcclusion(self.inner, direct, reverb).to_result() }
     }
@@ -325,7 +325,7 @@ impl ChannelControl {
 
     /// Sets the spread of a 3D sound in speaker space.
     ///
-    /// When the spread angle is 0 (default) a multi-channel signal will collapse to mono and be spatialized to a single point based on ChannelControl::set3DAttributes calculations.
+    /// When the spread angle is 0 (default) a multi-channel signal will collapse to mono and be spatialized to a single point based on `ChannelControl::set3DAttributes` calculations.
     /// As the angle is increased, each channel within a multi-channel signal will be rotated away from that point.
     /// For 2, 4, 6, 8, and 12 channel signals, the spread is arranged from leftmost speaker to rightmost speaker intelligently,
     /// for example in 5.1 the leftmost speaker is rear left, followed by front left, center, front right then finally rear right as the rightmost speaker (LFE is not spread).

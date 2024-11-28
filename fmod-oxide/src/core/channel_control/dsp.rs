@@ -54,7 +54,7 @@ impl ChannelControl {
         unsafe { FMOD_ChannelControl_SetDSPIndex(self.inner, dsp.inner, index).to_result() }
     }
 
-    /// Retrieves the index of a DSP inside the Channel or ChannelGroup's DSP chain.
+    /// Retrieves the index of a DSP inside the Channel or `ChannelGroup`'s DSP chain.
     pub fn get_dsp_index(&self, dsp: Dsp) -> Result<c_int> {
         let mut index = 0;
         unsafe {

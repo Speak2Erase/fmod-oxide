@@ -53,7 +53,7 @@ impl Dsp {
 
     /// Sets a binary data parameter by index.
     ///
-    /// Certain data types are predefined by the system and can be specified via the FMOD_DSP_PARAMETER_DESC_DATA, see [`DspParameterDataType`]
+    /// Certain data types are predefined by the system and can be specified via the `FMOD_DSP_PARAMETER_DESC_DATA`, see [`DspParameterDataType`]
     ///
     /// # Safety
     ///
