@@ -55,7 +55,7 @@ impl EventInstanceCallback for Callback {
     }
 
     fn sound_played(event: fmod::studio::EventInstance, sound: fmod::Sound) -> fmod::Result<()> {
-        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let callback_info = unsafe { &*event.get_userdata()?.cast::<CallbackInfo>() };
         let mut entries = callback_info.entries.lock().unwrap();
 
         let name = sound.get_name()?;
@@ -66,7 +66,7 @@ impl EventInstanceCallback for Callback {
     }
 
     fn sound_stopped(event: fmod::studio::EventInstance, sound: fmod::Sound) -> fmod::Result<()> {
-        let callback_info = unsafe { &*event.get_raw_userdata()?.cast::<CallbackInfo>() };
+        let callback_info = unsafe { &*event.get_userdata()?.cast::<CallbackInfo>() };
         let mut entries = callback_info.entries.lock().unwrap();
 
         let name = sound.get_name()?;

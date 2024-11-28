@@ -26,7 +26,12 @@ impl ChannelGroup {
     /// Frees the memory for the group.
     ///
     /// Any [`Channel`]s or [`ChannelGroup`]s feeding into this group are moved to the master [`ChannelGroup`].
-    pub fn release(&self) -> Result<()> {
+    ///
+    /// # Safety
+    ///
+    /// According to the FMOD documentation, [`ChannelGroup`]s are actual pointers, rather than a handle.
+    /// After a [`ChannelGroup`] is released it is no longer safe to use!
+    pub unsafe fn release(&self) -> Result<()> {
         unsafe { FMOD_ChannelGroup_Release(self.inner).to_result() }
     }
 }
