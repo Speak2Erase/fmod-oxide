@@ -68,7 +68,6 @@
     clippy::cast_possible_wrap,
     clippy::cast_sign_loss,
     clippy::must_use_candidate,
-    clippy::missing_panics_doc // TODO: disable later
 )]
 #![forbid(unsafe_op_in_unsafe_fn)]
 #![doc(html_favicon_url = "https://www.fmod.com/assets/fmod-logo.svg")]

@@ -158,7 +158,10 @@ impl EventInstance {
     /// All values will be set instantly regardless of `ingore_seek_speed` when the Event playback state is [`PlaybackState::Stopped`].
     ///
     /// If any ID is set to all zeroes then the corresponding value will be ignored.
-    // TODO iterator version?
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `ids.len()` != `values.len()`.
     pub fn set_parameters_by_ids(
         &self,
         ids: &[ParameterID], // TODO fmod says that the size of this must range from 1-32. do we need to enforce this?

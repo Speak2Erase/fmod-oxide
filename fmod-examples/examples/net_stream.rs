@@ -193,10 +193,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Shut down
     sound.release()?;
-    system.close()?;
 
     unsafe {
         // Safety: we don't use any fmod api calls after this, so this is ok
+        system.close()?;
         system.release()?;
     }
 

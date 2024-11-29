@@ -274,6 +274,10 @@ impl DspParameterDescription {
     /// The strings [`FMOD_DSP_PARAMETER_DESC`] must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
     ///
     /// See [`Utf8CStr::from_ptr_unchecked`] for more information.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the description type is not valid.
     pub unsafe fn from_ffi(value: FMOD_DSP_PARAMETER_DESC) -> Self {
         // FIXME these array accesses are safe and could be done in a safer way
         let name = unsafe { Utf8CStr::from_ptr_unchecked(value.name.as_ptr()).to_cstring() };
@@ -379,6 +383,10 @@ impl Tag {
     /// The string [`FMOD_TAG::name`] must be a null-terminated and must be valid for reads of bytes up to and including the nul terminator.
     ///
     /// This function will read into arbitrary memory! Because of this the tag data type must match the data type of the data pointer.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `value` is not valid (Invalid type, wrong data length, etc)
     #[allow(clippy::cast_lossless)]
     pub unsafe fn from_ffi(value: FMOD_TAG) -> Self {
         let kind = value.type_.try_into().unwrap();
@@ -709,6 +717,7 @@ impl<'a> SoundBuilder<'a> {
         self.create_sound_ex_info.defaultfrequency
     }
 
+    #[allow(clippy::missing_panics_doc)] // this function can't panic in practice as we control the sound format
     pub fn format(&self) -> SoundFormat {
         self.create_sound_ex_info.format.try_into().unwrap()
     }
@@ -758,6 +767,7 @@ impl<'a> SoundBuilder<'a> {
         self.create_sound_ex_info.maxpolyphony
     }
 
+    #[allow(clippy::missing_panics_doc)] // this function can't panic in practice as we control the sound type
     pub fn suggested_sound_type(&self) -> SoundType {
         self.create_sound_ex_info
             .suggestedsoundtype
@@ -769,6 +779,7 @@ impl<'a> SoundBuilder<'a> {
         self.create_sound_ex_info.filebuffersize
     }
 
+    #[allow(clippy::missing_panics_doc)] // this function can't panic in practice as we control the channel order
     pub fn channel_order(&self) -> ChannelOrder {
         self.create_sound_ex_info.channelorder.try_into().unwrap()
     }
@@ -777,6 +788,7 @@ impl<'a> SoundBuilder<'a> {
         SoundGroup::from(self.create_sound_ex_info.initialsoundgroup)
     }
 
+    #[allow(clippy::missing_panics_doc)] // this function can't panic in practice as we control the seek position
     pub fn initial_seek_position(&self) -> (c_uint, TimeUnit) {
         (
             self.create_sound_ex_info.initialseekposition,

@@ -193,6 +193,10 @@ impl UserProperty {
     /// The type field must match the type assigned to the union.
     ///
     /// See [`Utf8CStr::from_ptr_unchecked`] for more information.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `value` is not a valid user property type.
     pub unsafe fn from_ffi(value: FMOD_STUDIO_USER_PROPERTY) -> Self {
         unsafe {
             UserProperty {
