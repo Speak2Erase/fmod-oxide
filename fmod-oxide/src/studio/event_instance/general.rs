@@ -16,7 +16,8 @@ impl EventInstance {
     pub fn get_description(&self) -> Result<EventDescription> {
         let mut description = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_EventInstance_GetDescription(self.inner, &mut description).to_result()?;
+            FMOD_Studio_EventInstance_GetDescription(self.inner.as_ptr(), &mut description)
+                .to_result()?;
             Ok(EventDescription::from(description))
         }
     }
@@ -31,11 +32,11 @@ impl EventInstance {
     /// It is possible to interact with the instance after falling [`EventInstance::release`], however if the sound has stopped [`FMOD_RESULT::FMOD_ERR_INVALID_HANDLE`] will be returned.
     pub fn release(self) -> Result<()> {
         // we don't actually release userdata here because there is a callback, and the user might interact with the instance while it's being released
-        unsafe { FMOD_Studio_EventInstance_Release(self.inner).to_result() }
+        unsafe { FMOD_Studio_EventInstance_Release(self.inner.as_ptr()).to_result() }
     }
 
     /// Checks that the [`EventInstance`] reference is valid.
     pub fn is_valid(&self) -> bool {
-        unsafe { FMOD_Studio_EventInstance_IsValid(self.inner).into() }
+        unsafe { FMOD_Studio_EventInstance_IsValid(self.inner.as_ptr()).into() }
     }
 }

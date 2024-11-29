@@ -32,7 +32,7 @@ impl EventDescription {
     pub fn is_3d(&self) -> Result<bool> {
         let mut is_3d = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_Studio_EventDescription_Is3D(self.inner, &mut is_3d).to_result()?;
+            FMOD_Studio_EventDescription_Is3D(self.inner.as_ptr(), &mut is_3d).to_result()?;
         }
         Ok(is_3d.into())
     }
@@ -43,7 +43,7 @@ impl EventDescription {
     pub fn is_doppler_enabled(&self) -> Result<bool> {
         let mut is_doppler = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_Studio_EventDescription_IsDopplerEnabled(self.inner, &mut is_doppler)
+            FMOD_Studio_EventDescription_IsDopplerEnabled(self.inner.as_ptr(), &mut is_doppler)
                 .to_result()?;
         }
         Ok(is_doppler.into())
@@ -58,7 +58,8 @@ impl EventDescription {
     pub fn is_oneshot(&self) -> Result<bool> {
         let mut is_oneshot = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_Studio_EventDescription_IsOneshot(self.inner, &mut is_oneshot).to_result()?;
+            FMOD_Studio_EventDescription_IsOneshot(self.inner.as_ptr(), &mut is_oneshot)
+                .to_result()?;
         }
         Ok(is_oneshot.into())
     }
@@ -67,7 +68,8 @@ impl EventDescription {
     pub fn is_snapshot(&self) -> Result<bool> {
         let mut is_snapshot = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_Studio_EventDescription_IsSnapshot(self.inner, &mut is_snapshot).to_result()?;
+            FMOD_Studio_EventDescription_IsSnapshot(self.inner.as_ptr(), &mut is_snapshot)
+                .to_result()?;
         }
         Ok(is_snapshot.into())
     }
@@ -78,7 +80,8 @@ impl EventDescription {
     pub fn is_stream(&self) -> Result<bool> {
         let mut is_stream = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_Studio_EventDescription_IsStream(self.inner, &mut is_stream).to_result()?;
+            FMOD_Studio_EventDescription_IsStream(self.inner.as_ptr(), &mut is_stream)
+                .to_result()?;
         }
         Ok(is_stream.into())
     }
@@ -87,7 +90,7 @@ impl EventDescription {
     pub fn has_sustain_point(&self) -> Result<bool> {
         let mut sustain_point = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_Studio_EventDescription_HasSustainPoint(self.inner, &mut sustain_point)
+            FMOD_Studio_EventDescription_HasSustainPoint(self.inner.as_ptr(), &mut sustain_point)
                 .to_result()?;
         }
         Ok(sustain_point.into())
@@ -98,7 +101,7 @@ impl EventDescription {
         let mut min = 0.0;
         let mut max = 0.0;
         unsafe {
-            FMOD_Studio_EventDescription_GetMinMaxDistance(self.inner, &mut min, &mut max)
+            FMOD_Studio_EventDescription_GetMinMaxDistance(self.inner.as_ptr(), &mut min, &mut max)
                 .to_result()?;
         }
         Ok((min, max))
@@ -110,7 +113,8 @@ impl EventDescription {
     pub fn get_sound_size(&self) -> Result<c_float> {
         let mut size = 0.0;
         unsafe {
-            FMOD_Studio_EventDescription_GetSoundSize(self.inner, &mut size).to_result()?;
+            FMOD_Studio_EventDescription_GetSoundSize(self.inner.as_ptr(), &mut size)
+                .to_result()?;
         }
         Ok(size)
     }

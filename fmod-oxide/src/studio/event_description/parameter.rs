@@ -19,7 +19,7 @@ impl EventDescription {
         let mut description = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_EventDescription_GetParameterDescriptionByName(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 description.as_mut_ptr(),
             )
@@ -35,7 +35,7 @@ impl EventDescription {
         let mut description = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_EventDescription_GetParameterDescriptionByID(
-                self.inner,
+                self.inner.as_ptr(),
                 id.into(),
                 description.as_mut_ptr(),
             )
@@ -55,7 +55,7 @@ impl EventDescription {
         let mut description = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_EventDescription_GetParameterDescriptionByIndex(
-                self.inner,
+                self.inner.as_ptr(),
                 index,
                 description.as_mut_ptr(),
             )
@@ -72,8 +72,11 @@ impl EventDescription {
     pub fn parameter_description_count(&self) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_Studio_EventDescription_GetParameterDescriptionCount(self.inner, &mut count)
-                .to_result()?;
+            FMOD_Studio_EventDescription_GetParameterDescriptionCount(
+                self.inner.as_ptr(),
+                &mut count,
+            )
+            .to_result()?;
         }
         Ok(count)
     }
@@ -93,7 +96,7 @@ impl EventDescription {
         // this includes the null terminator, so we don't need to account for that.
         unsafe {
             let error = FMOD_Studio_EventDescription_GetParameterLabelByName(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 label_index,
                 std::ptr::null_mut(),
@@ -115,7 +118,7 @@ impl EventDescription {
 
         unsafe {
             FMOD_Studio_EventDescription_GetParameterLabelByName(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 label_index,
                 // u8 and i8 have the same layout, so this is ok
@@ -147,7 +150,7 @@ impl EventDescription {
         // this includes the null terminator, so we don't need to account for that.
         unsafe {
             let error = FMOD_Studio_EventDescription_GetParameterLabelByID(
-                self.inner,
+                self.inner.as_ptr(),
                 id.into(),
                 label_index,
                 std::ptr::null_mut(),
@@ -169,7 +172,7 @@ impl EventDescription {
 
         unsafe {
             FMOD_Studio_EventDescription_GetParameterLabelByID(
-                self.inner,
+                self.inner.as_ptr(),
                 id.into(),
                 label_index,
                 // u8 and i8 have the same layout, so this is ok
@@ -203,7 +206,7 @@ impl EventDescription {
         // this includes the null terminator, so we don't need to account for that.
         unsafe {
             let error = FMOD_Studio_EventDescription_GetParameterLabelByIndex(
-                self.inner,
+                self.inner.as_ptr(),
                 index,
                 label_index,
                 std::ptr::null_mut(),
@@ -225,7 +228,7 @@ impl EventDescription {
 
         unsafe {
             FMOD_Studio_EventDescription_GetParameterLabelByIndex(
-                self.inner,
+                self.inner.as_ptr(),
                 index,
                 label_index,
                 // u8 and i8 have the same layout, so this is ok

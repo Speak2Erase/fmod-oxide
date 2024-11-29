@@ -69,6 +69,9 @@ impl SystemBuilder {
         }
     }
 
+    /// Returns the FMOD core `SystemBuilder`.
+    ///
+    /// This function only returns a `&mut` reference to prevent building the core `System` as building the studio `System` will handle that for you.
     pub fn core_builder(&mut self) -> &mut crate::SystemBuilder {
         &mut self.core_builder
     }

@@ -18,8 +18,9 @@ impl Bank {
     /// If an asynchronous load failed due to a file error state will contain [`LoadingState::Error`] and the return code from this function will be the error code of the bank load function.
     pub fn get_loading_state(&self) -> Result<LoadingState> {
         let mut loading_state = 0;
-        let error =
-            unsafe { FMOD_Studio_Bank_GetLoadingState(self.inner, &mut loading_state).to_error() };
+        let error = unsafe {
+            FMOD_Studio_Bank_GetLoadingState(self.inner.as_ptr(), &mut loading_state).to_error()
+        };
 
         LoadingState::try_from_ffi(loading_state, error)
     }
@@ -28,14 +29,14 @@ impl Bank {
     ///
     /// This function is equivalent to calling [`EventDescription::load_sample_data`] for all events in the bank, including referenced events.
     pub fn load_sample_data(&self) -> Result<()> {
-        unsafe { FMOD_Studio_Bank_LoadSampleData(self.inner).to_result() }
+        unsafe { FMOD_Studio_Bank_LoadSampleData(self.inner.as_ptr()).to_result() }
     }
 
     /// Unloads non-streaming sample data for all events in the bank.
     ///
     /// Sample data loading is reference counted and the sample data will remain loaded until unload requests corresponding to all load requests are made, or until the bank is unloaded.
     pub fn unload_sample_data(&self) -> Result<()> {
-        unsafe { FMOD_Studio_Bank_UnloadSampleData(self.inner).to_result() }
+        unsafe { FMOD_Studio_Bank_UnloadSampleData(self.inner.as_ptr()).to_result() }
     }
 
     /// Retrieves the loading state of the samples in the bank.
@@ -46,7 +47,8 @@ impl Bank {
     pub fn get_sample_loading_state(&self) -> Result<LoadingState> {
         let mut loading_state = 0;
         let error = unsafe {
-            FMOD_Studio_Bank_GetSampleLoadingState(self.inner, &mut loading_state).to_error()
+            FMOD_Studio_Bank_GetSampleLoadingState(self.inner.as_ptr(), &mut loading_state)
+                .to_error()
         };
         LoadingState::try_from_ffi(loading_state, error)
     }
@@ -59,6 +61,6 @@ impl Bank {
     /// Poll the loading state using [`Bank::get_loading_state`] or use the [`FMOD_STUDIO_SYSTEM_CALLBACK_BANK_UNLOAD`] system callback to determine when it is safe to free the memory.
     pub fn unload(self) -> Result<()> {
         // we don't deallocate userdata here because the system callback will take care of that for us
-        unsafe { FMOD_Studio_Bank_Unload(self.inner).to_result() }
+        unsafe { FMOD_Studio_Bank_Unload(self.inner.as_ptr()).to_result() }
     }
 }

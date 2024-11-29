@@ -15,14 +15,14 @@ impl EventDescription {
     ///
     /// Sample data is loaded asynchronously, [`EventDescription::get_sample_loading_state`] may be used to poll the loading state.
     pub fn load_sample_data(&self) -> Result<()> {
-        unsafe { FMOD_Studio_EventDescription_LoadSampleData(self.inner).to_result() }
+        unsafe { FMOD_Studio_EventDescription_LoadSampleData(self.inner.as_ptr()).to_result() }
     }
 
     /// Unloads all non-streaming sample data.
     ///
     /// Sample data will not be unloaded until all instances of the event are released.
     pub fn unload_sample_data(&self) -> Result<()> {
-        unsafe { FMOD_Studio_EventDescription_UnloadSampleData(self.inner).to_result() }
+        unsafe { FMOD_Studio_EventDescription_UnloadSampleData(self.inner.as_ptr()).to_result() }
     }
 
     /// Retrieves the sample data loading state.
@@ -32,8 +32,11 @@ impl EventDescription {
         let mut loading_state = 0;
 
         let error = unsafe {
-            FMOD_Studio_EventDescription_GetSampleLoadingState(self.inner, &mut loading_state)
-                .to_error()
+            FMOD_Studio_EventDescription_GetSampleLoadingState(
+                self.inner.as_ptr(),
+                &mut loading_state,
+            )
+            .to_error()
         };
 
         LoadingState::try_from_ffi(loading_state, error)

@@ -17,7 +17,8 @@ impl EventDescription {
     pub fn get_id(&self) -> Result<Guid> {
         let mut guid = MaybeUninit::zeroed();
         unsafe {
-            FMOD_Studio_EventDescription_GetID(self.inner, guid.as_mut_ptr()).to_result()?;
+            FMOD_Studio_EventDescription_GetID(self.inner.as_ptr(), guid.as_mut_ptr())
+                .to_result()?;
 
             let guid = guid.assume_init().into();
 
@@ -31,7 +32,7 @@ impl EventDescription {
     pub fn get_length(&self) -> Result<c_int> {
         let mut length = 0;
         unsafe {
-            FMOD_Studio_EventDescription_GetLength(self.inner, &mut length).to_result()?;
+            FMOD_Studio_EventDescription_GetLength(self.inner.as_ptr(), &mut length).to_result()?;
         }
         Ok(length)
     }
@@ -47,7 +48,7 @@ impl EventDescription {
         // this includes the null terminator, so we don't need to account for that.
         unsafe {
             let error = FMOD_Studio_EventDescription_GetPath(
-                self.inner,
+                self.inner.as_ptr(),
                 std::ptr::null_mut(),
                 0,
                 &mut string_len,
@@ -67,7 +68,7 @@ impl EventDescription {
 
         unsafe {
             FMOD_Studio_EventDescription_GetPath(
-                self.inner,
+                self.inner.as_ptr(),
                 // u8 and i8 have the same layout, so this is ok
                 path.as_mut_ptr().cast(),
                 string_len,
@@ -87,6 +88,6 @@ impl EventDescription {
 
     /// Checks that the [`EventDescription`] reference is valid.
     pub fn is_valid(&self) -> bool {
-        unsafe { FMOD_Studio_EventDescription_IsValid(self.inner).into() }
+        unsafe { FMOD_Studio_EventDescription_IsValid(self.inner.as_ptr()).into() }
     }
 }

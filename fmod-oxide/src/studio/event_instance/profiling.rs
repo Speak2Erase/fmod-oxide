@@ -18,8 +18,12 @@ impl EventInstance {
         let mut exclusive = 0;
         let mut inclusive = 0;
         unsafe {
-            FMOD_Studio_EventInstance_GetCPUUsage(self.inner, &mut exclusive, &mut inclusive)
-                .to_result()?;
+            FMOD_Studio_EventInstance_GetCPUUsage(
+                self.inner.as_ptr(),
+                &mut exclusive,
+                &mut inclusive,
+            )
+            .to_result()?;
         }
         Ok((exclusive, inclusive))
     }
@@ -30,8 +34,11 @@ impl EventInstance {
     pub fn get_memory_usage(&self) -> Result<MemoryUsage> {
         let mut memory_usage = MaybeUninit::zeroed();
         unsafe {
-            FMOD_Studio_EventInstance_GetMemoryUsage(self.inner, memory_usage.as_mut_ptr())
-                .to_result()?;
+            FMOD_Studio_EventInstance_GetMemoryUsage(
+                self.inner.as_ptr(),
+                memory_usage.as_mut_ptr(),
+            )
+            .to_result()?;
 
             let memory_usage = memory_usage.assume_init().into();
             Ok(memory_usage)

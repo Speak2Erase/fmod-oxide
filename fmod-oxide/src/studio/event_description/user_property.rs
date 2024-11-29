@@ -16,7 +16,7 @@ impl EventDescription {
         let mut property = MaybeUninit::uninit();
         unsafe {
             FMOD_Studio_EventDescription_GetUserProperty(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 property.as_mut_ptr(),
             )
@@ -34,7 +34,7 @@ impl EventDescription {
         let mut property = MaybeUninit::uninit();
         unsafe {
             FMOD_Studio_EventDescription_GetUserPropertyByIndex(
-                self.inner,
+                self.inner.as_ptr(),
                 index,
                 property.as_mut_ptr(),
             )
@@ -48,7 +48,7 @@ impl EventDescription {
     pub fn user_property_count(&self) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_Studio_EventDescription_GetUserPropertyCount(self.inner, &mut count)
+            FMOD_Studio_EventDescription_GetUserPropertyCount(self.inner.as_ptr(), &mut count)
                 .to_result()?;
         }
         Ok(count)

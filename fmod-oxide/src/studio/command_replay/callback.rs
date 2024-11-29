@@ -111,13 +111,14 @@ unsafe extern "C" fn load_bank_impl<C: LoadBankCallback>(
 impl CommandReplay {
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
-        unsafe { FMOD_Studio_CommandReplay_SetUserData(self.inner, userdata).to_result() }
+        unsafe { FMOD_Studio_CommandReplay_SetUserData(self.inner.as_ptr(), userdata).to_result() }
     }
 
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_CommandReplay_GetUserData(self.inner, &mut userdata).to_result()?;
+            FMOD_Studio_CommandReplay_GetUserData(self.inner.as_ptr(), &mut userdata)
+                .to_result()?;
         }
         Ok(userdata)
     }
@@ -125,7 +126,7 @@ impl CommandReplay {
     pub fn set_create_instance_callback<C: CreateInstanceCallback>(&self) -> Result<()> {
         unsafe {
             FMOD_Studio_CommandReplay_SetCreateInstanceCallback(
-                self.inner,
+                self.inner.as_ptr(),
                 Some(create_instance_impl::<C>),
             )
             .to_result()
@@ -134,15 +135,18 @@ impl CommandReplay {
 
     pub fn set_frame_callback<C: FrameCallback>(&self) -> Result<()> {
         unsafe {
-            FMOD_Studio_CommandReplay_SetFrameCallback(self.inner, Some(frame_impl::<C>))
+            FMOD_Studio_CommandReplay_SetFrameCallback(self.inner.as_ptr(), Some(frame_impl::<C>))
                 .to_result()
         }
     }
 
     pub fn set_load_bank_callback<C: LoadBankCallback>(&self) -> Result<()> {
         unsafe {
-            FMOD_Studio_CommandReplay_SetLoadBankCallback(self.inner, Some(load_bank_impl::<C>))
-                .to_result()
+            FMOD_Studio_CommandReplay_SetLoadBankCallback(
+                self.inner.as_ptr(),
+                Some(load_bank_impl::<C>),
+            )
+            .to_result()
         }
     }
 }

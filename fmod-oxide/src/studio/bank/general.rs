@@ -17,7 +17,7 @@ impl Bank {
     pub fn get_id(&self) -> Result<Guid> {
         let mut guid = MaybeUninit::zeroed();
         unsafe {
-            FMOD_Studio_Bank_GetID(self.inner, guid.as_mut_ptr()).to_result()?;
+            FMOD_Studio_Bank_GetID(self.inner.as_ptr(), guid.as_mut_ptr()).to_result()?;
 
             let guid = guid.assume_init().into();
 
@@ -32,9 +32,13 @@ impl Bank {
         // retrieve the length of the string.
         // this includes the null terminator, so we don't need to account for that.
         unsafe {
-            let error =
-                FMOD_Studio_Bank_GetPath(self.inner, std::ptr::null_mut(), 0, &mut string_len)
-                    .to_error();
+            let error = FMOD_Studio_Bank_GetPath(
+                self.inner.as_ptr(),
+                std::ptr::null_mut(),
+                0,
+                &mut string_len,
+            )
+            .to_error();
 
             // we expect the error to be fmod_err_truncated.
             // if it isn't, we return the error.
@@ -49,7 +53,7 @@ impl Bank {
 
         unsafe {
             FMOD_Studio_Bank_GetPath(
-                self.inner,
+                self.inner.as_ptr(),
                 // u8 and i8 have the same layout, so this is ok
                 path.as_mut_ptr().cast(),
                 string_len,
@@ -69,18 +73,18 @@ impl Bank {
 
     /// Checks that the Bank reference is valid.
     pub fn is_valid(&self) -> bool {
-        unsafe { FMOD_Studio_Bank_IsValid(self.inner).into() }
+        unsafe { FMOD_Studio_Bank_IsValid(self.inner.as_ptr()).into() }
     }
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
-        unsafe { FMOD_Studio_Bank_SetUserData(self.inner, userdata).to_result() }
+        unsafe { FMOD_Studio_Bank_SetUserData(self.inner.as_ptr(), userdata).to_result() }
     }
 
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_Bank_GetUserData(self.inner, &mut userdata).to_result()?;
+            FMOD_Studio_Bank_GetUserData(self.inner.as_ptr(), &mut userdata).to_result()?;
         }
         Ok(userdata)
     }

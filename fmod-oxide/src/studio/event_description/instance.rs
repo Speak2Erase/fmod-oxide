@@ -23,7 +23,8 @@ impl EventDescription {
     pub fn create_instance(&self) -> Result<EventInstance> {
         let mut instance = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_EventDescription_CreateInstance(self.inner, &mut instance).to_result()?;
+            FMOD_Studio_EventDescription_CreateInstance(self.inner.as_ptr(), &mut instance)
+                .to_result()?;
             Ok(EventInstance::from(instance))
         }
     }
@@ -32,7 +33,8 @@ impl EventDescription {
     pub fn instance_count(&self) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_Studio_EventDescription_GetInstanceCount(self.inner, &mut count).to_result()?;
+            FMOD_Studio_EventDescription_GetInstanceCount(self.inner.as_ptr(), &mut count)
+                .to_result()?;
         }
         Ok(count)
     }
@@ -44,7 +46,7 @@ impl EventDescription {
 
         unsafe {
             FMOD_Studio_EventDescription_GetInstanceList(
-                self.inner,
+                self.inner.as_ptr(),
                 // eventinstance is repr transparent and has the same layout as *mut FMOD_STUDIO_EVENTINSTANCE, so this cast is ok
                 list.as_mut_ptr(),
                 list.capacity() as c_int,
@@ -66,6 +68,6 @@ impl EventDescription {
     ///
     /// This function immediately stops and releases all instances of the event.
     pub fn release_all_instances(&self) -> Result<()> {
-        unsafe { FMOD_Studio_EventDescription_ReleaseAllInstances(self.inner).to_result() }
+        unsafe { FMOD_Studio_EventDescription_ReleaseAllInstances(self.inner.as_ptr()).to_result() }
     }
 }
