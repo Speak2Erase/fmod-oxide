@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Lily Lyons
+// Copyright (c) 2024 Melody Madeline Lyons
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -190,7 +190,6 @@ impl From<EventCallbackMask> for FMOD_STUDIO_EVENT_CALLBACK_TYPE {
     }
 }
 
-#[allow(missing_docs)]
 bitflags::bitflags! {
     /// A mask used to determine what callbacks can or cannot be called.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
