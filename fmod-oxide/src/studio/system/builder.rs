@@ -41,6 +41,7 @@ impl SystemBuilder {
             system,
             core_builder: crate::SystemBuilder {
                 system: core_system,
+                thread_unsafe: false,
             },
         })
     }

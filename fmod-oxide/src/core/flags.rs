@@ -20,7 +20,9 @@ bitflags::bitflags! {
     const VOL_0_BECOMES_VIRTUAL =   FMOD_INIT_VOL0_BECOMES_VIRTUAL;
     const GEOMETRY_USE_CLOSEST =    FMOD_INIT_GEOMETRY_USECLOSEST;
     const PREFER_DOLBY_DOWNMIX =    FMOD_INIT_PREFER_DOLBY_DOWNMIX;
-    const THREAD_UNSAFE =           FMOD_INIT_THREAD_UNSAFE; // FIXME: this is unsafe
+    /// This flag cannot be used normally as this crate has guardrails preventing it.
+    /// It is still here for completeness' sake, though.
+    const THREAD_UNSAFE =           FMOD_INIT_THREAD_UNSAFE;
     const PROFILE_METER_ALL =       FMOD_INIT_PROFILE_METER_ALL;
     const MEMORY_TRACKING =         FMOD_INIT_MEMORY_TRACKING;
   }

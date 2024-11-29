@@ -22,16 +22,18 @@ impl System {
     }
 
     /// Close the connection to the output and return to an uninitialized state without releasing the object.
+    /// All pre-initialized configuration settings will remain and the System can be reinitialized as needed.
+    ///
+    /// # Safety
     ///
     /// Closing renders objects created with this System invalid.
     /// Make sure any Sound, [`crate::ChannelGroup`], Geometry and DSP objects are released before calling this.
-    ///
-    /// All pre-initialize configuration settings will remain and the System can be reinitialized as needed.
-    pub fn close(&self) -> Result<SystemBuilder> {
+    pub unsafe fn close(&self) -> Result<SystemBuilder> {
         unsafe {
             FMOD_System_Close(self.inner.as_ptr()).to_result()?;
             Ok(SystemBuilder {
                 system: self.inner.as_ptr(),
+                thread_unsafe: false,
             })
         }
     }

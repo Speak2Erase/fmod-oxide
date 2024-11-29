@@ -10,6 +10,7 @@ use std::ffi::{c_int, c_uint, c_void};
 
 pub struct SystemBuilder {
     pub(crate) system: *mut FMOD_SYSTEM,
+    pub(crate) thread_unsafe: bool,
 }
 
 unsafe impl Send for SystemBuilder {}
@@ -32,7 +33,18 @@ impl SystemBuilder {
         let mut system = std::ptr::null_mut();
         unsafe { FMOD_System_Create(&mut system, FMOD_VERSION).to_result()? };
 
-        Ok(SystemBuilder { system })
+        Ok(SystemBuilder {
+            system,
+            thread_unsafe: false,
+        })
+    }
+
+    /// # Safety
+    ///
+    /// This function intializes FMOD to be thread unsafe, which makes *EVERY* Struct in this crate `!Send` and `!Sync` *without* marking them as `!Send` and `!Sync`.
+    /// This means that there are no handrails preventing you from using FMOD across multiple threads, and you *must* ensure this yourself!
+    pub unsafe fn thread_unsafe(&mut self) {
+        self.thread_unsafe = true;
     }
 
     pub fn software_format(
@@ -95,9 +107,14 @@ impl SystemBuilder {
     pub unsafe fn build_with_extra_driver_data(
         self,
         max_channels: c_int,
-        flags: InitFlags,
+        mut flags: InitFlags,
         driver_data: *mut c_void,
     ) -> Result<System> {
+        if self.thread_unsafe {
+            flags.remove(InitFlags::THREAD_UNSAFE);
+        } else {
+            flags.insert(InitFlags::THREAD_UNSAFE);
+        }
         unsafe {
             FMOD_System_Init(self.system, max_channels, flags.bits(), driver_data).to_result()?;
         }
