@@ -64,8 +64,6 @@ impl Dsp {
         Ok(userdata)
     }
 
-    // TODO callback
-
     /// Retrieves the parent System object.
     pub fn get_system(&self) -> Result<System> {
         let mut system = std::ptr::null_mut();

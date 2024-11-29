@@ -8,6 +8,7 @@ use std::ptr::NonNull;
 
 use fmod_sys::*;
 
+mod callback;
 mod channel_format;
 mod connections;
 mod general;
