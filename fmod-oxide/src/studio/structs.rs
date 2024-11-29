@@ -416,6 +416,7 @@ impl CommandInfo {
     }
 }
 
+#[derive(Debug)]
 pub struct ProgrammerSoundProperties<'prop> {
     pub name: Utf8CString,
     // FIXME use option for both of these
@@ -423,6 +424,7 @@ pub struct ProgrammerSoundProperties<'prop> {
     pub subsound_index: &'prop mut c_int,
 }
 
+#[derive(Debug)]
 pub struct PluginInstanceProperties {
     pub name: Utf8CString,
     pub dsp: Dsp,
@@ -453,6 +455,7 @@ impl PluginInstanceProperties {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct TimelineMarkerProperties {
     pub name: Utf8CString,
     pub position: c_int,
@@ -483,6 +486,7 @@ impl TimelineMarkerProperties {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct TimelineBeatProperties {
     pub bar: c_int,
     pub beat: c_int,
@@ -518,6 +522,7 @@ impl From<FMOD_STUDIO_TIMELINE_BEAT_PROPERTIES> for TimelineBeatProperties {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct TimelineNestedBeatProperties {
     pub event_guid: Guid,
     pub properties: TimelineBeatProperties,

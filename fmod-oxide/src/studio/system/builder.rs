@@ -14,6 +14,7 @@ use crate::studio::{AdvancedSettings, InitFlags, System};
 ///
 /// Handles setting values that can only be set before initialization for you.
 #[must_use]
+#[derive(Debug)]
 pub struct SystemBuilder {
     system: *mut FMOD_STUDIO_SYSTEM,
     core_builder: crate::SystemBuilder,

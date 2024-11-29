@@ -228,6 +228,7 @@ impl From<ReverbProperties> for FMOD_REVERB_PROPERTIES {
     }
 }
 
+#[derive(Debug)]
 pub struct DspParameterDescription {
     pub kind: DspParameterType,
     pub name: Utf8CString,
@@ -235,7 +236,7 @@ pub struct DspParameterDescription {
     pub description: Utf8CString,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DspParameterType {
     Float {
         min: f32,
@@ -357,6 +358,7 @@ impl From<DspMeteringInfo> for FMOD_DSP_METERING_INFO {
     }
 }
 
+#[derive(Debug)]
 pub struct Tag {
     pub kind: TagType,
     pub name: Utf8CString,
@@ -364,6 +366,7 @@ pub struct Tag {
     pub updated: bool,
 }
 
+#[derive(Debug)]
 // FIXME: these strings are most likely null-terminated
 pub enum TagData {
     Binary(Vec<u8>),

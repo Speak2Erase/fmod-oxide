@@ -58,16 +58,21 @@
 //! It's likely better this way- the semantics of userdata are just too flexible and its hard to cover every edge case.
 //! Userdata isn't super commonly used anyway- it is mainly used to pass data into callbacks, but it's easy enough to use a `static` to do that.
 
-#![warn(rust_2018_idioms, clippy::pedantic)]
+#![warn(
+    rust_2018_idioms,
+    clippy::pedantic,
+    missing_debug_implementations,
+    missing_copy_implementations,
+    //missing_docs
+)]
 #![allow(
     clippy::missing_errors_doc,
-    missing_docs, // TODO: disable later
     clippy::wildcard_imports,
     clippy::module_name_repetitions,
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
     clippy::cast_sign_loss,
-    clippy::must_use_candidate,
+    clippy::must_use_candidate
 )]
 #![forbid(unsafe_op_in_unsafe_fn)]
 #![doc(html_favicon_url = "https://www.fmod.com/assets/fmod-logo.svg")]

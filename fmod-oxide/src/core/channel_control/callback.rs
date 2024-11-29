@@ -13,6 +13,7 @@ use std::{
 
 use crate::{Channel, ChannelControl, ChannelGroup};
 
+#[derive(Debug, Clone, Copy)]
 pub enum ChannelControlType {
     Channel(Channel),
     ChannelGroup(ChannelGroup),

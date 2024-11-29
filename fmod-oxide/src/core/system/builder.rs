@@ -8,6 +8,7 @@ use crate::{InitFlags, OutputType, SpeakerMode, System};
 use fmod_sys::*;
 use std::ffi::{c_int, c_uint, c_void};
 
+#[derive(Debug)]
 pub struct SystemBuilder {
     pub(crate) system: *mut FMOD_SYSTEM,
     pub(crate) thread_unsafe: bool,
