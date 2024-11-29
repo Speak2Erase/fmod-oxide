@@ -43,18 +43,18 @@ impl System {
     /// With [`Mode::OPEN_MEMORY_POINT`], only PCM formats and compressed formats using [`Mode::CREATE_COMPRESSED_SAMPLE`] are supported.
     pub fn create_sound(&self, builder: &SoundBuilder<'_>) -> Result<Sound> {
         let mut sound = std::ptr::null_mut();
-        // FIXME is casting to mut correct?
-        let ex_info = if builder.ex_info_is_empty() {
+        let mut ex_info = builder.raw_ex_info();
+        let ex_info_ptr = if builder.ex_info_is_empty() {
             std::ptr::null_mut()
         } else {
-            std::ptr::addr_of!(builder.create_sound_ex_info).cast_mut()
+            &raw mut ex_info
         };
         unsafe {
             FMOD_System_CreateSound(
                 self.inner.as_ptr(),
                 builder.name_or_data,
                 builder.mode,
-                ex_info,
+                ex_info_ptr,
                 &mut sound,
             )
             .to_result()?;
@@ -71,18 +71,19 @@ impl System {
     /// Open multiple streams to have them play concurrently.
     pub fn create_stream(&self, builder: &SoundBuilder<'_>) -> Result<Sound> {
         let mut sound = std::ptr::null_mut();
-        // FIXME is casting to mut correct?
-        let ex_info = if builder.ex_info_is_empty() {
+
+        let mut ex_info = builder.raw_ex_info();
+        let ex_info_ptr = if builder.ex_info_is_empty() {
             std::ptr::null_mut()
         } else {
-            std::ptr::addr_of!(builder.create_sound_ex_info).cast_mut()
+            &raw mut ex_info
         };
         unsafe {
             FMOD_System_CreateStream(
                 self.inner.as_ptr(),
                 builder.name_or_data,
                 builder.mode,
-                ex_info,
+                ex_info_ptr,
                 &mut sound,
             )
             .to_result()?;
