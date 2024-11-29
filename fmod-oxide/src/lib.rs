@@ -74,6 +74,9 @@
 #![doc(html_favicon_url = "https://www.fmod.com/assets/fmod-logo.svg")]
 #![doc(html_logo_url = "https://www.fmod.com/assets/fmod-logo.svg")]
 
+// FIXME fetching things (like from a bank) could have an alternative that doesn't allocate and instead fills out a slice
+// TODO no_std?
+
 pub use lanyard::*;
 
 #[doc(inline)]

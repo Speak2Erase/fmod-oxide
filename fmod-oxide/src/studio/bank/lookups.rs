@@ -4,6 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::ptr::NonNull;
 use std::{ffi::c_int, mem::MaybeUninit};
 
 use crate::studio::{Bank, Bus, EventDescription, Vca};
@@ -27,7 +28,7 @@ impl Bank {
         let mut count = 0;
         let mut list = vec![
             Bus {
-                inner: std::ptr::null_mut()
+                inner: NonNull::dangling(), // we can't store a *null* NonNull pointer so we use NonNull::dangling instead
             };
             expected_count as usize
         ];
@@ -167,7 +168,7 @@ impl Bank {
         let mut count = 0;
         let mut list = vec![
             Vca {
-                inner: std::ptr::null_mut()
+                inner: NonNull::dangling(), // same trick used here as getting the bus list
             };
             expected_count as usize
         ];

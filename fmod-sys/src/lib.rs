@@ -45,6 +45,7 @@ include!("../docs/documentation.rs");
 #[cfg(not(any(docsrs, feature = "force-docs-bindings")))]
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
+// TODO move this to the fmod-oxide crate
 #[derive(Clone, PartialEq, Eq)]
 pub enum Error {
     Fmod(FMOD_RESULT), // FIXME make FMOD_RESULT be a NonZero
