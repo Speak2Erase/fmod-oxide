@@ -307,7 +307,7 @@ impl DspParameterDescription {
             FMOD_DSP_PARAMETER_TYPE_DATA => {
                 let datadesc = unsafe { value.__bindgen_anon_1.datadesc };
                 DspParameterType::Data {
-                    data_type: datadesc.datatype.try_into().unwrap(),
+                    data_type: datadesc.datatype.into(),
                 }
             }
             _ => panic!("invalid parameter description type"), // FIXME panic

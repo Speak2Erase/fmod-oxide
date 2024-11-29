@@ -241,16 +241,17 @@ pub enum DspConnectionType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(num_enum::TryFromPrimitive, num_enum::IntoPrimitive)]
+#[derive(num_enum::FromPrimitive, num_enum::IntoPrimitive)]
 #[repr(i32)]
 pub enum DspParameterDataType {
-    User = FMOD_DSP_PARAMETER_DATA_TYPE_USER,
     OverAlign = FMOD_DSP_PARAMETER_DATA_TYPE_OVERALLGAIN,
     Attributes3D = FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
     Sidechain = FMOD_DSP_PARAMETER_DATA_TYPE_SIDECHAIN,
     FFT = FMOD_DSP_PARAMETER_DATA_TYPE_FFT,
     Attributes3DMulti = FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES_MULTI,
     AttenuationRange = FMOD_DSP_PARAMETER_DATA_TYPE_ATTENUATION_RANGE,
+    #[num_enum(catch_all)]
+    User(i32) = FMOD_DSP_PARAMETER_DATA_TYPE_USER, // unsure if this is correct
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

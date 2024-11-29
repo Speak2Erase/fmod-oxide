@@ -6,7 +6,7 @@
 
 use fmod_sys::*;
 use lanyard::Utf8CString;
-use std::ffi::{c_float, c_int, c_uint};
+use std::ffi::{c_float, c_int};
 
 use crate::{Dsp, DspParameterDataType, DspParameterDescription};
 
@@ -130,6 +130,51 @@ impl ParameterType for c_float {
     }
 }
 
+/// The trait for data types which a DSP can accept as a parameter.
+///
+/// # Safety
+/// TODO VERY IMPORTANT work out specific semantics (parameter type checking, for example)
+/// Any type that implements this type must have the same layout as the data type the DSP expects.
+/// **This is very important to get right**.
+pub unsafe trait DataParameterType: Sized {
+    fn set_parameter(self, dsp: Dsp, index: c_int) -> Result<()>;
+
+    fn get_parameter(dsp: Dsp, index: c_int) -> Result<Self>;
+}
+impl<T> sealed::Seal for T where T: DataParameterType {}
+
+impl<T> ParameterType for T
+where
+    T: DataParameterType,
+{
+    fn set_parameter(self, dsp: Dsp, index: c_int) -> Result<()> {
+        <Self as DataParameterType>::set_parameter(self, dsp, index)
+    }
+
+    fn get_parameter(dsp: Dsp, index: c_int) -> Result<Self> {
+        <Self as DataParameterType>::get_parameter(dsp, index)
+    }
+
+    fn get_parameter_string(dsp: Dsp, index: c_int) -> Result<Utf8CString> {
+        let dsp = dsp.inner.as_ptr();
+        let mut bytes = [0; FMOD_DSP_GETPARAM_VALUESTR_LENGTH as usize];
+        unsafe {
+            FMOD_DSP_GetParameterData(
+                dsp,
+                index,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                bytes.as_mut_ptr().cast(),
+                FMOD_DSP_GETPARAM_VALUESTR_LENGTH as i32,
+            )
+            .to_result()?;
+
+            let string = Utf8CString::from_utf8_with_nul(bytes.to_vec()).unwrap();
+            Ok(string)
+        }
+    }
+}
+
 impl Dsp {
     /// Retrieve the index of the first data parameter of a particular data type.
     ///
@@ -152,50 +197,6 @@ impl Dsp {
         let mut count = 0;
         unsafe { FMOD_DSP_GetNumParameters(self.inner.as_ptr(), &mut count).to_result()? };
         Ok(count)
-    }
-
-    /// Sets a binary data parameter by index.
-    ///
-    /// Certain data types are predefined by the system and can be specified via the `FMOD_DSP_PARAMETER_DESC_DATA`, see [`DspParameterDataType`]
-    ///
-    /// # Safety
-    ///
-    /// You must ensure that the data type passed in via `data` matches the data type expected by the [`Dsp`] unit.
-    // FIXME: does FMOD copy the data?
-    // FIXME: fmod has various predefined data types, should we expose them?
-    pub unsafe fn set_parameter_data(&self, index: c_int, data: &[u8]) -> Result<()> {
-        unsafe {
-            FMOD_DSP_SetParameterData(
-                self.inner.as_ptr(),
-                index,
-                data.as_ptr() as *mut _,
-                data.len() as c_uint,
-            )
-            .to_result()
-        }
-    }
-
-    /// Retrieves a binary data parameter by index.
-    ///
-    /// Note: FMOD also returns a string representation of the parameter value, but this is not currently exposed.
-    // FIXME is this safe???
-    pub fn get_parameter_data(&self, index: c_int) -> Result<Vec<u8>> {
-        let mut value = std::ptr::null_mut();
-        let mut length = 0;
-        unsafe {
-            FMOD_DSP_GetParameterData(
-                self.inner.as_ptr(),
-                index,
-                &mut value,
-                &mut length,
-                std::ptr::null_mut(),
-                0,
-            )
-            .to_result()?;
-
-            let slice = std::slice::from_raw_parts_mut(value.cast(), length as usize);
-            Ok(slice.to_vec())
-        }
     }
 
     /// Retrieve information about a specified parameter.

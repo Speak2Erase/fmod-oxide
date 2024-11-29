@@ -16,6 +16,8 @@ mod metering;
 mod parameters;
 mod processing;
 
+pub use parameters::{DataParameterType, ParameterType};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Dsp {
