@@ -170,7 +170,6 @@ impl Sound {
     /// If [`Mode::IGNORE_GEOMETRY_3D`] is not specified, the flag will be cleared if it was specified previously.
     ///
     /// Changing mode on an already buffered stream may not produced desired output. See Streaming Issues.
-    // FIXME this is pretty unsafe, add safe version
     pub fn set_mode(&self, mode: Mode) -> Result<()> {
         unsafe { FMOD_Sound_SetMode(self.inner.as_ptr(), mode.bits()).to_result() }
     }

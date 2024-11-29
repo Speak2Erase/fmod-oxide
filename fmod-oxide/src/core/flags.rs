@@ -88,7 +88,6 @@ impl From<ThreadAffinity> for FMOD_THREAD_AFFINITY {
     }
 }
 
-// FIXME: A LOT OF THESE ARE UNSAFE!
 bitflags::bitflags! {
   #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
   pub struct Mode: FMOD_MODE {
