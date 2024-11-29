@@ -65,21 +65,25 @@ unsafe extern "C" fn callback_impl<C: SystemCallback>(
 impl System {
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
-        unsafe { FMOD_Studio_System_SetUserData(self.inner, userdata).to_result() }
+        unsafe { FMOD_Studio_System_SetUserData(self.inner.as_ptr(), userdata).to_result() }
     }
 
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_System_GetUserData(self.inner, &mut userdata).to_result()?;
+            FMOD_Studio_System_GetUserData(self.inner.as_ptr(), &mut userdata).to_result()?;
         }
         Ok(userdata)
     }
 
     pub fn set_callback<C: SystemCallback>(&self, mask: SystemCallbackMask) -> Result<()> {
         unsafe {
-            FMOD_Studio_System_SetCallback(self.inner, Some(callback_impl::<C>), mask.into())
-                .to_result()
+            FMOD_Studio_System_SetCallback(
+                self.inner.as_ptr(),
+                Some(callback_impl::<C>),
+                mask.into(),
+            )
+            .to_result()
         }
     }
 }

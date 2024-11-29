@@ -4,6 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::ptr::NonNull;
+
 use fmod_sys::*;
 
 mod bank;
@@ -29,11 +31,14 @@ pub use callback::SystemCallback;
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)] // TODO: should this logically be copy?
 #[repr(transparent)] // so we can transmute between types
 pub struct System {
-    pub(crate) inner: *mut FMOD_STUDIO_SYSTEM,
+    pub(crate) inner: NonNull<FMOD_STUDIO_SYSTEM>,
 }
+
+// TODO tryfrom impls
 
 impl From<*mut FMOD_STUDIO_SYSTEM> for System {
     fn from(inner: *mut FMOD_STUDIO_SYSTEM) -> Self {
+        let inner = NonNull::new(inner).unwrap();
         Self { inner }
     }
 }
@@ -43,7 +48,7 @@ impl From<*mut FMOD_STUDIO_SYSTEM> for System {
 /// This is safe, provided you don't use the pointer.
 impl From<System> for *mut FMOD_STUDIO_SYSTEM {
     fn from(value: System) -> Self {
-        value.inner
+        value.inner.as_ptr()
     }
 }
 

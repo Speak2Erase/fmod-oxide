@@ -24,7 +24,7 @@ impl System {
 
         unsafe {
             FMOD_Studio_System_GetParameterByID(
-                self.inner,
+                self.inner.as_ptr(),
                 id.into(),
                 &mut value,
                 &mut final_value,
@@ -44,7 +44,7 @@ impl System {
     ) -> Result<()> {
         unsafe {
             FMOD_Studio_System_SetParameterByID(
-                self.inner,
+                self.inner.as_ptr(),
                 id.into(),
                 value,
                 ignore_seek_speed.into(),
@@ -65,7 +65,7 @@ impl System {
     ) -> Result<()> {
         unsafe {
             FMOD_Studio_System_SetParameterByIDWithLabel(
-                self.inner,
+                self.inner.as_ptr(),
                 id.into(),
                 label.as_ptr(),
                 ignore_seek_speed.into(),
@@ -89,7 +89,7 @@ impl System {
 
         unsafe {
             FMOD_Studio_System_SetParametersByIDs(
-                self.inner,
+                self.inner.as_ptr(),
                 ids.as_ptr().cast(),
                 values.as_mut_ptr(),
                 ids.len() as c_int,
@@ -109,7 +109,7 @@ impl System {
 
         unsafe {
             FMOD_Studio_System_GetParameterByName(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 &mut value,
                 &mut final_value,
@@ -129,7 +129,7 @@ impl System {
     ) -> Result<()> {
         unsafe {
             FMOD_Studio_System_SetParameterByName(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 value,
                 ignore_seek_speed.into(),
@@ -149,7 +149,7 @@ impl System {
     ) -> Result<()> {
         unsafe {
             FMOD_Studio_System_SetParameterByNameWithLabel(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 label.as_ptr(),
                 ignore_seek_speed.into(),
@@ -169,7 +169,7 @@ impl System {
         let mut description = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_System_GetParameterDescriptionByName(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 description.as_mut_ptr(),
             )
@@ -185,7 +185,7 @@ impl System {
         let mut description = MaybeUninit::zeroed();
         unsafe {
             FMOD_Studio_System_GetParameterDescriptionByID(
-                self.inner,
+                self.inner.as_ptr(),
                 id.into(),
                 description.as_mut_ptr(),
             )
@@ -200,7 +200,8 @@ impl System {
     pub fn parameter_description_count(&self) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_Studio_System_GetParameterDescriptionCount(self.inner, &mut count).to_result()?;
+            FMOD_Studio_System_GetParameterDescriptionCount(self.inner.as_ptr(), &mut count)
+                .to_result()?;
         }
         Ok(count)
     }
@@ -215,7 +216,7 @@ impl System {
 
         unsafe {
             FMOD_Studio_System_GetParameterDescriptionList(
-                self.inner,
+                self.inner.as_ptr(),
                 // bank is repr transparent and has the same layout as *mut FMOD_STUDIO_BANK, so this cast is ok
                 list.as_mut_ptr()
                     .cast::<FMOD_STUDIO_PARAMETER_DESCRIPTION>(),
@@ -253,7 +254,7 @@ impl System {
         // this includes the null terminator, so we don't need to account for that.
         unsafe {
             let error = FMOD_Studio_System_GetParameterLabelByName(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 label_index,
                 std::ptr::null_mut(),
@@ -275,7 +276,7 @@ impl System {
 
         unsafe {
             FMOD_Studio_System_GetParameterLabelByName(
-                self.inner,
+                self.inner.as_ptr(),
                 name.as_ptr(),
                 label_index,
                 // u8 and i8 have the same layout, so this is ok
@@ -307,7 +308,7 @@ impl System {
         // this includes the null terminator, so we don't need to account for that.
         unsafe {
             let error = FMOD_Studio_System_GetParameterLabelByID(
-                self.inner,
+                self.inner.as_ptr(),
                 id.into(),
                 label_index,
                 std::ptr::null_mut(),
@@ -329,7 +330,7 @@ impl System {
 
         unsafe {
             FMOD_Studio_System_GetParameterLabelByID(
-                self.inner,
+                self.inner.as_ptr(),
                 id.into(),
                 label_index,
                 // u8 and i8 have the same layout, so this is ok

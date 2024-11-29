@@ -93,6 +93,6 @@ impl SystemBuilder {
             )
             .to_result()?;
         }
-        Ok(System { inner: self.system })
+        Ok(self.system.into())
     }
 }

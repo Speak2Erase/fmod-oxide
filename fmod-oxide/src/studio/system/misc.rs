@@ -23,7 +23,8 @@ impl System {
     pub fn get_bus(&self, path_or_id: &Utf8CStr) -> Result<Bus> {
         let mut bus = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_System_GetBus(self.inner, path_or_id.as_ptr(), &mut bus).to_result()?;
+            FMOD_Studio_System_GetBus(self.inner.as_ptr(), path_or_id.as_ptr(), &mut bus)
+                .to_result()?;
         }
         Ok(bus.into())
     }
@@ -34,7 +35,7 @@ impl System {
     pub fn get_bus_by_id(&self, id: Guid) -> Result<Bus> {
         let mut bus = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_System_GetBusByID(self.inner, &id.into(), &mut bus).to_result()?;
+            FMOD_Studio_System_GetBusByID(self.inner.as_ptr(), &id.into(), &mut bus).to_result()?;
         }
         Ok(bus.into())
     }
@@ -49,7 +50,8 @@ impl System {
     pub fn get_event(&self, path_or_id: &Utf8CStr) -> Result<EventDescription> {
         let mut event = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_System_GetEvent(self.inner, path_or_id.as_ptr(), &mut event).to_result()?;
+            FMOD_Studio_System_GetEvent(self.inner.as_ptr(), path_or_id.as_ptr(), &mut event)
+                .to_result()?;
             Ok(EventDescription::from(event))
         }
     }
@@ -60,7 +62,8 @@ impl System {
     pub fn get_event_by_id(&self, id: Guid) -> Result<EventDescription> {
         let mut event = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_System_GetEventByID(self.inner, &id.into(), &mut event).to_result()?;
+            FMOD_Studio_System_GetEventByID(self.inner.as_ptr(), &id.into(), &mut event)
+                .to_result()?;
             Ok(EventDescription::from(event))
         }
     }
@@ -75,7 +78,8 @@ impl System {
     pub fn get_vca(&self, path_or_id: &Utf8CStr) -> Result<Vca> {
         let mut vca = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_System_GetVCA(self.inner, path_or_id.as_ptr(), &mut vca).to_result()?;
+            FMOD_Studio_System_GetVCA(self.inner.as_ptr(), path_or_id.as_ptr(), &mut vca)
+                .to_result()?;
         }
         Ok(vca.into())
     }
@@ -86,7 +90,7 @@ impl System {
     pub fn get_vca_by_id(&self, id: Guid) -> Result<Vca> {
         let mut vca = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_System_GetVCAByID(self.inner, &id.into(), &mut vca).to_result()?;
+            FMOD_Studio_System_GetVCAByID(self.inner.as_ptr(), &id.into(), &mut vca).to_result()?;
         }
         Ok(vca.into())
     }
@@ -96,8 +100,11 @@ impl System {
         let mut advanced_settings = MaybeUninit::zeroed();
 
         unsafe {
-            FMOD_Studio_System_GetAdvancedSettings(self.inner, advanced_settings.as_mut_ptr())
-                .to_result()?;
+            FMOD_Studio_System_GetAdvancedSettings(
+                self.inner.as_ptr(),
+                advanced_settings.as_mut_ptr(),
+            )
+            .to_result()?;
 
             let advanced_settings = AdvancedSettings::from_ffi(advanced_settings.assume_init());
 
@@ -123,8 +130,12 @@ impl System {
     pub unsafe fn get_sound_info<'a>(&self, key: &Utf8CStr) -> Result<SoundInfo<'a>> {
         let mut sound_info = MaybeUninit::zeroed();
         unsafe {
-            FMOD_Studio_System_GetSoundInfo(self.inner, key.as_ptr(), sound_info.as_mut_ptr())
-                .to_result()?;
+            FMOD_Studio_System_GetSoundInfo(
+                self.inner.as_ptr(),
+                key.as_ptr(),
+                sound_info.as_mut_ptr(),
+            )
+            .to_result()?;
 
             let sound_info = SoundInfo::from_ffi(sound_info.assume_init());
             Ok(sound_info)

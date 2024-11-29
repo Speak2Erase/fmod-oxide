@@ -24,7 +24,9 @@ impl System {
         &self,
         dsp_description: *const FMOD_DSP_DESCRIPTION,
     ) -> Result<()> {
-        unsafe { FMOD_Studio_System_RegisterPlugin(self.inner, dsp_description).to_result() }
+        unsafe {
+            FMOD_Studio_System_RegisterPlugin(self.inner.as_ptr(), dsp_description).to_result()
+        }
     }
 
     /// Unregisters a plugin DSP.
@@ -35,6 +37,8 @@ impl System {
     /// It can call into non-rust external code.
     /// TODO
     pub unsafe fn unregister_plugin(&self, name: &Utf8CStr) -> Result<()> {
-        unsafe { FMOD_Studio_System_UnregisterPlugin(self.inner, name.as_ptr()).to_result() }
+        unsafe {
+            FMOD_Studio_System_UnregisterPlugin(self.inner.as_ptr(), name.as_ptr()).to_result()
+        }
     }
 }

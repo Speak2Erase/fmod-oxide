@@ -32,7 +32,7 @@ impl System {
     ///
     /// This function is not safe to be called at the same time across multiple threads.
     pub unsafe fn release(self) -> Result<()> {
-        unsafe { FMOD_Studio_System_Release(self.inner).to_result() }
+        unsafe { FMOD_Studio_System_Release(self.inner.as_ptr()).to_result() }
     }
 
     /// Update the FMOD Studio System.
@@ -45,20 +45,20 @@ impl System {
     /// When Studio is initialized with [`InitFlags::SYNCHRONOUS_UPDATE`] queued commands will be processed immediately when calling this function, the scheduling and update logic for the Studio system are executed and all callbacks are fired.
     /// This may block the calling thread for a substantial amount of time.
     pub fn update(&self) -> Result<()> {
-        unsafe { FMOD_Studio_System_Update(self.inner) }.to_result()
+        unsafe { FMOD_Studio_System_Update(self.inner.as_ptr()) }.to_result()
     }
 
     /// This function blocks the calling thread until all pending commands have been executed and all non-blocking bank loads have been completed.
     ///
     /// This is equivalent to calling [`System::update`] and then sleeping until the asynchronous thread has finished executing all pending commands.
     pub fn flush_commands(&self) -> Result<()> {
-        unsafe { FMOD_Studio_System_FlushCommands(self.inner) }.to_result()
+        unsafe { FMOD_Studio_System_FlushCommands(self.inner.as_ptr()) }.to_result()
     }
 
     /// Block until all sample loading and unloading has completed.
     ///
     /// This function may stall for a long time if other threads are continuing to issue calls to load and unload sample data, e.g. by creating new event instances.
     pub fn flush_sample_loading(&self) -> Result<()> {
-        unsafe { FMOD_Studio_System_FlushSampleLoading(self.inner) }.to_result()
+        unsafe { FMOD_Studio_System_FlushSampleLoading(self.inner.as_ptr()) }.to_result()
     }
 }

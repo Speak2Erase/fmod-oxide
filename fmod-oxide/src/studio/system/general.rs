@@ -16,7 +16,7 @@ impl System {
     pub fn get_core_system(&self) -> Result<crate::core::System> {
         let mut system = std::ptr::null_mut();
         unsafe {
-            FMOD_Studio_System_GetCoreSystem(self.inner, &mut system).to_result()?;
+            FMOD_Studio_System_GetCoreSystem(self.inner.as_ptr(), &mut system).to_result()?;
         }
         Ok(system.into())
     }
@@ -29,7 +29,7 @@ impl System {
     pub fn lookup_id(&self, path: &Utf8CStr) -> Result<Guid> {
         let mut guid = MaybeUninit::zeroed();
         unsafe {
-            FMOD_Studio_System_LookupID(self.inner, path.as_ptr(), guid.as_mut_ptr())
+            FMOD_Studio_System_LookupID(self.inner.as_ptr(), path.as_ptr(), guid.as_mut_ptr())
                 .to_result()?;
 
             let guid = guid.assume_init().into();
@@ -47,7 +47,7 @@ impl System {
         // this includes the null terminator, so we don't need to account for that.
         unsafe {
             let error = FMOD_Studio_System_LookupPath(
-                self.inner,
+                self.inner.as_ptr(),
                 &id.into(),
                 std::ptr::null_mut(),
                 0,
@@ -68,7 +68,7 @@ impl System {
 
         unsafe {
             FMOD_Studio_System_LookupPath(
-                self.inner,
+                self.inner.as_ptr(),
                 &id.into(),
                 // u8 and i8 have the same layout, so this is ok
                 path.as_mut_ptr().cast(),
@@ -89,6 +89,6 @@ impl System {
 
     /// Checks that the [`System`] reference is valid and has been initialized.
     pub fn is_valid(&self) -> bool {
-        unsafe { FMOD_Studio_System_IsValid(self.inner).into() }
+        unsafe { FMOD_Studio_System_IsValid(self.inner.as_ptr()).into() }
     }
 }
