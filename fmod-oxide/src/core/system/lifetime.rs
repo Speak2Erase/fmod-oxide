@@ -29,8 +29,10 @@ impl System {
     /// All pre-initialize configuration settings will remain and the System can be reinitialized as needed.
     pub fn close(&self) -> Result<SystemBuilder> {
         unsafe {
-            FMOD_System_Close(self.inner).to_result()?;
-            Ok(SystemBuilder { system: self.inner })
+            FMOD_System_Close(self.inner.as_ptr()).to_result()?;
+            Ok(SystemBuilder {
+                system: self.inner.as_ptr(),
+            })
         }
     }
 
@@ -43,7 +45,7 @@ impl System {
     /// [`System::release`] is not thread-safe. Do not call this function simultaneously from multiple threads at once.
 
     pub unsafe fn release(&self) -> Result<()> {
-        unsafe { FMOD_System_Release(self.inner).to_result() }
+        unsafe { FMOD_System_Release(self.inner.as_ptr()).to_result() }
     }
 
     /// Updates the FMOD system.
@@ -64,7 +66,7 @@ impl System {
     /// If [`InitFlags::STREAM_FROM_UPDATE`]. is used, this function will update the stream engine.
     /// Combining this with the non realtime output will mean smoother captured output.
     pub fn update(&self) -> Result<()> {
-        unsafe { FMOD_System_Update(self.inner).to_result() }
+        unsafe { FMOD_System_Update(self.inner.as_ptr()).to_result() }
     }
 
     /// Suspend mixer thread and relinquish usage of audio hardware while maintaining internal state.
@@ -73,7 +75,7 @@ impl System {
     ///
     /// All internal state will be maintained, i.e. created [`Sound`] and [`Channel`]s will stay available in memory.
     pub fn suspend_mixer(&self) -> Result<()> {
-        unsafe { FMOD_System_MixerSuspend(self.inner).to_result() }
+        unsafe { FMOD_System_MixerSuspend(self.inner.as_ptr()).to_result() }
     }
 
     /// Resume mixer thread and reacquire access to audio hardware.
@@ -82,6 +84,6 @@ impl System {
     ///
     /// All internal state will resume, i.e. created [`Sound`] and [`Channel`]s are still valid and playback will continue.
     pub fn resume_mixer(&self) -> Result<()> {
-        unsafe { FMOD_System_MixerResume(self.inner).to_result() }
+        unsafe { FMOD_System_MixerResume(self.inner.as_ptr()).to_result() }
     }
 }

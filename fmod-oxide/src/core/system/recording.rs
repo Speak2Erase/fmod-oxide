@@ -24,7 +24,7 @@ impl System {
         let mut drivers = 0;
         let mut connected = 0;
         unsafe {
-            FMOD_System_GetRecordNumDrivers(self.inner, &mut drivers, &mut connected)
+            FMOD_System_GetRecordNumDrivers(self.inner.as_ptr(), &mut drivers, &mut connected)
                 .to_result()?;
         }
         Ok((drivers, connected))
@@ -42,7 +42,7 @@ impl System {
         let mut state = 0;
         let name = get_string(|name| unsafe {
             FMOD_System_GetRecordDriverInfo(
-                self.inner,
+                self.inner.as_ptr(),
                 id,
                 name.as_mut_ptr().cast(),
                 name.len() as c_int,
@@ -79,7 +79,7 @@ impl System {
     pub fn get_record_position(&self, id: c_int) -> Result<c_uint> {
         let mut position = 0;
         unsafe {
-            FMOD_System_GetRecordPosition(self.inner, id, &mut position).to_result()?;
+            FMOD_System_GetRecordPosition(self.inner.as_ptr(), id, &mut position).to_result()?;
         }
         Ok(position)
     }
@@ -96,14 +96,17 @@ impl System {
     /// For lowest latency set the [`Sound`] sample rate to the rate returned by `System::getRecordDriverInfo`,
     /// otherwise a resampler will be allocated to handle the difference in frequencies, which adds latency.
     pub fn record_start(&self, id: c_int, sound: Sound, do_loop: bool) -> Result<()> {
-        unsafe { FMOD_System_RecordStart(self.inner, id, sound.into(), do_loop.into()).to_result() }
+        unsafe {
+            FMOD_System_RecordStart(self.inner.as_ptr(), id, sound.into(), do_loop.into())
+                .to_result()
+        }
     }
 
     /// Stops the recording engine from recording to a pre-created Sound object.
     ///
     /// Returns no error if unplugged or already stopped.
     pub fn record_stop(&self, id: c_int) -> Result<()> {
-        unsafe { FMOD_System_RecordStop(self.inner, id).to_result() }
+        unsafe { FMOD_System_RecordStop(self.inner.as_ptr(), id).to_result() }
     }
 
     /// Retrieves the state of the FMOD recording API, ie if it is currently recording or not.
@@ -117,7 +120,7 @@ impl System {
     pub fn is_recording(&self, id: c_int) -> Result<bool> {
         let mut recording = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_System_IsRecording(self.inner, id, &mut recording).to_result()?;
+            FMOD_System_IsRecording(self.inner.as_ptr(), id, &mut recording).to_result()?;
         }
         Ok(recording.into())
     }

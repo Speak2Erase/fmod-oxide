@@ -4,6 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::ptr::NonNull;
+
 use fmod_sys::*;
 
 mod builder;
@@ -27,7 +29,7 @@ pub use setup::RolloffCallback;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct System {
-    pub(crate) inner: *mut FMOD_SYSTEM,
+    pub(crate) inner: NonNull<FMOD_SYSTEM>,
 }
 
 unsafe impl Send for System {}
@@ -35,12 +37,13 @@ unsafe impl Sync for System {}
 
 impl From<*mut FMOD_SYSTEM> for System {
     fn from(value: *mut FMOD_SYSTEM) -> Self {
-        System { inner: value }
+        let inner = NonNull::new(value).unwrap();
+        System { inner }
     }
 }
 
 impl From<System> for *mut FMOD_SYSTEM {
     fn from(value: System) -> Self {
-        value.inner
+        value.inner.as_ptr()
     }
 }

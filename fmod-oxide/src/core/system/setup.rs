@@ -32,7 +32,7 @@ impl System {
     pub fn get_software_channels(&self) -> Result<c_int> {
         let mut channels = 0;
         unsafe {
-            FMOD_System_GetSoftwareChannels(self.inner, &mut channels).to_result()?;
+            FMOD_System_GetSoftwareChannels(self.inner.as_ptr(), &mut channels).to_result()?;
         }
         Ok(channels)
     }
@@ -44,7 +44,7 @@ impl System {
         let mut raw_speakers = 0;
         unsafe {
             FMOD_System_GetSoftwareFormat(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut sample_rate,
                 &mut speaker_mode,
                 &mut raw_speakers,
@@ -72,8 +72,12 @@ impl System {
         let mut buffer_length = 0;
         let mut buffer_count = 0;
         unsafe {
-            FMOD_System_GetDSPBufferSize(self.inner, &mut buffer_length, &mut buffer_count)
-                .to_result()?;
+            FMOD_System_GetDSPBufferSize(
+                self.inner.as_ptr(),
+                &mut buffer_length,
+                &mut buffer_count,
+            )
+            .to_result()?;
         }
         Ok((buffer_length, buffer_count))
     }
@@ -102,7 +106,8 @@ impl System {
     /// The decode buffer size is changeable via `FMOD_CREATESOUNDEXINFO`.
     pub fn set_stream_buffer_size(&self, file_buffer_size: c_uint, kind: TimeUnit) -> Result<()> {
         unsafe {
-            FMOD_System_SetStreamBufferSize(self.inner, file_buffer_size, kind.into()).to_result()
+            FMOD_System_SetStreamBufferSize(self.inner.as_ptr(), file_buffer_size, kind.into())
+                .to_result()
         }
     }
 
@@ -111,8 +116,12 @@ impl System {
         let mut file_buffer_size = 0;
         let mut time_unit = 0;
         unsafe {
-            FMOD_System_GetStreamBufferSize(self.inner, &mut file_buffer_size, &mut time_unit)
-                .to_result()?;
+            FMOD_System_GetStreamBufferSize(
+                self.inner.as_ptr(),
+                &mut file_buffer_size,
+                &mut time_unit,
+            )
+            .to_result()?;
         }
         let time_unit = time_unit.try_into()?;
         Ok((file_buffer_size, time_unit))
@@ -159,7 +168,7 @@ impl System {
         active: bool,
     ) -> Result<()> {
         unsafe {
-            FMOD_System_SetSpeakerPosition(self.inner, speaker.into(), x, y, active.into())
+            FMOD_System_SetSpeakerPosition(self.inner.as_ptr(), speaker.into(), x, y, active.into())
                 .to_result()
         }
     }
@@ -170,8 +179,14 @@ impl System {
         let mut y = 0.0;
         let mut active = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_System_GetSpeakerPosition(self.inner, speaker.into(), &mut x, &mut y, &mut active)
-                .to_result()?;
+            FMOD_System_GetSpeakerPosition(
+                self.inner.as_ptr(),
+                speaker.into(),
+                &mut x,
+                &mut y,
+                &mut active,
+            )
+            .to_result()?;
         }
         Ok((x, y, active.into()))
     }
@@ -201,8 +216,13 @@ impl System {
         rollof_scale: c_float,
     ) -> Result<()> {
         unsafe {
-            FMOD_System_Set3DSettings(self.inner, doppler_scale, distance_factor, rollof_scale)
-                .to_result()
+            FMOD_System_Set3DSettings(
+                self.inner.as_ptr(),
+                doppler_scale,
+                distance_factor,
+                rollof_scale,
+            )
+            .to_result()
         }
     }
 
@@ -213,7 +233,7 @@ impl System {
         let mut rolloff_scale = 0.0;
         unsafe {
             FMOD_System_Get3DSettings(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut doppler_scale,
                 &mut distance_factor,
                 &mut rolloff_scale,
@@ -232,14 +252,14 @@ impl System {
     ///
     /// Users of the Studio API should call [`crate::studio::System::set_listener_count`] instead of this function.
     pub fn set_3d_listener_count(&self, count: c_int) -> Result<()> {
-        unsafe { FMOD_System_Set3DNumListeners(self.inner, count).to_result() }
+        unsafe { FMOD_System_Set3DNumListeners(self.inner.as_ptr(), count).to_result() }
     }
 
     /// Retrieves the number of 3D listeners.
     pub fn get_3d_listener_count(&self) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_System_Get3DNumListeners(self.inner, &mut count).to_result()?;
+            FMOD_System_Get3DNumListeners(self.inner.as_ptr(), &mut count).to_result()?;
         }
         Ok(count)
     }
@@ -249,13 +269,13 @@ impl System {
     /// This function overrides `FMOD_3D_INVERSEROLLOFF`, `FMOD_3D_LINEARROLLOFF`, `FMOD_3D_LINEARSQUAREROLLOFF`, `FMOD_3D_INVERSETAPEREDROLLOFF` and `FMOD_3D_CUSTOMROLLOFF`.
     pub fn set_3d_rolloff_callback<C: RolloffCallback>(&self) -> Result<()> {
         unsafe {
-            FMOD_System_Set3DRolloffCallback(self.inner, Some(rolloff_callback_impl::<C>))
+            FMOD_System_Set3DRolloffCallback(self.inner.as_ptr(), Some(rolloff_callback_impl::<C>))
                 .to_result()
         }
     }
 
     /// Unset the 3d rolloff callback, returning control of distance attenuation to FMOD.
     pub fn unset_3d_rolloff_callback(&self) -> Result<()> {
-        unsafe { FMOD_System_Set3DRolloffCallback(self.inner, None).to_result() }
+        unsafe { FMOD_System_Set3DRolloffCallback(self.inner.as_ptr(), None).to_result() }
     }
 }

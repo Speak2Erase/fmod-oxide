@@ -21,8 +21,13 @@ impl System {
     pub fn create_geometry(&self, max_polygons: c_int, max_vertices: c_int) -> Result<Geometry> {
         let mut geometry = std::ptr::null_mut();
         unsafe {
-            FMOD_System_CreateGeometry(self.inner, max_polygons, max_vertices, &mut geometry)
-                .to_result()?;
+            FMOD_System_CreateGeometry(
+                self.inner.as_ptr(),
+                max_polygons,
+                max_vertices,
+                &mut geometry,
+            )
+            .to_result()?;
         }
         Ok(geometry.into())
     }
@@ -37,7 +42,7 @@ impl System {
     /// Setting `max_world_size` should be done first before creating any geometry.
     /// It can be done any time afterwards but may be slow in this case.
     pub fn set_geometry_settings(&self, max_world_size: c_float) -> Result<()> {
-        unsafe { FMOD_System_SetGeometrySettings(self.inner, max_world_size).to_result() }
+        unsafe { FMOD_System_SetGeometrySettings(self.inner.as_ptr(), max_world_size).to_result() }
     }
 
     /// Retrieves the maximum world size for the geometry engine.
@@ -49,7 +54,8 @@ impl System {
     pub fn get_geometry_settings(&self) -> Result<c_float> {
         let mut max_world_size = 0.0;
         unsafe {
-            FMOD_System_GetGeometrySettings(self.inner, &mut max_world_size).to_result()?;
+            FMOD_System_GetGeometrySettings(self.inner.as_ptr(), &mut max_world_size)
+                .to_result()?;
         }
         Ok(max_world_size)
     }
@@ -61,7 +67,7 @@ impl System {
         let mut geometry = std::ptr::null_mut();
         unsafe {
             FMOD_System_LoadGeometry(
-                self.inner,
+                self.inner.as_ptr(),
                 data.as_ptr().cast(),
                 data.len() as c_int,
                 &mut geometry,
@@ -84,7 +90,7 @@ impl System {
         let mut reverb = 0.0;
         unsafe {
             FMOD_System_GetGeometryOcclusion(
-                self.inner,
+                self.inner.as_ptr(),
                 std::ptr::from_ref(&listener).cast(),
                 std::ptr::from_ref(&source).cast(),
                 &mut direct,

@@ -27,14 +27,14 @@ impl System {
     /// When using the Studio API, switching to an NRT (non-realtime) output type after FMOD is already initialized
     /// will not behave correctly unless the Studio API was initialized with [`crate::studio::InitFlags::SYNCHRONOUS_UPDATE`].
     pub fn set_output(&self, output_type: OutputType) -> Result<()> {
-        unsafe { FMOD_System_SetOutput(self.inner, output_type.into()).to_result() }
+        unsafe { FMOD_System_SetOutput(self.inner.as_ptr(), output_type.into()).to_result() }
     }
 
     /// Retrieves the type of output interface used to run the mixer.
     pub fn get_output_type(&self) -> Result<OutputType> {
         let mut output_type = 0;
         unsafe {
-            FMOD_System_GetOutput(self.inner, &mut output_type).to_result()?;
+            FMOD_System_GetOutput(self.inner.as_ptr(), &mut output_type).to_result()?;
         }
         let output_type = output_type.try_into()?;
         Ok(output_type)
@@ -49,7 +49,7 @@ impl System {
     pub fn get_driver_count(&self) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_System_GetNumDrivers(self.inner, &mut count).to_result()?;
+            FMOD_System_GetNumDrivers(self.inner.as_ptr(), &mut count).to_result()?;
         }
         Ok(count)
     }
@@ -67,7 +67,7 @@ impl System {
 
             let name = get_string(|name| {
                 FMOD_System_GetDriverInfo(
-                    self.inner,
+                    self.inner.as_ptr(),
                     id,
                     name.as_mut_ptr().cast(),
                     name.len() as c_int,
@@ -91,14 +91,14 @@ impl System {
     ///
     /// When this function is called, the current driver will be shutdown and the newly selected driver will be initialized / started.
     pub fn set_driver(&self, driver: c_int) -> Result<()> {
-        unsafe { FMOD_System_SetDriver(self.inner, driver).to_result() }
+        unsafe { FMOD_System_SetDriver(self.inner.as_ptr(), driver).to_result() }
     }
 
     /// Retrieves the output driver for the selected output type.
     pub fn get_driver(&self) -> Result<c_int> {
         let mut driver = 0;
         unsafe {
-            FMOD_System_GetDriver(self.inner, &mut driver).to_result()?;
+            FMOD_System_GetDriver(self.inner.as_ptr(), &mut driver).to_result()?;
         }
         Ok(driver)
     }

@@ -13,7 +13,7 @@ use crate::{get_string, Dsp, PluginType, System};
 impl System {
     /// Specify a base search path for plugins so they can be placed somewhere else than the directory of the main executable.
     pub fn set_plugin_path(&self, path: &Utf8CStr) -> Result<()> {
-        unsafe { FMOD_System_SetPluginPath(self.inner, path.as_ptr()).to_result() }
+        unsafe { FMOD_System_SetPluginPath(self.inner.as_ptr(), path.as_ptr()).to_result() }
     }
 
     /// Loads an FMOD (DSP, Output or Codec) plugin from file.
@@ -34,15 +34,20 @@ impl System {
     pub unsafe fn load_plugin(&self, filename: &Utf8CStr, priority: c_uint) -> Result<c_uint> {
         let mut handle = 0;
         unsafe {
-            FMOD_System_LoadPlugin(self.inner, filename.as_ptr(), &mut handle, priority)
-                .to_result()?;
+            FMOD_System_LoadPlugin(
+                self.inner.as_ptr(),
+                filename.as_ptr(),
+                &mut handle,
+                priority,
+            )
+            .to_result()?;
         }
         Ok(handle)
     }
 
     /// Unloads an FMOD (DSP, Output or Codec) plugin.
     pub fn unload_plugin(&self, handle: c_uint) -> Result<()> {
-        unsafe { FMOD_System_UnloadPlugin(self.inner, handle).to_result() }
+        unsafe { FMOD_System_UnloadPlugin(self.inner.as_ptr(), handle).to_result() }
     }
 
     /// Retrieves the number of nested plugins from the selected plugin.
@@ -54,7 +59,7 @@ impl System {
     pub fn get_nested_plugin_count(&self, handle: c_uint) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_System_GetNumNestedPlugins(self.inner, handle, &mut count).to_result()?;
+            FMOD_System_GetNumNestedPlugins(self.inner.as_ptr(), handle, &mut count).to_result()?;
         }
         Ok(count)
     }
@@ -70,7 +75,7 @@ impl System {
     pub fn get_nested_plugin(&self, handle: c_uint, index: c_int) -> Result<c_uint> {
         let mut nested_handle = 0;
         unsafe {
-            FMOD_System_GetNestedPlugin(self.inner, handle, index, &mut nested_handle)
+            FMOD_System_GetNestedPlugin(self.inner.as_ptr(), handle, index, &mut nested_handle)
                 .to_result()?;
         }
         Ok(nested_handle)
@@ -80,7 +85,7 @@ impl System {
     pub fn get_plugin_count(&self, kind: PluginType) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_System_GetNumPlugins(self.inner, kind.into(), &mut count).to_result()?;
+            FMOD_System_GetNumPlugins(self.inner.as_ptr(), kind.into(), &mut count).to_result()?;
         }
         Ok(count)
     }
@@ -91,7 +96,8 @@ impl System {
     pub fn get_plugin_handle(&self, kind: PluginType, index: c_int) -> Result<c_uint> {
         let mut handle = 0;
         unsafe {
-            FMOD_System_GetPluginHandle(self.inner, kind.into(), index, &mut handle).to_result()?;
+            FMOD_System_GetPluginHandle(self.inner.as_ptr(), kind.into(), index, &mut handle)
+                .to_result()?;
         }
         Ok(handle)
     }
@@ -103,7 +109,7 @@ impl System {
 
         let name = get_string(|name| unsafe {
             FMOD_System_GetPluginInfo(
-                self.inner,
+                self.inner.as_ptr(),
                 handle,
                 &mut plugin_type,
                 name.as_mut_ptr().cast(),
@@ -118,14 +124,14 @@ impl System {
 
     /// Selects an output type given a plugin handle.
     pub fn set_output_by_plugin(&self, handle: c_uint) -> Result<()> {
-        unsafe { FMOD_System_SetOutputByPlugin(self.inner, handle).to_result() }
+        unsafe { FMOD_System_SetOutputByPlugin(self.inner.as_ptr(), handle).to_result() }
     }
 
     /// Retrieves the plugin handle for the currently selected output type.
     pub fn get_output_by_plugin(&self) -> Result<c_uint> {
         let mut handle = 0;
         unsafe {
-            FMOD_System_GetOutputByPlugin(self.inner, &mut handle).to_result()?;
+            FMOD_System_GetOutputByPlugin(self.inner.as_ptr(), &mut handle).to_result()?;
         }
         Ok(handle)
     }
@@ -141,7 +147,7 @@ impl System {
     pub fn create_dsp_by_plugin(&self, handle: c_uint) -> Result<Dsp> {
         let mut dsp = std::ptr::null_mut();
         unsafe {
-            FMOD_System_CreateDSPByPlugin(self.inner, handle, &mut dsp).to_result()?;
+            FMOD_System_CreateDSPByPlugin(self.inner.as_ptr(), handle, &mut dsp).to_result()?;
         }
         Ok(dsp.into())
     }
@@ -151,7 +157,8 @@ impl System {
     pub fn get_dsp_info_by_plugin(&self, handle: c_uint) -> Result<*const FMOD_DSP_DESCRIPTION> {
         let mut dsp_description = std::ptr::null();
         unsafe {
-            FMOD_System_GetDSPInfoByPlugin(self.inner, handle, &mut dsp_description).to_result()?;
+            FMOD_System_GetDSPInfoByPlugin(self.inner.as_ptr(), handle, &mut dsp_description)
+                .to_result()?;
         }
         Ok(dsp_description)
     }
@@ -205,7 +212,7 @@ impl System {
     ) -> Result<c_uint> {
         let mut handle = 0;
         unsafe {
-            FMOD_System_RegisterCodec(self.inner, description, &mut handle, priority)
+            FMOD_System_RegisterCodec(self.inner.as_ptr(), description, &mut handle, priority)
                 .to_result()?;
         }
         Ok(handle)
@@ -226,7 +233,8 @@ impl System {
     ) -> Result<c_uint> {
         let mut handle = 0;
         unsafe {
-            FMOD_System_RegisterDSP(self.inner, dsp_description, &mut handle).to_result()?;
+            FMOD_System_RegisterDSP(self.inner.as_ptr(), dsp_description, &mut handle)
+                .to_result()?;
         }
         Ok(handle)
     }
@@ -246,7 +254,8 @@ impl System {
     ) -> Result<c_uint> {
         let mut handle = 0;
         unsafe {
-            FMOD_System_RegisterOutput(self.inner, description, &mut handle).to_result()?;
+            FMOD_System_RegisterOutput(self.inner.as_ptr(), description, &mut handle)
+                .to_result()?;
         }
         Ok(handle)
     }
