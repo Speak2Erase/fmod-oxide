@@ -24,8 +24,8 @@ unsafe impl Send for CommandReplay {}
 unsafe impl Sync for CommandReplay {}
 
 impl From<*mut FMOD_STUDIO_COMMANDREPLAY> for CommandReplay {
-    fn from(inner: *mut FMOD_STUDIO_COMMANDREPLAY) -> Self {
-        let inner = NonNull::new(inner).unwrap();
+    fn from(value: *mut FMOD_STUDIO_COMMANDREPLAY) -> Self {
+        let inner = NonNull::new(value).unwrap();
         Self { inner }
     }
 }

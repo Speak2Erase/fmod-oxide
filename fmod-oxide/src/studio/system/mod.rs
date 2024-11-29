@@ -37,8 +37,8 @@ pub struct System {
 // TODO tryfrom impls
 
 impl From<*mut FMOD_STUDIO_SYSTEM> for System {
-    fn from(inner: *mut FMOD_STUDIO_SYSTEM) -> Self {
-        let inner = NonNull::new(inner).unwrap();
+    fn from(value: *mut FMOD_STUDIO_SYSTEM) -> Self {
+        let inner = NonNull::new(value).unwrap();
         Self { inner }
     }
 }

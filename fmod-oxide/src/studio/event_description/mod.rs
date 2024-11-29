@@ -26,8 +26,8 @@ unsafe impl Send for EventDescription {}
 unsafe impl Sync for EventDescription {}
 
 impl From<*mut FMOD_STUDIO_EVENTDESCRIPTION> for EventDescription {
-    fn from(inner: *mut FMOD_STUDIO_EVENTDESCRIPTION) -> Self {
-        let inner = NonNull::new(inner).unwrap();
+    fn from(value: *mut FMOD_STUDIO_EVENTDESCRIPTION) -> Self {
+        let inner = NonNull::new(value).unwrap();
         Self { inner }
     }
 }
