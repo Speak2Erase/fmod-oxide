@@ -5,9 +5,130 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use fmod_sys::*;
+use lanyard::Utf8CString;
 use std::ffi::{c_float, c_int, c_uint};
 
 use crate::{Dsp, DspParameterDataType, DspParameterDescription};
+
+mod sealed {
+    pub trait Seal {}
+}
+pub trait ParameterType: sealed::Seal + Sized {
+    fn set_parameter(self, dsp: Dsp, index: c_int) -> Result<()>;
+
+    fn get_parameter(dsp: Dsp, index: c_int) -> Result<Self>;
+
+    // TODO Strings are a max of FMOD_DSP_GETPARAM_VALUESTR_LENGTH so we don't need to heap allocate them
+    fn get_parameter_string(dsp: Dsp, index: c_int) -> Result<Utf8CString>;
+}
+
+impl sealed::Seal for bool {}
+impl ParameterType for bool {
+    fn set_parameter(self, dsp: Dsp, index: c_int) -> Result<()> {
+        let dsp = dsp.inner.as_ptr();
+        unsafe { FMOD_DSP_SetParameterBool(dsp, index, self.into()).to_result() }
+    }
+
+    fn get_parameter(dsp: Dsp, index: c_int) -> Result<Self> {
+        let dsp = dsp.inner.as_ptr();
+        unsafe {
+            let mut value = FMOD_BOOL::FALSE;
+            FMOD_DSP_GetParameterBool(dsp, index, &mut value, std::ptr::null_mut(), 0)
+                .to_result()?;
+            Ok(value.into())
+        }
+    }
+
+    fn get_parameter_string(dsp: Dsp, index: c_int) -> Result<Utf8CString> {
+        let dsp = dsp.inner.as_ptr();
+        let mut bytes = [0; FMOD_DSP_GETPARAM_VALUESTR_LENGTH as usize];
+        unsafe {
+            FMOD_DSP_GetParameterBool(
+                dsp,
+                index,
+                std::ptr::null_mut(),
+                bytes.as_mut_ptr().cast(),
+                FMOD_DSP_GETPARAM_VALUESTR_LENGTH as i32,
+            )
+            .to_result()?;
+
+            let string = Utf8CString::from_utf8_with_nul(bytes.to_vec()).unwrap();
+            Ok(string)
+        }
+    }
+}
+
+impl sealed::Seal for c_int {}
+impl ParameterType for c_int {
+    fn set_parameter(self, dsp: Dsp, index: c_int) -> Result<()> {
+        let dsp = dsp.inner.as_ptr();
+        unsafe { FMOD_DSP_SetParameterInt(dsp, index, self).to_result() }
+    }
+
+    fn get_parameter(dsp: Dsp, index: c_int) -> Result<Self> {
+        let dsp = dsp.inner.as_ptr();
+        unsafe {
+            let mut value = 0;
+            FMOD_DSP_GetParameterInt(dsp, index, &mut value, std::ptr::null_mut(), 0)
+                .to_result()?;
+            Ok(value)
+        }
+    }
+
+    fn get_parameter_string(dsp: Dsp, index: c_int) -> Result<Utf8CString> {
+        let dsp = dsp.inner.as_ptr();
+        let mut bytes = [0; FMOD_DSP_GETPARAM_VALUESTR_LENGTH as usize];
+        unsafe {
+            FMOD_DSP_GetParameterInt(
+                dsp,
+                index,
+                std::ptr::null_mut(),
+                bytes.as_mut_ptr().cast(),
+                FMOD_DSP_GETPARAM_VALUESTR_LENGTH as i32,
+            )
+            .to_result()?;
+
+            let string = Utf8CString::from_utf8_with_nul(bytes.to_vec()).unwrap();
+            Ok(string)
+        }
+    }
+}
+
+impl sealed::Seal for c_float {}
+impl ParameterType for c_float {
+    fn set_parameter(self, dsp: Dsp, index: c_int) -> Result<()> {
+        let dsp = dsp.inner.as_ptr();
+        unsafe { FMOD_DSP_SetParameterFloat(dsp, index, self).to_result() }
+    }
+
+    fn get_parameter(dsp: Dsp, index: c_int) -> Result<Self> {
+        let dsp = dsp.inner.as_ptr();
+        unsafe {
+            let mut value = 0.0;
+            FMOD_DSP_GetParameterFloat(dsp, index, &mut value, std::ptr::null_mut(), 0)
+                .to_result()?;
+            Ok(value)
+        }
+    }
+
+    fn get_parameter_string(dsp: Dsp, index: c_int) -> Result<Utf8CString> {
+        let dsp = dsp.inner.as_ptr();
+        let mut bytes = [0; FMOD_DSP_GETPARAM_VALUESTR_LENGTH as usize];
+        unsafe {
+            FMOD_DSP_GetParameterFloat(
+                dsp,
+                index,
+                std::ptr::null_mut(),
+                bytes.as_mut_ptr().cast(),
+                FMOD_DSP_GETPARAM_VALUESTR_LENGTH as i32,
+            )
+            .to_result()?;
+
+            let string = Utf8CString::from_utf8_with_nul(bytes.to_vec()).unwrap();
+            Ok(string)
+        }
+    }
+}
 
 impl Dsp {
     /// Retrieve the index of the first data parameter of a particular data type.
@@ -31,31 +152,6 @@ impl Dsp {
         let mut count = 0;
         unsafe { FMOD_DSP_GetNumParameters(self.inner.as_ptr(), &mut count).to_result()? };
         Ok(count)
-    }
-
-    /// Sets a boolean parameter by index.
-    pub fn set_parameter_bool(&self, index: c_int, value: bool) -> Result<()> {
-        unsafe { FMOD_DSP_SetParameterBool(self.inner.as_ptr(), index, value.into()).to_result() }
-    }
-
-    /// Retrieves a boolean parameter by index.
-    ///
-    /// Note: FMOD also returns a string representation of the parameter value, but this is not currently exposed.
-    /// You can just use [`ToString`] instead.
-    // FIXME turn this into an enum sorta thing?
-    pub fn get_parameter_bool(&self, index: c_int) -> Result<bool> {
-        let mut value = FMOD_BOOL::FALSE;
-        unsafe {
-            FMOD_DSP_GetParameterBool(
-                self.inner.as_ptr(),
-                index,
-                &mut value,
-                std::ptr::null_mut(),
-                0,
-            )
-            .to_result()?;
-        }
-        Ok(value.into())
     }
 
     /// Sets a binary data parameter by index.
@@ -102,54 +198,6 @@ impl Dsp {
         }
     }
 
-    /// Sets a floating point parameter by index.
-    pub fn set_parameter_float(&self, index: c_int, value: c_float) -> Result<()> {
-        unsafe { FMOD_DSP_SetParameterFloat(self.inner.as_ptr(), index, value).to_result() }
-    }
-
-    /// Retrieves a floating point parameter by index.
-    ///
-    /// Note: FMOD also returns a string representation of the parameter value, but this is not currently exposed.
-    /// You can just use [`ToString`] instead.
-    pub fn get_parameter_float(&self, index: c_int) -> Result<c_float> {
-        let mut value = 0.0;
-        unsafe {
-            FMOD_DSP_GetParameterFloat(
-                self.inner.as_ptr(),
-                index,
-                &mut value,
-                std::ptr::null_mut(),
-                0,
-            )
-            .to_result()?;
-        }
-        Ok(value)
-    }
-
-    /// Sets an integer parameter by index.
-    pub fn set_parameter_int(&self, index: c_int, value: c_int) -> Result<()> {
-        unsafe { FMOD_DSP_SetParameterInt(self.inner.as_ptr(), index, value).to_result() }
-    }
-
-    /// Retrieves an integer parameter by index.
-    ///
-    /// Note: FMOD also returns a string representation of the parameter value, but this is not currently exposed.
-    /// You can just use [`ToString`] instead.
-    pub fn get_parameter_int(&self, index: c_int) -> Result<c_int> {
-        let mut value = 0;
-        unsafe {
-            FMOD_DSP_GetParameterInt(
-                self.inner.as_ptr(),
-                index,
-                &mut value,
-                std::ptr::null_mut(),
-                0,
-            )
-            .to_result()?;
-        }
-        Ok(value)
-    }
-
     /// Retrieve information about a specified parameter.
     pub fn get_parameter_info(&self, index: c_int) -> Result<DspParameterDescription> {
         let mut desc = std::ptr::null_mut();
@@ -158,5 +206,17 @@ impl Dsp {
             let desc = DspParameterDescription::from_ffi(*desc); // oh god this is *awful*
             Ok(desc)
         }
+    }
+
+    pub fn set_parameter<P: ParameterType>(&self, index: c_int, parameter: P) -> Result<()> {
+        parameter.set_parameter(*self, index)
+    }
+
+    pub fn get_parameter<P: ParameterType>(&self, index: c_int) -> Result<P> {
+        P::get_parameter(*self, index)
+    }
+
+    pub fn get_parameter_string<P: ParameterType>(&self, index: c_int) -> Result<Utf8CString> {
+        P::get_parameter_string(*self, index)
     }
 }
