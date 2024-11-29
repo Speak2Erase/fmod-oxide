@@ -23,7 +23,7 @@ impl ChannelControl {
         // because we use c exports of the c++ api, we get to use bool! no fmod_bool here :3
         let mut playing = false;
         unsafe {
-            FMOD_ChannelControl_IsPlaying(self.inner, &mut playing).to_result()?;
+            FMOD_ChannelControl_IsPlaying(self.inner.as_ptr(), &mut playing).to_result()?;
         }
         Ok(playing)
     }
@@ -37,7 +37,7 @@ impl ChannelControl {
     /// in which case the [`Channel`] will continue playing until stop is called. Once stopped,
     /// the [`Channel`] handle will become invalid and can be discarded and any API calls made with it will return [`FMOD_RESULT::FMOD_ERR_INVALID_HANDLE`].
     pub fn stop(&self) -> Result<()> {
-        unsafe { FMOD_ChannelControl_Stop(self.inner).to_result() }
+        unsafe { FMOD_ChannelControl_Stop(self.inner.as_ptr()).to_result() }
     }
 
     /// Sets the paused state.
@@ -47,7 +47,7 @@ impl ChannelControl {
     /// An individual pause state is kept for each object,
     /// pausing a parent `ChannelGroup` will effectively pause this object however when queried the individual pause state is returned.
     pub fn set_paused(&self, paused: bool) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetPaused(self.inner, paused).to_result() }
+        unsafe { FMOD_ChannelControl_SetPaused(self.inner.as_ptr(), paused).to_result() }
     }
 
     /// Retrieves the paused state.
@@ -57,7 +57,7 @@ impl ChannelControl {
     pub fn get_paused(&self) -> Result<bool> {
         let mut paused = false;
         unsafe {
-            FMOD_ChannelControl_GetPaused(self.inner, &mut paused).to_result()?;
+            FMOD_ChannelControl_GetPaused(self.inner.as_ptr(), &mut paused).to_result()?;
         }
         Ok(paused)
     }
@@ -98,14 +98,14 @@ impl ChannelControl {
     ///
     /// If [`Mode::IGNORE_GEOMETRY_3D`] or [`Mode::VIRTUAL_PLAYFROM_START`] is not specified, the flag will be cleared if it was specified previously.
     pub fn set_mode(&self, mode: Mode) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetMode(self.inner, mode.into()).to_result() }
+        unsafe { FMOD_ChannelControl_SetMode(self.inner.as_ptr(), mode.into()).to_result() }
     }
 
     /// Retrieves the playback mode bits that control how this object behaves.
     pub fn get_mode(&self) -> Result<Mode> {
         let mut mode = 0;
         unsafe {
-            FMOD_ChannelControl_GetMode(self.inner, &mut mode).to_result()?;
+            FMOD_ChannelControl_GetMode(self.inner.as_ptr(), &mut mode).to_result()?;
         }
         Ok(mode.into())
     }
@@ -117,7 +117,7 @@ impl ChannelControl {
     /// An individual pitch value is kept for each object,
     /// changing the pitch of a parent [`ChannelGroup`] will effectively alter the pitch of this object however when queried the individual pitch value is returned.
     pub fn set_pitch(&self, pitch: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetPitch(self.inner, pitch).to_result() }
+        unsafe { FMOD_ChannelControl_SetPitch(self.inner.as_ptr(), pitch).to_result() }
     }
 
     /// Retrieves the relative pitch / playback rate.
@@ -126,7 +126,7 @@ impl ChannelControl {
     pub fn get_pitch(&self) -> Result<c_float> {
         let mut pitch = 0.0;
         unsafe {
-            FMOD_ChannelControl_GetPitch(self.inner, &mut pitch).to_result()?;
+            FMOD_ChannelControl_GetPitch(self.inner.as_ptr(), &mut pitch).to_result()?;
         }
         Ok(pitch)
     }

@@ -4,7 +4,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::ffi::{c_int, c_uint};
+use std::{
+    ffi::{c_int, c_uint},
+    ptr::NonNull,
+};
 
 use fmod_sys::*;
 use lanyard::{Utf8CStr, Utf8CString};
@@ -14,7 +17,7 @@ use crate::{get_string, Sound, TimeUnit};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct SyncPoint {
-    pub(crate) inner: *mut FMOD_SYNCPOINT,
+    pub(crate) inner: NonNull<FMOD_SYNCPOINT>,
 }
 
 unsafe impl Send for SyncPoint {}
@@ -22,13 +25,14 @@ unsafe impl Sync for SyncPoint {}
 
 impl From<*mut FMOD_SYNCPOINT> for SyncPoint {
     fn from(value: *mut FMOD_SYNCPOINT) -> Self {
-        SyncPoint { inner: value }
+        let inner = NonNull::new(value).unwrap();
+        SyncPoint { inner }
     }
 }
 
 impl From<SyncPoint> for *mut FMOD_SYNCPOINT {
     fn from(value: SyncPoint) -> Self {
-        value.inner
+        value.inner.as_ptr()
     }
 }
 

@@ -22,14 +22,17 @@ impl ChannelControl {
     /// When setting a wet level for a `ChannelGroup`, any Channels under that `ChannelGroup` will still have their existing sends to the reverb.
     /// To avoid this doubling up you should explicitly set the Channel wet levels to 0.
     pub fn set_reverb_properties(&self, instance: c_int, wet: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetReverbProperties(self.inner, instance, wet).to_result() }
+        unsafe {
+            FMOD_ChannelControl_SetReverbProperties(self.inner.as_ptr(), instance, wet).to_result()
+        }
     }
 
     /// Retrieves the wet / send level for a particular reverb instance.
     pub fn get_reverb_properties(&self, instance: c_int) -> Result<c_float> {
         let mut wet = 0.0;
         unsafe {
-            FMOD_ChannelControl_GetReverbProperties(self.inner, instance, &mut wet).to_result()?;
+            FMOD_ChannelControl_GetReverbProperties(self.inner.as_ptr(), instance, &mut wet)
+                .to_result()?;
         }
         Ok(wet)
     }
@@ -40,7 +43,7 @@ impl ChannelControl {
     ///
     /// #### NOTE: Currently only supported for Channel, not `ChannelGroup`.
     pub fn set_low_pass_gain(&self, gain: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetLowPassGain(self.inner, gain).to_result() }
+        unsafe { FMOD_ChannelControl_SetLowPassGain(self.inner.as_ptr(), gain).to_result() }
     }
 
     /// Retrieves the gain of the dry signal when built in lowpass / distance filtering is applied.
@@ -51,7 +54,7 @@ impl ChannelControl {
     pub fn get_low_pass_gain(&self) -> Result<c_float> {
         let mut gain = 0.0;
         unsafe {
-            FMOD_ChannelControl_GetLowPassGain(self.inner, &mut gain).to_result()?;
+            FMOD_ChannelControl_GetLowPassGain(self.inner.as_ptr(), &mut gain).to_result()?;
         }
         Ok(gain)
     }

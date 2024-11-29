@@ -19,8 +19,8 @@ impl ChannelGroup {
         let mut dsp_connection = std::ptr::null_mut();
         unsafe {
             FMOD_ChannelGroup_AddGroup(
-                self.inner,
-                group.inner,
+                self.inner.as_ptr(),
+                group.inner.as_ptr(),
                 propgate_dsp_clock.into(),
                 &mut dsp_connection,
             )
@@ -32,14 +32,14 @@ impl ChannelGroup {
     /// Retrieves the number of [`ChannelGroup`]s that feed into to this group.
     pub fn get_group_count(&self) -> Result<c_int> {
         let mut count = 0;
-        unsafe { FMOD_ChannelGroup_GetNumGroups(self.inner, &mut count).to_result()? }
+        unsafe { FMOD_ChannelGroup_GetNumGroups(self.inner.as_ptr(), &mut count).to_result()? }
         Ok(count)
     }
 
     /// Retrieves the [`ChannelGroup`] at the specified index in the list of group inputs.
     pub fn get_group(&self, index: c_int) -> Result<ChannelGroup> {
         let mut group = std::ptr::null_mut();
-        unsafe { FMOD_ChannelGroup_GetGroup(self.inner, index, &mut group).to_result()? }
+        unsafe { FMOD_ChannelGroup_GetGroup(self.inner.as_ptr(), index, &mut group).to_result()? }
         Ok(group.into())
     }
 
@@ -47,7 +47,8 @@ impl ChannelGroup {
     pub fn get_parent_group(&self) -> Result<ChannelGroup> {
         let mut channel_group = std::ptr::null_mut();
         unsafe {
-            FMOD_ChannelGroup_GetParentGroup(self.inner, &mut channel_group).to_result()?;
+            FMOD_ChannelGroup_GetParentGroup(self.inner.as_ptr(), &mut channel_group)
+                .to_result()?;
         }
         // FIXME: what if this is null? if it can be, what about other places we return pointers like this?
         // do we even need to worry about this issue? we aren't returning references...

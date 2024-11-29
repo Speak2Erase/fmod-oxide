@@ -35,7 +35,9 @@ impl ChannelControl {
             .as_ref()
             .map_or(std::ptr::null(), std::ptr::from_ref)
             .cast();
-        unsafe { FMOD_ChannelControl_Set3DAttributes(self.inner, position, velocity).to_result() }
+        unsafe {
+            FMOD_ChannelControl_Set3DAttributes(self.inner.as_ptr(), position, velocity).to_result()
+        }
     }
 
     /// Retrieves the 3D position and velocity used to apply panning, attenuation and doppler.
@@ -44,7 +46,7 @@ impl ChannelControl {
         let mut velocity = MaybeUninit::zeroed();
         unsafe {
             FMOD_ChannelControl_Get3DAttributes(
-                self.inner,
+                self.inner.as_ptr(),
                 position.as_mut_ptr(),
                 velocity.as_mut_ptr(),
             )
@@ -67,14 +69,16 @@ impl ChannelControl {
     pub fn set_3d_cone_orientation(&self, mut orientation: Vector) -> Result<()> {
         // this probably doesn't need to be mutable? more safe to be mutable just in case
         let orientation = std::ptr::from_mut(&mut orientation).cast();
-        unsafe { FMOD_ChannelControl_Set3DConeOrientation(self.inner, orientation).to_result() }
+        unsafe {
+            FMOD_ChannelControl_Set3DConeOrientation(self.inner.as_ptr(), orientation).to_result()
+        }
     }
 
     /// Retrieves the orientation of a 3D cone shape, used for simulated occlusion.
     pub fn get_3d_cone_orientation(&self) -> Result<Vector> {
         let mut orientation = MaybeUninit::zeroed();
         unsafe {
-            FMOD_ChannelControl_Get3DConeOrientation(self.inner, orientation.as_mut_ptr())
+            FMOD_ChannelControl_Get3DConeOrientation(self.inner.as_ptr(), orientation.as_mut_ptr())
                 .to_result()?;
 
             let orientation = orientation.assume_init().into();
@@ -102,7 +106,7 @@ impl ChannelControl {
     ) -> Result<()> {
         unsafe {
             FMOD_ChannelControl_Set3DConeSettings(
-                self.inner,
+                self.inner.as_ptr(),
                 inside_angle,
                 outside_angle,
                 outside_volume,
@@ -126,7 +130,7 @@ impl ChannelControl {
         let mut outside_volume = 0.0;
         unsafe {
             FMOD_ChannelControl_Get3DConeSettings(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut inside_angle,
                 &mut outside_angle,
                 &mut outside_volume,
@@ -156,7 +160,7 @@ impl ChannelControl {
         // probably doesn't need to be mutable, but more safe to be mutable just in case
         unsafe {
             FMOD_ChannelControl_Set3DCustomRolloff(
-                self.inner,
+                self.inner.as_ptr(),
                 points.as_mut_ptr().cast(),
                 points.len() as i32,
             )
@@ -169,8 +173,12 @@ impl ChannelControl {
         let mut points = std::ptr::null_mut();
         let mut num_points = 0;
         unsafe {
-            FMOD_ChannelControl_Get3DCustomRolloff(self.inner, &mut points, &mut num_points)
-                .to_result()?;
+            FMOD_ChannelControl_Get3DCustomRolloff(
+                self.inner.as_ptr(),
+                &mut points,
+                &mut num_points,
+            )
+            .to_result()?;
 
             let points = std::slice::from_raw_parts(points.cast(), num_points as usize).to_vec();
 
@@ -195,8 +203,13 @@ impl ChannelControl {
         center_freq: c_float,
     ) -> Result<()> {
         unsafe {
-            FMOD_ChannelControl_Set3DDistanceFilter(self.inner, custom, custom_level, center_freq)
-                .to_result()
+            FMOD_ChannelControl_Set3DDistanceFilter(
+                self.inner.as_ptr(),
+                custom,
+                custom_level,
+                center_freq,
+            )
+            .to_result()
         }
     }
 
@@ -207,7 +220,7 @@ impl ChannelControl {
         let mut center_freq = 0.0;
         unsafe {
             FMOD_ChannelControl_Get3DDistanceFilter(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut custom,
                 &mut custom_level,
                 &mut center_freq,
@@ -225,13 +238,15 @@ impl ChannelControl {
     ///
     /// #### NOTE: Currently only supported for [`Channel`], not [`ChannelGroup`].
     pub fn set_3d_doppler_level(&self, level: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_Set3DDopplerLevel(self.inner, level).to_result() }
+        unsafe { FMOD_ChannelControl_Set3DDopplerLevel(self.inner.as_ptr(), level).to_result() }
     }
 
     /// Retrieves the amount by which doppler is scaled.
     pub fn get_3d_doppler_level(&self) -> Result<c_float> {
         let mut level = 0.0;
-        unsafe { FMOD_ChannelControl_Get3DDopplerLevel(self.inner, &mut level).to_result()? }
+        unsafe {
+            FMOD_ChannelControl_Get3DDopplerLevel(self.inner.as_ptr(), &mut level).to_result()?;
+        }
         Ok(level)
     }
 
@@ -252,7 +267,7 @@ impl ChannelControl {
     /// - `ChannelControl::set3DConeOrientation`
     /// - `ChannelControl::set3DCustomRolloff`
     pub fn set_3d_level(&self, level: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_Set3DLevel(self.inner, level).to_result() }
+        unsafe { FMOD_ChannelControl_Set3DLevel(self.inner.as_ptr(), level).to_result() }
     }
 
     /// Retrieves the blend between 3D panning and 2D panning.
@@ -273,7 +288,7 @@ impl ChannelControl {
     /// - `ChannelControl::set3DCustomRolloff`
     pub fn get_3d_level(&self) -> Result<c_float> {
         let mut level = 0.0;
-        unsafe { FMOD_ChannelControl_Get3DLevel(self.inner, &mut level).to_result()? }
+        unsafe { FMOD_ChannelControl_Get3DLevel(self.inner.as_ptr(), &mut level).to_result()? }
         Ok(level)
     }
 
@@ -293,7 +308,9 @@ impl ChannelControl {
     ///
     /// If `FMOD_3D_CUSTOMROLLOFF` has been set on this object these values are stored, but ignored in 3D processing.
     pub fn set_3d_min_max_distance(&self, min: c_float, max: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_Set3DMinMaxDistance(self.inner, min, max).to_result() }
+        unsafe {
+            FMOD_ChannelControl_Set3DMinMaxDistance(self.inner.as_ptr(), min, max).to_result()
+        }
     }
 
     /// Retrieves the minimum and maximum distances used to calculate the 3D roll-off attenuation.
@@ -301,7 +318,8 @@ impl ChannelControl {
         let mut min = 0.0;
         let mut max = 0.0;
         unsafe {
-            FMOD_ChannelControl_Get3DMinMaxDistance(self.inner, &mut min, &mut max).to_result()?;
+            FMOD_ChannelControl_Get3DMinMaxDistance(self.inner.as_ptr(), &mut min, &mut max)
+                .to_result()?;
         }
         Ok((min, max))
     }
@@ -313,7 +331,9 @@ impl ChannelControl {
     /// If the System has been initialized with `FMOD_INIT_CHANNEL_DISTANCEFILTER` or
     /// `FMOD_INIT_CHANNEL_LOWPASS` the directocclusion is applied as frequency filtering rather than volume attenuation.
     pub fn set_3d_occlusion(&self, direct: c_float, reverb: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_Set3DOcclusion(self.inner, direct, reverb).to_result() }
+        unsafe {
+            FMOD_ChannelControl_Set3DOcclusion(self.inner.as_ptr(), direct, reverb).to_result()
+        }
     }
 
     /// Retrieves the 3D attenuation factors for the direct and reverb paths.
@@ -321,7 +341,8 @@ impl ChannelControl {
         let mut direct = 0.0;
         let mut reverb = 0.0;
         unsafe {
-            FMOD_ChannelControl_Get3DOcclusion(self.inner, &mut direct, &mut reverb).to_result()?;
+            FMOD_ChannelControl_Get3DOcclusion(self.inner.as_ptr(), &mut direct, &mut reverb)
+                .to_result()?;
         }
         Ok((direct, reverb))
     }
@@ -341,13 +362,13 @@ impl ChannelControl {
     /// - 180: Left channel is rotated 90 degrees to the left compared with angle=0 and the right channel 90 degrees to the right.
     /// - 360: Left channel is rotated 180 degrees to the left and the right channel 180 degrees to the right. This means the sound is collapsed to mono and spatialized to a single point in the opposite direction compared with (angle=0).
     pub fn set_3d_spread(&self, angle: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_Set3DSpread(self.inner, angle).to_result() }
+        unsafe { FMOD_ChannelControl_Set3DSpread(self.inner.as_ptr(), angle).to_result() }
     }
 
     /// Retrieves the spread of a 3D sound in speaker space.
     pub fn get_3d_spread(&self) -> Result<c_float> {
         let mut angle = 0.0;
-        unsafe { FMOD_ChannelControl_Get3DSpread(self.inner, &mut angle).to_result()? }
+        unsafe { FMOD_ChannelControl_Get3DSpread(self.inner.as_ptr(), &mut angle).to_result()? }
         Ok(angle)
     }
 }

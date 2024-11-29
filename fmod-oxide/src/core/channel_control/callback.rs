@@ -96,6 +96,9 @@ unsafe extern "C" fn callback_impl<C: ChannelControlCallback>(
 
 impl ChannelControl {
     pub fn set_callback<C: ChannelControlCallback>(&self) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetCallback(self.inner, Some(callback_impl::<C>)).to_result() }
+        unsafe {
+            FMOD_ChannelControl_SetCallback(self.inner.as_ptr(), Some(callback_impl::<C>))
+                .to_result()
+        }
     }
 }

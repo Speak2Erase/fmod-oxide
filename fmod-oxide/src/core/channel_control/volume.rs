@@ -25,7 +25,7 @@ impl ChannelControl {
     pub fn get_audibility(&self) -> Result<c_float> {
         let mut audibility = 0.0;
         unsafe {
-            FMOD_ChannelControl_GetAudibility(self.inner, &mut audibility).to_result()?;
+            FMOD_ChannelControl_GetAudibility(self.inner.as_ptr(), &mut audibility).to_result()?;
         }
         Ok(audibility)
     }
@@ -36,14 +36,14 @@ impl ChannelControl {
     ///
     /// Setting volume at a level higher than 1 can lead to distortion/clipping.
     pub fn set_volume(&self, volume: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetVolume(self.inner, volume).to_result() }
+        unsafe { FMOD_ChannelControl_SetVolume(self.inner.as_ptr(), volume).to_result() }
     }
 
     /// Retrieves the volume level.
     pub fn get_volume(&self) -> Result<c_float> {
         let mut volume = 0.0;
         unsafe {
-            FMOD_ChannelControl_GetVolume(self.inner, &mut volume).to_result()?;
+            FMOD_ChannelControl_GetVolume(self.inner.as_ptr(), &mut volume).to_result()?;
         }
         Ok(volume)
     }
@@ -53,14 +53,14 @@ impl ChannelControl {
     /// Volume changes when not paused will be ramped to the target value to avoid a pop sound,
     /// this function allows that setting to be overridden and volume changes to be applied immediately.
     pub fn set_volume_ramp(&self, ramp: bool) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetVolumeRamp(self.inner, ramp).to_result() }
+        unsafe { FMOD_ChannelControl_SetVolumeRamp(self.inner.as_ptr(), ramp).to_result() }
     }
 
     /// Retrieves whether volume changes are ramped or instantaneous.
     pub fn get_volume_ramp(&self) -> Result<bool> {
         let mut ramp = false;
         unsafe {
-            FMOD_ChannelControl_GetVolumeRamp(self.inner, &mut ramp).to_result()?;
+            FMOD_ChannelControl_GetVolumeRamp(self.inner.as_ptr(), &mut ramp).to_result()?;
         }
         Ok(ramp)
     }
@@ -73,7 +73,7 @@ impl ChannelControl {
     /// muting a parent `ChannelGroup` will effectively mute this object however when queried the individual mute state is returned.
     /// `ChannelControl::getAudibility` can be used to calculate overall audibility for a Channel or `ChannelGroup`.
     pub fn set_mute(&self, mute: bool) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetMute(self.inner, mute).to_result() }
+        unsafe { FMOD_ChannelControl_SetMute(self.inner.as_ptr(), mute).to_result() }
     }
 
     /// Retrieves the mute state.
@@ -84,7 +84,7 @@ impl ChannelControl {
     pub fn get_mute(&self) -> Result<bool> {
         let mut mute = false;
         unsafe {
-            FMOD_ChannelControl_GetMute(self.inner, &mut mute).to_result()?;
+            FMOD_ChannelControl_GetMute(self.inner.as_ptr(), &mut mute).to_result()?;
         }
         Ok(mute)
     }

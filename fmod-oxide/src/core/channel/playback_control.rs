@@ -19,13 +19,13 @@ impl Channel {
     ///
     /// Sounds opened as [`Mode::CREATE_SAMPLE`] (not [`Mode::CREATE_STREAM`] or [`Mode::CREATE_COMPRESSED_SAMPLE`]) can be played backwards by giving a negative frequency.
     pub fn set_frequency(&self, frequency: c_float) -> Result<()> {
-        unsafe { FMOD_Channel_SetFrequency(self.inner, frequency).to_result() }
+        unsafe { FMOD_Channel_SetFrequency(self.inner.as_ptr(), frequency).to_result() }
     }
 
     /// Retrieves the playback frequency or playback rate.
     pub fn get_frequency(&self) -> Result<c_float> {
         let mut frequency = 0.0;
-        unsafe { FMOD_Channel_GetFrequency(self.inner, &mut frequency).to_result()? }
+        unsafe { FMOD_Channel_GetFrequency(self.inner.as_ptr(), &mut frequency).to_result()? }
         Ok(frequency)
     }
     /// Sets the priority used for virtual voice ordering.
@@ -35,7 +35,7 @@ impl Channel {
     ///
     /// See the Virtual Voices guide for more information.
     pub fn set_priority(&self, priority: c_int) -> Result<()> {
-        unsafe { FMOD_Channel_SetPriority(self.inner, priority).to_result() }
+        unsafe { FMOD_Channel_SetPriority(self.inner.as_ptr(), priority).to_result() }
     }
 
     /// Retrieves the priority used for virtual voice ordering.
@@ -46,7 +46,7 @@ impl Channel {
     ///See the Virtual Voices guide for more information.
     pub fn get_priority(&self) -> Result<c_int> {
         let mut priority = 0;
-        unsafe { FMOD_Channel_GetPriority(self.inner, &mut priority).to_result()? }
+        unsafe { FMOD_Channel_GetPriority(self.inner.as_ptr(), &mut priority).to_result()? }
         Ok(priority)
     }
 
@@ -64,7 +64,9 @@ impl Channel {
     /// If you want FMOD to create a PCM vs bytes seek table so that seeking is accurate, you will have to specify [`Mode::ACCURATE_TIME`] when loading or opening the sound.
     /// This means there is a slight delay as FMOD scans the whole file when loading the sound to create this table.
     pub fn set_position(&self, position: c_uint, time_unit: TimeUnit) -> Result<()> {
-        unsafe { FMOD_Channel_SetPosition(self.inner, position, time_unit.into()).to_result() }
+        unsafe {
+            FMOD_Channel_SetPosition(self.inner.as_ptr(), position, time_unit.into()).to_result()
+        }
     }
 
     /// Retrieves the current playback position.
@@ -76,7 +78,8 @@ impl Channel {
     pub fn get_position(&self, time_unit: TimeUnit) -> Result<c_uint> {
         let mut position = 0;
         unsafe {
-            FMOD_Channel_GetPosition(self.inner, &mut position, time_unit.into()).to_result()?;
+            FMOD_Channel_GetPosition(self.inner.as_ptr(), &mut position, time_unit.into())
+                .to_result()?;
         }
         Ok(position)
     }
@@ -87,14 +90,16 @@ impl Channel {
     ///
     /// [`Channel`]s may only output to a single [`ChannelGroup`]. This operation will remove it from the previous group first.
     pub fn set_channel_group(&self, channel_group: ChannelGroup) -> Result<()> {
-        unsafe { FMOD_Channel_SetChannelGroup(self.inner, channel_group.into()).to_result() }
+        unsafe {
+            FMOD_Channel_SetChannelGroup(self.inner.as_ptr(), channel_group.into()).to_result()
+        }
     }
 
     /// Retrieves the [`ChannelGroup`] this object outputs to.
     pub fn get_channel_group(&self) -> Result<ChannelGroup> {
         let mut channel_group = std::ptr::null_mut();
         unsafe {
-            FMOD_Channel_GetChannelGroup(self.inner, &mut channel_group).to_result()?;
+            FMOD_Channel_GetChannelGroup(self.inner.as_ptr(), &mut channel_group).to_result()?;
         }
         Ok(channel_group.into())
     }
@@ -103,7 +108,7 @@ impl Channel {
     ///
     /// The 'mode' of the Sound or Channel must be [`Mode::LOOP_NORMAL`] or [`Mode::LOOP_BIDI`] for this function to work.
     pub fn set_loop_count(&self, loop_count: c_int) -> Result<()> {
-        unsafe { FMOD_Channel_SetLoopCount(self.inner, loop_count).to_result() }
+        unsafe { FMOD_Channel_SetLoopCount(self.inner.as_ptr(), loop_count).to_result() }
     }
 
     /// Retrieves the number of times to loop before stopping.
@@ -112,7 +117,7 @@ impl Channel {
     /// Reset with [`Channel::set_loop_count`].
     pub fn get_loop_count(&self) -> Result<c_int> {
         let mut loop_count = 0;
-        unsafe { FMOD_Channel_GetLoopCount(self.inner, &mut loop_count).to_result()? }
+        unsafe { FMOD_Channel_GetLoopCount(self.inner.as_ptr(), &mut loop_count).to_result()? }
         Ok(loop_count)
     }
 
@@ -132,8 +137,14 @@ impl Channel {
         end_type: TimeUnit,
     ) -> Result<()> {
         unsafe {
-            FMOD_Channel_SetLoopPoints(self.inner, start, start_type.into(), end, end_type.into())
-                .to_result()
+            FMOD_Channel_SetLoopPoints(
+                self.inner.as_ptr(),
+                start,
+                start_type.into(),
+                end,
+                end_type.into(),
+            )
+            .to_result()
         }
     }
 
@@ -150,7 +161,7 @@ impl Channel {
         let mut end = 0;
         unsafe {
             FMOD_Channel_GetLoopPoints(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut start,
                 start_type.into(),
                 &mut end,

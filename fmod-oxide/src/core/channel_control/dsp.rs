@@ -21,19 +21,23 @@ impl ChannelControl {
     ///
     /// For detailed information on FMOD's DSP network, read the DSP Architecture and Usage white paper.
     pub fn add_dsp(&self, index: c_int, dsp: Dsp) -> Result<()> {
-        unsafe { FMOD_ChannelControl_AddDSP(self.inner, index, dsp.inner.as_ptr()).to_result() }
+        unsafe {
+            FMOD_ChannelControl_AddDSP(self.inner.as_ptr(), index, dsp.inner.as_ptr()).to_result()
+        }
     }
 
     /// Removes the specified DSP unit from the DSP chain.
     pub fn remove_dsp(&self, dsp: Dsp) -> Result<()> {
-        unsafe { FMOD_ChannelControl_RemoveDSP(self.inner, dsp.inner.as_ptr()).to_result() }
+        unsafe {
+            FMOD_ChannelControl_RemoveDSP(self.inner.as_ptr(), dsp.inner.as_ptr()).to_result()
+        }
     }
 
     /// Retrieves the number of DSP units in the DSP chain.
     pub fn get_dsp_count(&self) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_ChannelControl_GetNumDSPs(self.inner, &mut count).to_result()?;
+            FMOD_ChannelControl_GetNumDSPs(self.inner.as_ptr(), &mut count).to_result()?;
         }
         Ok(count)
     }
@@ -42,7 +46,7 @@ impl ChannelControl {
     pub fn get_dsp(&self, index: c_int) -> Result<Dsp> {
         let mut dsp = std::ptr::null_mut();
         unsafe {
-            FMOD_ChannelControl_GetDSP(self.inner, index, &mut dsp).to_result()?;
+            FMOD_ChannelControl_GetDSP(self.inner.as_ptr(), index, &mut dsp).to_result()?;
         }
         Ok(dsp.into())
     }
@@ -52,7 +56,8 @@ impl ChannelControl {
     /// This will move a DSP already in the DSP chain to a new offset.
     pub fn set_dsp_index(&self, dsp: Dsp, index: c_int) -> Result<()> {
         unsafe {
-            FMOD_ChannelControl_SetDSPIndex(self.inner, dsp.inner.as_ptr(), index).to_result()
+            FMOD_ChannelControl_SetDSPIndex(self.inner.as_ptr(), dsp.inner.as_ptr(), index)
+                .to_result()
         }
     }
 
@@ -60,7 +65,7 @@ impl ChannelControl {
     pub fn get_dsp_index(&self, dsp: Dsp) -> Result<c_int> {
         let mut index = 0;
         unsafe {
-            FMOD_ChannelControl_GetDSPIndex(self.inner, dsp.inner.as_ptr(), &mut index)
+            FMOD_ChannelControl_GetDSPIndex(self.inner.as_ptr(), dsp.inner.as_ptr(), &mut index)
                 .to_result()?;
         }
         Ok(index)

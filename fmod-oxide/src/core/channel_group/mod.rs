@@ -5,7 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use fmod_sys::*;
-use std::ops::Deref;
+use std::{ops::Deref, ptr::NonNull};
 
 use crate::ChannelControl;
 
@@ -16,7 +16,7 @@ mod group_management;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct ChannelGroup {
-    pub(crate) inner: *mut FMOD_CHANNELGROUP,
+    pub(crate) inner: NonNull<FMOD_CHANNELGROUP>,
 }
 
 unsafe impl Send for ChannelGroup {}
@@ -24,13 +24,14 @@ unsafe impl Sync for ChannelGroup {}
 
 impl From<*mut FMOD_CHANNELGROUP> for ChannelGroup {
     fn from(value: *mut FMOD_CHANNELGROUP) -> Self {
-        ChannelGroup { inner: value }
+        let inner = NonNull::new(value).unwrap();
+        ChannelGroup { inner }
     }
 }
 
 impl From<ChannelGroup> for *mut FMOD_CHANNELGROUP {
     fn from(value: ChannelGroup) -> Self {
-        value.inner
+        value.inner.as_ptr()
     }
 }
 
@@ -41,9 +42,10 @@ impl Deref for ChannelGroup {
         #[cfg(debug_assertions)]
         unsafe {
             // perform a debug check to ensure that the the cast results in the same pointer
-            let control = FMOD_ChannelGroup_CastToControl(self.inner);
+            let control = FMOD_ChannelGroup_CastToControl(self.inner.as_ptr());
             assert_eq!(
-                control as usize, self.inner as usize,
+                control as usize,
+                self.inner.as_ptr() as usize,
                 "ChannelControl cast was not equivalent! THIS IS A MAJOR BUG. PLEASE REPORT THIS!"
             );
         }

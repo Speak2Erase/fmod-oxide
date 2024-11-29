@@ -14,20 +14,22 @@ impl ChannelControl {
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetUserData(self.inner, userdata).to_result() }
+        unsafe { FMOD_ChannelControl_SetUserData(self.inner.as_ptr(), userdata).to_result() }
     }
 
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
-            FMOD_ChannelControl_GetUserData(self.inner, &mut userdata).to_result()?;
+            FMOD_ChannelControl_GetUserData(self.inner.as_ptr(), &mut userdata).to_result()?;
         }
         Ok(userdata)
     }
 
     pub fn get_system(&self) -> Result<System> {
         let mut system = std::ptr::null_mut();
-        unsafe { FMOD_ChannelControl_GetSystemObject(self.inner, &mut system).to_result()? }
+        unsafe {
+            FMOD_ChannelControl_GetSystemObject(self.inner.as_ptr(), &mut system).to_result()?;
+        }
         Ok(system.into())
     }
 }

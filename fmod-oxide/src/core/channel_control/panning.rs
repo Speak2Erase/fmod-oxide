@@ -22,7 +22,7 @@ impl ChannelControl {
     ///
     /// If the System is initialized with `FMOD_SPEAKERMODE_RAW` calling this function will produce silence.
     pub fn set_pan(&self, pan: c_float) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetPan(self.inner, pan).to_result() }
+        unsafe { FMOD_ChannelControl_SetPan(self.inner.as_ptr(), pan).to_result() }
     }
 
     /// Sets the incoming volume level for each channel of a multi-channel signal.
@@ -36,7 +36,7 @@ impl ChannelControl {
         // FIXME do we need to enforce a max length?
         unsafe {
             FMOD_ChannelControl_SetMixLevelsInput(
-                self.inner,
+                self.inner.as_ptr(),
                 levels.as_mut_ptr(),
                 levels.len() as i32,
             )
@@ -69,7 +69,7 @@ impl ChannelControl {
     ) -> Result<()> {
         unsafe {
             FMOD_ChannelControl_SetMixLevelsOutput(
-                self.inner,
+                self.inner.as_ptr(),
                 front_left,
                 front_right,
                 center,

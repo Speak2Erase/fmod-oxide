@@ -18,7 +18,7 @@ impl ChannelControl {
         let mut dsp_clock = 0;
         let mut parent_clock = 0;
         unsafe {
-            FMOD_ChannelControl_GetDSPClock(self.inner, &mut dsp_clock, &mut parent_clock)
+            FMOD_ChannelControl_GetDSPClock(self.inner.as_ptr(), &mut dsp_clock, &mut parent_clock)
                 .to_result()?;
         }
         Ok((dsp_clock, parent_clock))
@@ -34,7 +34,9 @@ impl ChannelControl {
         end: c_ulonglong,
         stop_channels: bool,
     ) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetDelay(self.inner, start, end, stop_channels).to_result() }
+        unsafe {
+            FMOD_ChannelControl_SetDelay(self.inner.as_ptr(), start, end, stop_channels).to_result()
+        }
     }
 
     /// Retrieves a sample accurate start (and/or stop) time relative to the parent `ChannelGroup` DSP clock.
@@ -44,7 +46,7 @@ impl ChannelControl {
         let mut stop_channels = false;
         unsafe {
             FMOD_ChannelControl_GetDelay(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut dsp_start,
                 &mut dsp_end,
                 &mut stop_channels,
@@ -68,7 +70,9 @@ impl ChannelControl {
     /// target.add_fade_point(parent + 4096, 0.5);
     /// ```
     pub fn add_fade_point(&self, dsp_clock: c_ulonglong, volume: f32) -> Result<()> {
-        unsafe { FMOD_ChannelControl_AddFadePoint(self.inner, dsp_clock, volume).to_result() }
+        unsafe {
+            FMOD_ChannelControl_AddFadePoint(self.inner.as_ptr(), dsp_clock, volume).to_result()
+        }
     }
 
     /// Adds a volume ramp at the specified time in the future using fade points.
@@ -79,7 +83,9 @@ impl ChannelControl {
     ///
     /// All fade points after `dsp_clock` will be removed.
     pub fn set_fade_point_ramp(&self, dsp_clock: c_ulonglong, volume: f32) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetFadePointRamp(self.inner, dsp_clock, volume).to_result() }
+        unsafe {
+            FMOD_ChannelControl_SetFadePointRamp(self.inner.as_ptr(), dsp_clock, volume).to_result()
+        }
     }
 
     /// Removes all fade points between the two specified clock values (inclusive).
@@ -89,8 +95,12 @@ impl ChannelControl {
         dsp_clock_end: c_ulonglong,
     ) -> Result<()> {
         unsafe {
-            FMOD_ChannelControl_RemoveFadePoints(self.inner, dsp_clock_start, dsp_clock_end)
-                .to_result()
+            FMOD_ChannelControl_RemoveFadePoints(
+                self.inner.as_ptr(),
+                dsp_clock_start,
+                dsp_clock_end,
+            )
+            .to_result()
         }
     }
 
@@ -99,7 +109,7 @@ impl ChannelControl {
         let mut num_points = 0;
         unsafe {
             FMOD_ChannelControl_GetFadePoints(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut num_points,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
@@ -111,7 +121,7 @@ impl ChannelControl {
         let mut volumes = vec![0.0; num_points as usize];
         unsafe {
             FMOD_ChannelControl_GetFadePoints(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut num_points,
                 dsp_clocks.as_mut_ptr(),
                 volumes.as_mut_ptr(),
