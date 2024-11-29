@@ -211,11 +211,11 @@
 - [x] FMOD_DSP_GetChannelFormat
 - [x] FMOD_DSP_GetOutputChannelFormat
 - [x] FMOD_DSP_Reset
-- [ ] FMOD_DSP_SetCallback
+- [x] FMOD_DSP_SetCallback
 - [x] FMOD_DSP_SetParameterFloat
 - [x] FMOD_DSP_SetParameterInt
 - [x] FMOD_DSP_SetParameterBool
-- [x] FMOD_DSP_SetParameterData
+- [ ] FMOD_DSP_SetParameterData
 - [x] FMOD_DSP_GetParameterFloat
 - [x] FMOD_DSP_GetParameterInt
 - [x] FMOD_DSP_GetParameterBool

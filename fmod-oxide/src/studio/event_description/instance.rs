@@ -39,6 +39,7 @@ impl EventDescription {
         Ok(count)
     }
 
+    /// Retrieves a list of the instances.
     pub fn get_instance_list(&self) -> Result<Vec<EventInstance>> {
         let expected_count = self.instance_count()?;
         let mut count = 0;

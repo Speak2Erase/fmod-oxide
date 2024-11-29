@@ -20,6 +20,7 @@ mod profiling;
 pub(crate) use callback::event_callback_impl;
 pub use callback::EventInstanceCallback;
 
+/// An instance of an FMOD Studio event.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct EventInstance {

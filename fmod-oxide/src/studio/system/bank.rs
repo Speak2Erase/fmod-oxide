@@ -15,7 +15,7 @@ use crate::Guid;
 use crate::studio::AdvancedSettings;
 
 impl System {
-    // TODO: load bank with callbacks
+    /// TODO: load bank with callbacks
     pub fn load_bank_custom(&self) -> Result<Bank> {
         todo!()
     }
@@ -157,6 +157,7 @@ impl System {
         Ok(count)
     }
 
+    /// Retrieves a list of the currently-loaded banks.
     pub fn get_bank_list(&self) -> Result<Vec<Bank>> {
         let expected_count = self.bank_count()?;
         let mut count = 0;

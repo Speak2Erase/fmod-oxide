@@ -45,6 +45,7 @@ impl EventDescription {
         }
     }
 
+    /// Retrieves the number of user properties attached to the event.
     pub fn user_property_count(&self) -> Result<c_int> {
         let mut count = 0;
         unsafe {

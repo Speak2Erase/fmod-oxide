@@ -14,6 +14,7 @@ mod playback;
 mod query;
 pub use callback::{CreateInstanceCallback, FrameCallback, LoadBankCallback};
 
+/// The FMOD Studio command replay system allows API calls in a session to be recorded and later played back for debugging and performance purposes.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct CommandReplay {

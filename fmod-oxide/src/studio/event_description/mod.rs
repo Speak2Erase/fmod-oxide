@@ -16,6 +16,10 @@ mod parameter;
 mod sample_data;
 mod user_property;
 
+/// The description for an FMOD Studio event.
+///
+/// Event descriptions belong to banks, and so an event description can only be queried if the relevant bank is loaded.
+/// Event descriptions may be retrieved via path or GUID lookup, or by enumerating all descriptions in a bank.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct EventDescription {

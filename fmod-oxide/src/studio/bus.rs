@@ -17,6 +17,7 @@ use crate::{core::ChannelGroup, Guid};
 
 use super::{MemoryUsage, StopMode};
 
+/// Represents a global mixer bus.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Bus {

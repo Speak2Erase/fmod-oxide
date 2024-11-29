@@ -47,6 +47,7 @@ impl SystemBuilder {
         })
     }
 
+    /// Sets advanced settings.
     pub fn settings(&mut self, settings: &AdvancedSettings) -> Result<&mut Self> {
         let mut settings = settings.into();
         // this function expects a pointer. maybe this is incorrect?
@@ -54,6 +55,9 @@ impl SystemBuilder {
         Ok(self)
     }
 
+    /// Builds the Studio System.
+    ///
+    /// The core system used by the studio system is initialized at the same time as the studio system.
     pub fn build(
         self,
         max_channels: c_int,

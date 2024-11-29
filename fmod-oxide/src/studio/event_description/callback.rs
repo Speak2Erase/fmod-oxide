@@ -12,6 +12,7 @@ use crate::studio::{
 };
 
 impl EventDescription {
+    /// Sets the event user data.
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
         unsafe {
@@ -19,6 +20,7 @@ impl EventDescription {
         }
     }
 
+    /// Retrieves the event user data.
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
@@ -28,6 +30,10 @@ impl EventDescription {
         Ok(userdata)
     }
 
+    /// Sets the user callback.
+    ///
+    /// This function sets a user callback which will be assigned to all event instances subsequently created from the event.
+    /// The callback for individual instances can be set with `EventInstance::set_callback`.
     pub fn set_callback<C: EventInstanceCallback>(&self, mask: EventCallbackMask) -> Result<()> {
         unsafe {
             FMOD_Studio_EventDescription_SetCallback(

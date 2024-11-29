@@ -13,7 +13,11 @@ use crate::{
     Guid,
 };
 
+/// Trait for this particular FMOD callback.
+///
+/// No `self` parameter is passed to the callback!
 pub trait CreateInstanceCallback {
+    /// Callback for command replay event instance creation.
     fn create_instance_callback(
         replay: CommandReplay,
         command_index: c_int,
@@ -44,7 +48,11 @@ unsafe extern "C" fn create_instance_impl<C: CreateInstanceCallback>(
     }
 }
 
+/// Trait for this particular FMOD callback.
+///
+/// No `self` parameter is passed to the callback!
 pub trait FrameCallback {
+    /// Callback for when the command replay goes to the next frame.
     fn frame_callback(
         replay: CommandReplay,
         command_index: c_int,
@@ -63,7 +71,11 @@ unsafe extern "C" fn frame_impl<C: FrameCallback>(
     C::frame_callback(replay, command_index, current_time, userdata).into()
 }
 
+/// Trait for this particular FMOD callback.
+///
+/// No `self` parameter is passed to the callback!
 pub trait LoadBankCallback {
+    /// Callback for command replay bank loading.
     fn load_bank_callback(
         replay: CommandReplay,
         command_index: c_int,
@@ -109,11 +121,13 @@ unsafe extern "C" fn load_bank_impl<C: LoadBankCallback>(
 }
 
 impl CommandReplay {
+    /// Sets user data.
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
         unsafe { FMOD_Studio_CommandReplay_SetUserData(self.inner.as_ptr(), userdata).to_result() }
     }
 
+    /// Retrieves user data.
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
@@ -123,6 +137,14 @@ impl CommandReplay {
         Ok(userdata)
     }
 
+    /// Sets the create event instance callback.
+    ///
+    /// The create instance callback is invoked each time a `EventDescription::createInstance` command is processed.
+    ///
+    /// The callback can either create a new event instance based on the callback parameters or skip creating the instance.
+    /// If the instance is not created then subsequent commands for the event instance will be ignored in the replay.
+    ///
+    /// If this callback is not set then the system will always create an event instance.
     pub fn set_create_instance_callback<C: CreateInstanceCallback>(&self) -> Result<()> {
         unsafe {
             FMOD_Studio_CommandReplay_SetCreateInstanceCallback(
@@ -133,6 +155,7 @@ impl CommandReplay {
         }
     }
 
+    /// Sets a callback that is issued each time the replay reaches a new frame.
     pub fn set_frame_callback<C: FrameCallback>(&self) -> Result<()> {
         unsafe {
             FMOD_Studio_CommandReplay_SetFrameCallback(self.inner.as_ptr(), Some(frame_impl::<C>))
@@ -140,6 +163,17 @@ impl CommandReplay {
         }
     }
 
+    /// Sets the bank loading callback.
+    ///
+    /// The load bank callback is invoked whenever any of the Studio load bank functions are reached.
+    ///
+    /// This callback is required to be implemented to successfully replay `Studio::System::loadBankMemory` and `Studio::System::loadBankCustom` commands.
+    ///
+    /// The callback is responsible for loading the bank based on the callback parameters.
+    /// If the bank is not loaded subsequent commands which reference objects in the bank will fail.
+    ///
+    /// If this callback is not set then the system will attempt to load banks from file according to recorded
+    /// `Studio::System::loadBankFile` commands and skip other load commands.
     pub fn set_load_bank_callback<C: LoadBankCallback>(&self) -> Result<()> {
         unsafe {
             FMOD_Studio_CommandReplay_SetLoadBankCallback(

@@ -9,24 +9,34 @@ use std::ffi::c_void;
 
 use crate::studio::{Bank, System, SystemCallbackMask};
 
+/// Trait for this particular FMOD callback.
+///
+/// No `self` parameter is passed to the callback!
+///
+/// Callbacks are called from the Studio Update Thread in default / async mode and the main (calling) thread in synchronous mode.
 #[allow(unused_variables)]
 pub trait SystemCallback {
+    /// Called at the start of the main Studio update. For async mode this will be on its own thread.
     fn preupdate(system: System, userdata: *mut c_void) -> Result<()> {
         Ok(())
     }
 
+    /// Called at the end of the main Studio update. For async mode this will be on its own thread.
     fn postupdate(system: System, userdata: *mut c_void) -> Result<()> {
         Ok(())
     }
 
+    /// Called directly when a bank has just been unloaded, after all resources are freed.
     fn bank_unload(system: System, bank: Bank, userdata: *mut c_void) -> Result<()> {
         Ok(())
     }
 
+    /// Called after a live update connection has been established.
     fn liveupdate_connected(system: System, userdata: *mut c_void) -> Result<()> {
         Ok(())
     }
 
+    /// Called after live update session disconnects.
     fn liveupdate_disconnected(system: System, userdata: *mut c_void) -> Result<()> {
         Ok(())
     }
@@ -63,11 +73,13 @@ unsafe extern "C" fn callback_impl<C: SystemCallback>(
 }
 
 impl System {
+    /// Sets the user data.
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
         unsafe { FMOD_Studio_System_SetUserData(self.inner.as_ptr(), userdata).to_result() }
     }
 
+    /// Retrieves the user data.
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
@@ -76,6 +88,7 @@ impl System {
         Ok(userdata)
     }
 
+    /// Sets a callback for the Studio System.
     pub fn set_callback<C: SystemCallback>(&self, mask: SystemCallbackMask) -> Result<()> {
         unsafe {
             FMOD_Studio_System_SetCallback(

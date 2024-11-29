@@ -12,6 +12,9 @@ mod general;
 mod loading;
 mod lookups; // general lookups that are too small to be their own module
 
+/// Banks made in FMOD Studio contain the metadata and audio sample data required for runtime mixing and playback.
+///
+/// Audio sample data may be packed into the same bank as the event metadata which references it, or it may be packed into separate banks.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(transparent)] // so we can transmute between types
 pub struct Bank {

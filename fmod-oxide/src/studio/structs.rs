@@ -15,10 +15,18 @@ use crate::{
     Guid, SoundBuilder,
 };
 
+/// Memory usage statistics.
+///
+/// Memory usage `exclusive` and `inclusive` values do not include sample data loaded in memory because sample data is a shared resource.
+/// Streaming sample data is not a shared resource and is included in the exclusive and `inclusive` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MemoryUsage {
+    /// Size of memory belonging to the bus or event instance.
     pub exclusive: c_int,
+    /// Size of memory belonging exclusively to the bus or event plus the inclusive memory sizes of all buses and event instances which route into it.
     pub inclusive: c_int,
+    /// Size of shared sample memory referenced by the bus or event instance,
+    /// inclusive of all sample memory referenced by all buses and event instances which route into it.
     pub sample_data: c_int,
 }
 
@@ -42,11 +50,16 @@ impl From<MemoryUsage> for FMOD_STUDIO_MEMORY_USAGE {
     }
 }
 
+/// Describes an event parameter identifier.
+///
+/// `ParameterID` can be retrieved from the `ParameterDescription`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// force this type to have the exact same layout as FMOD_STUDIO_PARAMETER_ID so we can safely transmute between them.
+// forces this type to have the exact same layout as FMOD_STUDIO_PARAMETER_ID so we can safely transmute between them.
 #[repr(C)]
 pub struct ParameterID {
+    /// First half of the ID.
     pub data_1: c_uint,
+    /// Second half of the ID.
     pub data_2: c_uint,
 }
 
@@ -68,14 +81,22 @@ impl From<ParameterID> for FMOD_STUDIO_PARAMETER_ID {
     }
 }
 
+/// Settings for advanced features like configuring memory and cpu usage.
 // default impl is ok, all values are zero or none.
 #[derive(Clone, Default, PartialEq, Eq, Debug)]
 pub struct AdvancedSettings {
+    /// Command queue size for studio async processing.
     pub command_queue_size: c_uint,
+    /// Initial size to allocate for handles. Memory for handles will grow as needed in pages.
     pub handle_initial_size: c_uint,
-    pub studioupdateperiod: c_int,
+    /// Update period of Studio when in async mode, in milliseconds. Will be quantized to the nearest multiple of mixer duration.
+    pub studio_update_period: c_int,
+    /// Size in bytes of sample data to retain in memory when no longer used, to avoid repeated disk I/O. Use -1 to disable.
     pub idle_sample_data_pool_size: c_int,
+    /// Specify the schedule delay for streams, in samples.
+    /// Lower values can reduce latency when scheduling events containing streams but may cause scheduling issues if too small.
     pub streaming_schedule_delay: c_uint,
+    /// Specify the key for loading sounds from encrypted banks.
     pub encryption_key: Option<Utf8CString>, // TODO investigate if FMOD copies this string or if it needs to be kept alive
 }
 
@@ -98,7 +119,7 @@ impl AdvancedSettings {
         Self {
             command_queue_size: value.commandqueuesize,
             handle_initial_size: value.handleinitialsize,
-            studioupdateperiod: value.studioupdateperiod,
+            studio_update_period: value.studioupdateperiod,
             idle_sample_data_pool_size: value.idlesampledatapoolsize,
             streaming_schedule_delay: value.streamingscheduledelay,
             encryption_key,
@@ -118,7 +139,7 @@ impl From<&AdvancedSettings> for FMOD_STUDIO_ADVANCEDSETTINGS {
             cbsize: std::mem::size_of::<Self>() as c_int,
             commandqueuesize: value.command_queue_size,
             handleinitialsize: value.handle_initial_size,
-            studioupdateperiod: value.studioupdateperiod,
+            studioupdateperiod: value.studio_update_period,
             idlesampledatapoolsize: value.idle_sample_data_pool_size,
             streamingscheduledelay: value.streaming_schedule_delay,
             encryptionkey: encryption_key,
@@ -126,15 +147,24 @@ impl From<&AdvancedSettings> for FMOD_STUDIO_ADVANCEDSETTINGS {
     }
 }
 
+/// Describes an event parameter.
 #[derive(Clone, PartialEq, Debug)]
 pub struct ParameterDescription {
+    /// The parameter's name.
     pub name: Utf8CString,
+    /// The parameter's id.
     pub id: ParameterID,
+    /// The parameter's minimum value.
     pub minimum: c_float,
+    /// The parameter's maximum value.
     pub maximum: c_float,
+    /// The parameter's default value.
     pub default_value: c_float,
+    /// The parameter's type.
     pub kind: ParameterKind,
+    /// The parameter's behavior flags.
     pub flags: ParameterFlags,
+    /// The parameter's `Guid`.
     pub guid: Guid,
 }
 
@@ -178,9 +208,12 @@ impl ParameterDescription {
     }
 }
 
+/// Describes a user property.
 #[derive(Clone, PartialEq, Debug)]
 pub struct UserProperty {
+    /// Property name.
     pub name: Utf8CString,
+    /// Property type.
     pub kind: UserPropertyKind,
 }
 
@@ -256,12 +289,18 @@ impl From<&UserProperty> for FMOD_STUDIO_USER_PROPERTY {
     }
 }
 
+/// Information for a single buffer in FMOD Studio.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct BufferInfo {
+    /// Current buffer usage in bytes.
     pub current_usage: c_int,
+    /// Peak buffer usage in bytes.
     pub peak_usage: c_int,
+    /// Buffer capacity in bytes.
     pub capacity: c_int,
+    /// Cumulative number of stalls due to buffer overflow.
     pub stall_count: c_int,
+    /// Cumulative amount of time stalled due to buffer overflow, in seconds.
     pub stall_time: c_float,
 }
 
@@ -289,9 +328,12 @@ impl From<BufferInfo> for FMOD_STUDIO_BUFFER_INFO {
     }
 }
 
+/// Information for FMOD Studio buffer usage.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct BufferUsage {
+    /// Information for the Studio Async Command buffer.
     pub studio_command_queue: BufferInfo,
+    /// Information for the Studio handle table.
     pub studio_handle: BufferInfo,
 }
 
@@ -313,8 +355,11 @@ impl From<BufferUsage> for FMOD_STUDIO_BUFFER_USAGE {
     }
 }
 
+/// Performance information for Studio API functionality.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct CpuUsage {
+    /// `System::update` CPU usage.
+    /// Percentage of main thread, or main thread if the System was created with `SYNCHRONOUS_UPDATE`.
     pub update: c_float,
 }
 
@@ -334,9 +379,12 @@ impl From<CpuUsage> for FMOD_STUDIO_CPU_USAGE {
     }
 }
 
+/// Describes a sound in the audio table.
 #[derive(Debug)]
 pub struct SoundInfo<'a> {
+    /// The Sound's sound builder.
     pub builder: SoundBuilder<'a>,
+    /// Subsound index for loading the sound.
     pub subsound_index: c_int,
 }
 
@@ -367,15 +415,24 @@ impl From<&SoundInfo<'_>> for FMOD_STUDIO_SOUND_INFO {
     }
 }
 
+/// Describes a command replay command.
 #[derive(Debug, Clone)]
 pub struct CommandInfo {
+    /// Fully qualified C++ name of the API function for this command.
     pub command_name: Utf8CString,
+    /// Index of the command that created the instance this command operates on, or -1 if the command does not operate on any instance.
     pub parent_command_index: c_int,
+    /// Frame the command belongs to.
     pub frame_number: c_int,
+    /// Playback time at which this command will be executed.
     pub frame_time: c_float,
+    /// Type of object that this command uses as an instance.
     pub instance_type: InstanceType,
+    /// Type of object that this command outputs.
     pub output_type: InstanceType,
+    /// Original handle value of the instance.
     pub instance_handle: c_uint,
+    /// Original handle value of the command output.
     pub output_handle: c_uint,
 }
 
@@ -416,17 +473,24 @@ impl CommandInfo {
     }
 }
 
+/// Describes a programmer sound.
 #[derive(Debug)]
 pub struct ProgrammerSoundProperties<'prop> {
+    /// Name of the programmer instrument (set in FMOD Studio).
     pub name: Utf8CString,
+    /// Programmer-created sound.
     // FIXME use option for both of these
     pub sound: &'prop mut Sound,
+    /// Subsound index.
     pub subsound_index: &'prop mut c_int,
 }
 
+/// Describes a DSP plug-in instance.
 #[derive(Debug)]
 pub struct PluginInstanceProperties {
+    /// Name of the plug-in effect or sound (set in FMOD Studio).
     pub name: Utf8CString,
+    /// DSP plug-in instance. (DSP)
     pub dsp: Dsp,
 }
 
@@ -455,9 +519,12 @@ impl PluginInstanceProperties {
     }
 }
 
+/// Describes a marker on the timeline.
 #[derive(Debug, Clone)]
 pub struct TimelineMarkerProperties {
+    /// Marker name.
     pub name: Utf8CString,
+    /// Position of the marker on the timeline in milliseconds.
     pub position: c_int,
 }
 
@@ -486,13 +553,20 @@ impl TimelineMarkerProperties {
     }
 }
 
+/// Describes a beat on the timeline.
 #[derive(Clone, Copy, Debug)]
 pub struct TimelineBeatProperties {
+    /// Bar number (starting from 1).
     pub bar: c_int,
+    /// Beat number within bar (starting from 1).
     pub beat: c_int,
+    /// Position of the beat on the timeline in milliseconds.
     pub position: c_int,
+    /// Current tempo in beats per minute.
     pub tempo: c_float,
+    /// Current time signature upper number (beats per bar).
     pub time_signature_upper: c_int,
+    /// Current time signature lower number (beat unit).
     pub time_signature_lower: c_int,
 }
 
@@ -522,9 +596,12 @@ impl From<FMOD_STUDIO_TIMELINE_BEAT_PROPERTIES> for TimelineBeatProperties {
     }
 }
 
+/// Describes a beat on the timeline from a nested event.
 #[derive(Debug, Clone, Copy)]
 pub struct TimelineNestedBeatProperties {
+    /// Event description GUID.
     pub event_guid: Guid,
+    /// Beat properties.
     pub properties: TimelineBeatProperties,
 }
 
