@@ -428,7 +428,7 @@ impl From<&PluginInstanceProperties> for FMOD_STUDIO_PLUGIN_INSTANCE_PROPERTIES 
     fn from(value: &PluginInstanceProperties) -> Self {
         FMOD_STUDIO_PLUGIN_INSTANCE_PROPERTIES {
             name: value.name.as_ptr(),
-            dsp: value.dsp.inner,
+            dsp: value.dsp.into(),
         }
     }
 }

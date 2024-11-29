@@ -21,12 +21,12 @@ impl ChannelControl {
     ///
     /// For detailed information on FMOD's DSP network, read the DSP Architecture and Usage white paper.
     pub fn add_dsp(&self, index: c_int, dsp: Dsp) -> Result<()> {
-        unsafe { FMOD_ChannelControl_AddDSP(self.inner, index, dsp.inner).to_result() }
+        unsafe { FMOD_ChannelControl_AddDSP(self.inner, index, dsp.inner.as_ptr()).to_result() }
     }
 
     /// Removes the specified DSP unit from the DSP chain.
     pub fn remove_dsp(&self, dsp: Dsp) -> Result<()> {
-        unsafe { FMOD_ChannelControl_RemoveDSP(self.inner, dsp.inner).to_result() }
+        unsafe { FMOD_ChannelControl_RemoveDSP(self.inner, dsp.inner.as_ptr()).to_result() }
     }
 
     /// Retrieves the number of DSP units in the DSP chain.
@@ -44,21 +44,24 @@ impl ChannelControl {
         unsafe {
             FMOD_ChannelControl_GetDSP(self.inner, index, &mut dsp).to_result()?;
         }
-        Ok(Dsp { inner: dsp })
+        Ok(dsp.into())
     }
 
     /// Sets the index in the DSP chain of the specified DSP.
     ///
     /// This will move a DSP already in the DSP chain to a new offset.
     pub fn set_dsp_index(&self, dsp: Dsp, index: c_int) -> Result<()> {
-        unsafe { FMOD_ChannelControl_SetDSPIndex(self.inner, dsp.inner, index).to_result() }
+        unsafe {
+            FMOD_ChannelControl_SetDSPIndex(self.inner, dsp.inner.as_ptr(), index).to_result()
+        }
     }
 
     /// Retrieves the index of a DSP inside the Channel or `ChannelGroup`'s DSP chain.
     pub fn get_dsp_index(&self, dsp: Dsp) -> Result<c_int> {
         let mut index = 0;
         unsafe {
-            FMOD_ChannelControl_GetDSPIndex(self.inner, dsp.inner, &mut index).to_result()?;
+            FMOD_ChannelControl_GetDSPIndex(self.inner, dsp.inner.as_ptr(), &mut index)
+                .to_result()?;
         }
         Ok(index)
     }

@@ -19,7 +19,7 @@ impl Dsp {
         let mut input = MaybeUninit::zeroed();
         let mut output = MaybeUninit::zeroed();
         unsafe {
-            FMOD_DSP_GetMeteringInfo(self.inner, input.as_mut_ptr(), output.as_mut_ptr())
+            FMOD_DSP_GetMeteringInfo(self.inner.as_ptr(), input.as_mut_ptr(), output.as_mut_ptr())
                 .to_result()?;
             let input = input.assume_init().into();
             let output = output.assume_init().into();
@@ -39,8 +39,12 @@ impl Dsp {
     /// such as in the Unity or Unreal Engine integrations, in order to avoid conflict with FMOD Studio's live update feature.
     pub fn set_metering_enabled(&self, input_enabled: bool, output_enabled: bool) -> Result<()> {
         unsafe {
-            FMOD_DSP_SetMeteringEnabled(self.inner, input_enabled.into(), output_enabled.into())
-                .to_result()
+            FMOD_DSP_SetMeteringEnabled(
+                self.inner.as_ptr(),
+                input_enabled.into(),
+                output_enabled.into(),
+            )
+            .to_result()
         }
     }
 
@@ -55,8 +59,12 @@ impl Dsp {
         let mut input_enabled = FMOD_BOOL::FALSE;
         let mut output_enabled = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_DSP_GetMeteringEnabled(self.inner, &mut input_enabled, &mut output_enabled)
-                .to_result()?;
+            FMOD_DSP_GetMeteringEnabled(
+                self.inner.as_ptr(),
+                &mut input_enabled,
+                &mut output_enabled,
+            )
+            .to_result()?;
         }
         Ok((input_enabled.into(), output_enabled.into()))
     }
