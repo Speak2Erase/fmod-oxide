@@ -10,8 +10,6 @@ use std::ffi::c_void;
 use crate::{ChannelControl, System};
 
 impl ChannelControl {
-    // TODO callback
-
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
         unsafe { FMOD_ChannelControl_SetUserData(self.inner.as_ptr(), userdata).to_result() }

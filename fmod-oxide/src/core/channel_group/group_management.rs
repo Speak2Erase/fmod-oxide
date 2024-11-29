@@ -50,8 +50,6 @@ impl ChannelGroup {
             FMOD_ChannelGroup_GetParentGroup(self.inner.as_ptr(), &mut channel_group)
                 .to_result()?;
         }
-        // FIXME: what if this is null? if it can be, what about other places we return pointers like this?
-        // do we even need to worry about this issue? we aren't returning references...
         Ok(channel_group.into())
     }
 }
