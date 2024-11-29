@@ -20,7 +20,11 @@ impl Sound {
     /// If `FMOD_LOWMEM` has been specified in `System::createSound`, this function will return "(null)".
     pub fn get_name(&self) -> Result<Utf8CString> {
         get_string(|name| unsafe {
-            FMOD_Sound_GetName(self.inner, name.as_mut_ptr().cast(), name.len() as c_int)
+            FMOD_Sound_GetName(
+                self.inner.as_ptr(),
+                name.as_mut_ptr().cast(),
+                name.len() as c_int,
+            )
         })
     }
 
@@ -31,8 +35,14 @@ impl Sound {
         let mut channels = 0;
         let mut bits = 0;
         unsafe {
-            FMOD_Sound_GetFormat(self.inner, &mut kind, &mut format, &mut channels, &mut bits)
-                .to_result()?;
+            FMOD_Sound_GetFormat(
+                self.inner.as_ptr(),
+                &mut kind,
+                &mut format,
+                &mut channels,
+                &mut bits,
+            )
+            .to_result()?;
         }
         let kind = kind.try_into()?;
         let format = format.try_into()?;
@@ -50,7 +60,7 @@ impl Sound {
     pub fn get_length(&self, unit: TimeUnit) -> Result<c_uint> {
         let mut length = 0;
         unsafe {
-            FMOD_Sound_GetLength(self.inner, &mut length, unit.into()).to_result()?;
+            FMOD_Sound_GetLength(self.inner.as_ptr(), &mut length, unit.into()).to_result()?;
         }
         Ok(length)
     }
@@ -65,7 +75,7 @@ impl Sound {
         let mut tags = 0;
         let mut updated = 0;
         unsafe {
-            FMOD_Sound_GetNumTags(self.inner, &mut tags, &mut updated).to_result()?;
+            FMOD_Sound_GetNumTags(self.inner.as_ptr(), &mut tags, &mut updated).to_result()?;
         }
         Ok((tags, updated))
     }
@@ -101,7 +111,7 @@ impl Sound {
         let mut tag = MaybeUninit::uninit();
         unsafe {
             FMOD_Sound_GetTag(
-                self.inner,
+                self.inner.as_ptr(),
                 name.map_or(std::ptr::null(), Utf8CStr::as_ptr),
                 index,
                 tag.as_mut_ptr(),

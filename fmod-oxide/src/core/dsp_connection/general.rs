@@ -18,7 +18,7 @@ impl DspConnection {
     /// If so the function will return [`FMOD_RESULT::FMOD_ERR_NOTREADY`].
     pub fn get_input(&self) -> Result<Dsp> {
         let mut dsp = std::ptr::null_mut();
-        unsafe { FMOD_DSPConnection_GetInput(self.inner, &mut dsp).to_result()? };
+        unsafe { FMOD_DSPConnection_GetInput(self.inner.as_ptr(), &mut dsp).to_result()? };
         Ok(dsp.into())
     }
 
@@ -29,27 +29,29 @@ impl DspConnection {
     /// If so the function will return [`FMOD_RESULT::FMOD_ERR_NOTREADY`].
     pub fn get_output(&self) -> Result<Dsp> {
         let mut dsp = std::ptr::null_mut();
-        unsafe { FMOD_DSPConnection_GetOutput(self.inner, &mut dsp).to_result()? };
+        unsafe { FMOD_DSPConnection_GetOutput(self.inner.as_ptr(), &mut dsp).to_result()? };
         Ok(dsp.into())
     }
 
     /// Retrieves the type of the connection between 2 DSP units.
     pub fn get_type(&self) -> Result<DspConnectionType> {
         let mut connection_type = 0;
-        unsafe { FMOD_DSPConnection_GetType(self.inner, &mut connection_type).to_result()? };
+        unsafe {
+            FMOD_DSPConnection_GetType(self.inner.as_ptr(), &mut connection_type).to_result()?;
+        };
         let connection_type = connection_type.try_into()?;
         Ok(connection_type)
     }
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
-        unsafe { FMOD_DSPConnection_SetUserData(self.inner, userdata).to_result() }
+        unsafe { FMOD_DSPConnection_SetUserData(self.inner.as_ptr(), userdata).to_result() }
     }
 
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
-            FMOD_DSPConnection_GetUserData(self.inner, &mut userdata).to_result()?;
+            FMOD_DSPConnection_GetUserData(self.inner.as_ptr(), &mut userdata).to_result()?;
         }
         Ok(userdata)
     }

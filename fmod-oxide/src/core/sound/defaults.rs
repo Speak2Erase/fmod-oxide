@@ -29,8 +29,13 @@ impl Sound {
         outside_volume: c_float,
     ) -> Result<()> {
         unsafe {
-            FMOD_Sound_Set3DConeSettings(self.inner, inside_angle, outside_angle, outside_volume)
-                .to_result()
+            FMOD_Sound_Set3DConeSettings(
+                self.inner.as_ptr(),
+                inside_angle,
+                outside_angle,
+                outside_volume,
+            )
+            .to_result()
         }
     }
 
@@ -41,7 +46,7 @@ impl Sound {
         let mut outside_volume = 0.0;
         unsafe {
             FMOD_Sound_Get3DConeSettings(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut inside_angle,
                 &mut outside_angle,
                 &mut outside_volume,
@@ -71,7 +76,7 @@ impl Sound {
         // probably doesn't need to be mutable, but more safe to be mutable just in case
         unsafe {
             FMOD_Sound_Set3DCustomRolloff(
-                self.inner,
+                self.inner.as_ptr(),
                 points.as_mut_ptr().cast(),
                 points.len() as i32,
             )
@@ -84,7 +89,8 @@ impl Sound {
         let mut points = std::ptr::null_mut();
         let mut num_points = 0;
         unsafe {
-            FMOD_Sound_Get3DCustomRolloff(self.inner, &mut points, &mut num_points).to_result()?;
+            FMOD_Sound_Get3DCustomRolloff(self.inner.as_ptr(), &mut points, &mut num_points)
+                .to_result()?;
 
             let points = std::slice::from_raw_parts(points.cast(), num_points as usize).to_vec();
 
@@ -110,7 +116,7 @@ impl Sound {
     /// For this mode the max distance is ignored:
     /// - `FMOD_3D_CUSTOMROLLOFF`
     pub fn set_3d_min_max_distance(&self, min: c_float, max: c_float) -> Result<()> {
-        unsafe { FMOD_Sound_Set3DMinMaxDistance(self.inner, min, max).to_result() }
+        unsafe { FMOD_Sound_Set3DMinMaxDistance(self.inner.as_ptr(), min, max).to_result() }
     }
 
     /// Retrieve the minimum and maximum audible distance for a 3D sound.
@@ -118,7 +124,7 @@ impl Sound {
         let mut min = 0.0;
         let mut max = 0.0;
         unsafe {
-            FMOD_Sound_Get3DMinMaxDistance(self.inner, &mut min, &mut max).to_result()?;
+            FMOD_Sound_Get3DMinMaxDistance(self.inner.as_ptr(), &mut min, &mut max).to_result()?;
         }
         Ok((min, max))
     }
@@ -127,7 +133,7 @@ impl Sound {
     ///
     /// When the Sound is played it will use these values without having to specify them later on a per Channel basis.
     pub fn set_defaults(&self, frequency: c_float, priority: c_int) -> Result<()> {
-        unsafe { FMOD_Sound_SetDefaults(self.inner, frequency, priority).to_result() }
+        unsafe { FMOD_Sound_SetDefaults(self.inner.as_ptr(), frequency, priority).to_result() }
     }
 
     /// Retrieves a sound's default playback attributes.
@@ -135,7 +141,8 @@ impl Sound {
         let mut frequency = 0.0;
         let mut priority = 0;
         unsafe {
-            FMOD_Sound_GetDefaults(self.inner, &mut frequency, &mut priority).to_result()?;
+            FMOD_Sound_GetDefaults(self.inner.as_ptr(), &mut frequency, &mut priority)
+                .to_result()?;
         }
         Ok((frequency, priority))
     }
@@ -165,7 +172,7 @@ impl Sound {
     /// Changing mode on an already buffered stream may not produced desired output. See Streaming Issues.
     // FIXME this is pretty unsafe, add safe version
     pub fn set_mode(&self, mode: Mode) -> Result<()> {
-        unsafe { FMOD_Sound_SetMode(self.inner, mode.bits()).to_result() }
+        unsafe { FMOD_Sound_SetMode(self.inner.as_ptr(), mode.bits()).to_result() }
     }
 
     /// Retrieves the mode of a sound.
@@ -174,7 +181,7 @@ impl Sound {
     pub fn get_mode(&self) -> Result<Mode> {
         let mut mode = 0;
         unsafe {
-            FMOD_Sound_GetMode(self.inner, &mut mode).to_result()?;
+            FMOD_Sound_GetMode(self.inner.as_ptr(), &mut mode).to_result()?;
         }
         Ok(Mode::from(mode))
     }
@@ -183,7 +190,7 @@ impl Sound {
     ///
     /// Changing loop count on an already buffered stream may not produced desired output. See Streaming Issues.
     pub fn set_loop_count(&self, loop_count: c_int) -> Result<()> {
-        unsafe { FMOD_Sound_SetLoopCount(self.inner, loop_count).to_result() }
+        unsafe { FMOD_Sound_SetLoopCount(self.inner.as_ptr(), loop_count).to_result() }
     }
 
     /// Retrieves the sound's loop count.
@@ -193,7 +200,7 @@ impl Sound {
     pub fn get_loop_count(&self) -> Result<c_int> {
         let mut loop_count = 0;
         unsafe {
-            FMOD_Sound_GetLoopCount(self.inner, &mut loop_count).to_result()?;
+            FMOD_Sound_GetLoopCount(self.inner.as_ptr(), &mut loop_count).to_result()?;
         }
         Ok(loop_count)
     }
@@ -217,7 +224,7 @@ impl Sound {
     ) -> Result<()> {
         unsafe {
             FMOD_Sound_SetLoopPoints(
-                self.inner,
+                self.inner.as_ptr(),
                 loop_start,
                 start_type.into(),
                 loop_end,
@@ -239,7 +246,7 @@ impl Sound {
         let mut loop_end = 0;
         unsafe {
             FMOD_Sound_GetLoopPoints(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut loop_start,
                 start_type.into(),
                 &mut loop_end,

@@ -12,13 +12,13 @@ use crate::DspConnection;
 impl DspConnection {
     /// Sets the connection's volume scale.
     pub fn set_mix(&self, volume: c_float) -> Result<()> {
-        unsafe { FMOD_DSPConnection_SetMix(self.inner, volume).to_result() }
+        unsafe { FMOD_DSPConnection_SetMix(self.inner.as_ptr(), volume).to_result() }
     }
 
     /// Retrieves the connection's volume scale.
     pub fn get_mix(&self) -> Result<c_float> {
         let mut volume = 0.0;
-        unsafe { FMOD_DSPConnection_GetMix(self.inner, &mut volume).to_result()? };
+        unsafe { FMOD_DSPConnection_GetMix(self.inner.as_ptr(), &mut volume).to_result()? };
         Ok(volume)
     }
 

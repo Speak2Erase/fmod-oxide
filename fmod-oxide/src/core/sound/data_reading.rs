@@ -29,7 +29,7 @@ impl Sound {
         let mut disk_busy = FMOD_BOOL::FALSE;
         let error = unsafe {
             FMOD_Sound_GetOpenState(
-                self.inner,
+                self.inner.as_ptr(),
                 &mut open_state,
                 &mut percent_buffered,
                 &mut starving,

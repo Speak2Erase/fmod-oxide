@@ -32,7 +32,7 @@ impl Channel {
         Ok(if sound.is_null() {
             None
         } else {
-            Some(Sound { inner: sound })
+            Some(sound.into())
         })
     }
 

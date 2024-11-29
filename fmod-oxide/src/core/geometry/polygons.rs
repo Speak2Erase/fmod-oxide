@@ -23,7 +23,7 @@ impl Geometry {
     ) -> Result<()> {
         unsafe {
             FMOD_Geometry_SetPolygonAttributes(
-                self.inner,
+                self.inner.as_ptr(),
                 index,
                 direct_occlusion,
                 reverb_occlusion,
@@ -40,7 +40,7 @@ impl Geometry {
         let mut double_sided = FMOD_BOOL::FALSE;
         unsafe {
             FMOD_Geometry_GetPolygonAttributes(
-                self.inner,
+                self.inner.as_ptr(),
                 index,
                 &mut direct,
                 &mut reverb,
@@ -55,7 +55,8 @@ impl Geometry {
     pub fn get_polygon_vertex_count(&self, index: c_int) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_Geometry_GetPolygonNumVertices(self.inner, index, &mut count).to_result()?;
+            FMOD_Geometry_GetPolygonNumVertices(self.inner.as_ptr(), index, &mut count)
+                .to_result()?;
         }
         Ok(count)
     }
@@ -75,7 +76,7 @@ impl Geometry {
     ) -> Result<()> {
         unsafe {
             FMOD_Geometry_SetPolygonVertex(
-                self.inner,
+                self.inner.as_ptr(),
                 index,
                 vertex_index,
                 std::ptr::from_ref(&vertex).cast(),
@@ -90,8 +91,13 @@ impl Geometry {
     pub fn get_polygon_vertex(&self, index: c_int, vertex_index: c_int) -> Result<Vector> {
         let mut vertex = MaybeUninit::uninit();
         unsafe {
-            FMOD_Geometry_GetPolygonVertex(self.inner, index, vertex_index, vertex.as_mut_ptr())
-                .to_result()?;
+            FMOD_Geometry_GetPolygonVertex(
+                self.inner.as_ptr(),
+                index,
+                vertex_index,
+                vertex.as_mut_ptr(),
+            )
+            .to_result()?;
             let vertex = vertex.assume_init().into();
             Ok(vertex)
         }

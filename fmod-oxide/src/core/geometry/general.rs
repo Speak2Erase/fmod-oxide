@@ -30,7 +30,7 @@ impl Geometry {
         let mut index = 0;
         unsafe {
             FMOD_Geometry_AddPolygon(
-                self.inner,
+                self.inner.as_ptr(),
                 direct_occlusion,
                 reverb_occlusion,
                 double_sided.into(),
@@ -45,14 +45,14 @@ impl Geometry {
 
     /// Sets whether an object is processed by the geometry engine.
     pub fn set_active(&self, active: bool) -> Result<()> {
-        unsafe { FMOD_Geometry_SetActive(self.inner, active.into()).to_result() }
+        unsafe { FMOD_Geometry_SetActive(self.inner.as_ptr(), active.into()).to_result() }
     }
 
     /// Retrieves whether an object is processed by the geometry engine.
     pub fn get_active(&self) -> Result<bool> {
         let mut active = FMOD_BOOL::FALSE;
         unsafe {
-            FMOD_Geometry_GetActive(self.inner, &mut active).to_result()?;
+            FMOD_Geometry_GetActive(self.inner.as_ptr(), &mut active).to_result()?;
         }
         Ok(active.into())
     }
@@ -64,7 +64,7 @@ impl Geometry {
         let mut max_polygons = 0;
         let mut max_vertices = 0;
         unsafe {
-            FMOD_Geometry_GetMaxPolygons(self.inner, &mut max_polygons, &mut max_vertices)
+            FMOD_Geometry_GetMaxPolygons(self.inner.as_ptr(), &mut max_polygons, &mut max_vertices)
                 .to_result()?;
         }
         Ok((max_polygons, max_vertices))
@@ -74,27 +74,27 @@ impl Geometry {
     pub fn get_polygon_count(&self) -> Result<c_int> {
         let mut count = 0;
         unsafe {
-            FMOD_Geometry_GetNumPolygons(self.inner, &mut count).to_result()?;
+            FMOD_Geometry_GetNumPolygons(self.inner.as_ptr(), &mut count).to_result()?;
         }
         Ok(count)
     }
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
-        unsafe { FMOD_Geometry_SetUserData(self.inner, userdata).to_result() }
+        unsafe { FMOD_Geometry_SetUserData(self.inner.as_ptr(), userdata).to_result() }
     }
 
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
-            FMOD_Geometry_GetUserData(self.inner, &mut userdata).to_result()?;
+            FMOD_Geometry_GetUserData(self.inner.as_ptr(), &mut userdata).to_result()?;
         }
         Ok(userdata)
     }
 
     /// Frees a geometry object and releases its memory.
     pub fn release(&self) -> Result<()> {
-        unsafe { FMOD_Geometry_Release(self.inner).to_result() }
+        unsafe { FMOD_Geometry_Release(self.inner.as_ptr()).to_result() }
     }
 
     /// Saves the geometry object as a serialized binary block to a [`Vec`].
@@ -103,12 +103,18 @@ impl Geometry {
     pub fn save(&self) -> Result<Vec<u8>> {
         let mut data_size = 0;
         unsafe {
-            FMOD_Geometry_Save(self.inner, std::ptr::null_mut(), &mut data_size).to_result()?;
+            FMOD_Geometry_Save(self.inner.as_ptr(), std::ptr::null_mut(), &mut data_size)
+                .to_result()?;
         }
 
         let mut data = vec![0; data_size as usize];
         unsafe {
-            FMOD_Geometry_Save(self.inner, data.as_mut_ptr().cast(), &mut data_size).to_result()?;
+            FMOD_Geometry_Save(
+                self.inner.as_ptr(),
+                data.as_mut_ptr().cast(),
+                &mut data_size,
+            )
+            .to_result()?;
         }
 
         Ok(data)

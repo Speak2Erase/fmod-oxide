@@ -14,7 +14,11 @@ impl SoundGroup {
     /// Retrieves the name of the sound group.
     pub fn get_name(&self) -> Result<Utf8CString> {
         get_string(|name| unsafe {
-            FMOD_SoundGroup_GetName(self.inner, name.as_mut_ptr().cast(), name.len() as c_int)
+            FMOD_SoundGroup_GetName(
+                self.inner.as_ptr(),
+                name.as_mut_ptr().cast(),
+                name.len() as c_int,
+            )
         })
     }
 
@@ -22,18 +26,18 @@ impl SoundGroup {
     ///
     /// You cannot release the master [`SoundGroup`].
     pub fn release(&self) -> Result<()> {
-        unsafe { FMOD_SoundGroup_Release(self.inner).to_result() }
+        unsafe { FMOD_SoundGroup_Release(self.inner.as_ptr()).to_result() }
     }
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // fmod doesn't dereference the passed in pointer, and the user dereferencing it is unsafe anyway
     pub fn set_userdata(&self, userdata: *mut c_void) -> Result<()> {
-        unsafe { FMOD_SoundGroup_SetUserData(self.inner, userdata).to_result() }
+        unsafe { FMOD_SoundGroup_SetUserData(self.inner.as_ptr(), userdata).to_result() }
     }
 
     pub fn get_userdata(&self) -> Result<*mut c_void> {
         let mut userdata = std::ptr::null_mut();
         unsafe {
-            FMOD_SoundGroup_GetUserData(self.inner, &mut userdata).to_result()?;
+            FMOD_SoundGroup_GetUserData(self.inner.as_ptr(), &mut userdata).to_result()?;
         }
         Ok(userdata)
     }
@@ -41,7 +45,7 @@ impl SoundGroup {
     /// Retrieves the parent System object.
     pub fn get_system(&self) -> Result<System> {
         let mut system = std::ptr::null_mut();
-        unsafe { FMOD_SoundGroup_GetSystemObject(self.inner, &mut system).to_result()? };
+        unsafe { FMOD_SoundGroup_GetSystemObject(self.inner.as_ptr(), &mut system).to_result()? };
         Ok(system.into())
     }
 }
