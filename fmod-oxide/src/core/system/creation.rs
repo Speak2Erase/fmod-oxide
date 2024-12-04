@@ -100,7 +100,11 @@ impl System {
     /// See the DSP architecture guide for more information.
     ///
     /// DSPs must be attached to the DSP graph before they become active, either via `ChannelControl::addDSP` or `DSP::addInput`.
-    pub fn create_dsp(&self, description: &FMOD_DSP_DESCRIPTION) -> Result<Dsp> {
+    ///
+    /// # Safety
+    ///
+    /// The [`FMOD_DSP_DESCRIPTION`] pointer must point to a valid [`FMOD_DSP_DESCRIPTION`]. Said plugin description must alsoconform to FMOD's plugin API!
+    pub unsafe fn create_dsp(&self, description: *const FMOD_DSP_DESCRIPTION) -> Result<Dsp> {
         let mut dsp = std::ptr::null_mut();
         unsafe {
             FMOD_System_CreateDSP(self.inner.as_ptr(), description, &mut dsp).to_result()?;
