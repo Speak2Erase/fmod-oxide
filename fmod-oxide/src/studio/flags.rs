@@ -19,6 +19,9 @@ bitflags::bitflags! {
         /// Load banks even if they reference plug-ins that have not been loaded.
         const ALLOW_MISSING_PLUGINS = FMOD_STUDIO_INIT_ALLOW_MISSING_PLUGINS;
         /// Disable asynchronous processing and perform all processing on the calling thread instead.
+        ///
+        /// This flag cannot be used normally as this crate has guardrails preventing it.
+        /// It is still here for completeness' sake, though.
         const SYNCHRONOUS_UPDATE    = FMOD_STUDIO_INIT_SYNCHRONOUS_UPDATE;
         /// Defer timeline callbacks until the main update.
         const DEFERRED_CALLBACKS    = FMOD_STUDIO_INIT_DEFERRED_CALLBACKS;

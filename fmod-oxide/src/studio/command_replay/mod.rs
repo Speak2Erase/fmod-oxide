@@ -21,7 +21,9 @@ pub struct CommandReplay {
     pub(crate) inner: NonNull<FMOD_STUDIO_COMMANDREPLAY>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for CommandReplay {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for CommandReplay {}
 
 impl From<*mut FMOD_STUDIO_COMMANDREPLAY> for CommandReplay {

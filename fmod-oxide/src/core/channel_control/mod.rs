@@ -33,7 +33,9 @@ pub struct ChannelControl {
     // so it would be feasible
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for ChannelControl {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for ChannelControl {}
 
 impl From<*mut FMOD_CHANNELCONTROL> for ChannelControl {

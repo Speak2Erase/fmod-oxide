@@ -17,7 +17,9 @@ pub struct DspConnection {
     pub(crate) inner: NonNull<FMOD_DSPCONNECTION>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for DspConnection {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for DspConnection {}
 
 impl From<*mut FMOD_DSPCONNECTION> for DspConnection {

@@ -20,7 +20,9 @@ pub struct SyncPoint {
     pub(crate) inner: NonNull<FMOD_SYNCPOINT>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for SyncPoint {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for SyncPoint {}
 
 impl From<*mut FMOD_SYNCPOINT> for SyncPoint {

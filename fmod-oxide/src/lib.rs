@@ -57,7 +57,11 @@
 //! Ultimately I've decided to make userdata not the concern of this crate. Setting and fetching it is perfectly safe, *using* the pointer is what's unsafe.
 //! It's likely better this way- the semantics of userdata are just too flexible and its hard to cover every edge case.
 //! Userdata isn't super commonly used anyway- it is mainly used to pass data into callbacks, but it's easy enough to use a `static` to do that.
-
+//!
+//! # Feature flags
+#![doc = document_features::document_features!()]
+// Used to document cfgs (copied from https://docs.rs/winit/latest/src/winit/lib.rs.html#1-207)
+#![cfg_attr(docsrs, feature(doc_auto_cfg), doc(cfg_hide(doc, docsrs)))]
 #![warn(
     rust_2018_idioms,
     clippy::pedantic,

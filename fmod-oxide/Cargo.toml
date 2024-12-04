@@ -20,6 +20,12 @@ fmod-audio-sys = { version = "2.220.2", path = "../fmod-sys" }
 lanyard = { version = "0.1.0", path = "../lanyard/" }
 num_enum = "0.7.2"
 
+document-features = "0.2"
+
+[features]
+## Disable Send + Sync impls for FMOD's types, making FMOD's thread-unsafe API safer
+thread-unsafe = []
+
 [dev-dependencies]
 once_cell = "1.19"
 

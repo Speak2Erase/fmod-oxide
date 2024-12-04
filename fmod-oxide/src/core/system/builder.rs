@@ -14,7 +14,9 @@ pub struct SystemBuilder {
     pub(crate) thread_unsafe: bool,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for SystemBuilder {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for SystemBuilder {}
 
 #[cfg(doc)]
@@ -44,7 +46,13 @@ impl SystemBuilder {
     ///
     /// This function intializes FMOD to be thread unsafe, which makes *EVERY* Struct in this crate `!Send` and `!Sync` *without* marking them as `!Send` and `!Sync`.
     /// This means that there are no handrails preventing you from using FMOD across multiple threads, and you *must* ensure this yourself!
+    #[cfg(not(feature = "thread-unsafe"))]
     pub unsafe fn thread_unsafe(&mut self) {
+        self.thread_unsafe = true;
+    }
+
+    #[cfg(feature = "thread-unsafe")]
+    pub fn thread_unsafe(&mut self) {
         self.thread_unsafe = true;
     }
 
@@ -112,9 +120,10 @@ impl SystemBuilder {
         driver_data: *mut c_void,
     ) -> Result<System> {
         if self.thread_unsafe {
-            flags.remove(InitFlags::THREAD_UNSAFE);
-        } else {
             flags.insert(InitFlags::THREAD_UNSAFE);
+        } else {
+            #[cfg(not(feature = "thread-unsafe"))]
+            flags.remove(InitFlags::THREAD_UNSAFE);
         }
         unsafe {
             FMOD_System_Init(self.system, max_channels, flags.bits(), driver_data).to_result()?;

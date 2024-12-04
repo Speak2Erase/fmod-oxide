@@ -18,7 +18,9 @@ pub struct Vca {
     pub(crate) inner: NonNull<FMOD_STUDIO_VCA>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for Vca {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for Vca {}
 
 impl From<*mut FMOD_STUDIO_VCA> for Vca {

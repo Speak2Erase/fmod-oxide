@@ -32,7 +32,9 @@ pub struct System {
     pub(crate) inner: NonNull<FMOD_SYSTEM>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for System {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for System {}
 
 impl From<*mut FMOD_SYSTEM> for System {

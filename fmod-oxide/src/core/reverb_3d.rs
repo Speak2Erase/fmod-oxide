@@ -20,7 +20,9 @@ pub struct Reverb3D {
     pub(crate) inner: NonNull<FMOD_REVERB3D>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for Reverb3D {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for Reverb3D {}
 
 impl From<*mut FMOD_REVERB3D> for Reverb3D {

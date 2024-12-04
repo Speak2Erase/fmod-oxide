@@ -18,9 +18,12 @@ use crate::studio::{AdvancedSettings, InitFlags, System};
 pub struct SystemBuilder {
     system: *mut FMOD_STUDIO_SYSTEM,
     core_builder: crate::SystemBuilder,
+    sync_update: bool,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for SystemBuilder {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for SystemBuilder {}
 
 impl SystemBuilder {
@@ -28,7 +31,7 @@ impl SystemBuilder {
     ///
     /// # Safety
     ///
-    /// Calling either of this function concurrently with any FMOD Studio API function (including this function) may cause undefined behavior.
+    /// Calling this function concurrently with any FMOD Studio API function (including this function) may cause undefined behavior.
     /// External synchronization must be used if calls to [`SystemBuilder::new`] or [`System::release`] could overlap other FMOD Studio API calls.
     /// All other FMOD Studio API functions are thread safe and may be called freely from any thread unless otherwise documented.
     pub unsafe fn new() -> Result<Self> {
@@ -44,7 +47,24 @@ impl SystemBuilder {
                 system: core_system,
                 thread_unsafe: false,
             },
+            sync_update: false,
         })
+    }
+
+    /// # Safety
+    ///
+    /// This function sets up FMOD Studio to run all commands on the calling thread, and FMOD Studio expects all calls to be issued from a single thread.
+    ///
+    /// This has the side effect of making *EVERY* Studio Struct in this crate `!Send` and `!Sync` *without* marking them as `!Send` and `!Sync`.
+    /// This means that there are no handrails preventing you from using FMOD Studio across multiple threads, and you *must* ensure this yourself!
+    #[cfg(not(feature = "thread-unsafe"))]
+    pub unsafe fn synchronous_update(&mut self) {
+        self.sync_update = true;
+    }
+
+    #[cfg(feature = "thread-unsafe")]
+    pub fn synchronous_update(&mut self) {
+        self.sync_update = true;
     }
 
     /// Sets advanced settings.
@@ -88,10 +108,16 @@ impl SystemBuilder {
     pub unsafe fn build_with_extra_driver_data(
         self,
         max_channels: c_int,
-        studio_flags: InitFlags,
+        mut studio_flags: InitFlags,
         flags: crate::InitFlags,
         driver_data: *mut c_void,
     ) -> Result<System> {
+        if self.sync_update {
+            studio_flags.insert(InitFlags::SYNCHRONOUS_UPDATE);
+        } else {
+            #[cfg(not(feature = "thread-unsafe"))]
+            studio_flags.remove(InitFlags::SYNCHRONOUS_UPDATE);
+        }
         unsafe {
             FMOD_Studio_System_Initialize(
                 self.system,

@@ -24,7 +24,9 @@ pub struct Bus {
     pub(crate) inner: NonNull<FMOD_STUDIO_BUS>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for Bus {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for Bus {}
 
 impl From<*mut FMOD_STUDIO_BUS> for Bus {

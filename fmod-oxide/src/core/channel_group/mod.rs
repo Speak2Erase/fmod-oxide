@@ -19,7 +19,9 @@ pub struct ChannelGroup {
     pub(crate) inner: NonNull<FMOD_CHANNELGROUP>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for ChannelGroup {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for ChannelGroup {}
 
 impl From<*mut FMOD_CHANNELGROUP> for ChannelGroup {

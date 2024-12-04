@@ -18,7 +18,9 @@ pub struct Geometry {
     pub(crate) inner: NonNull<FMOD_GEOMETRY>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for Geometry {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for Geometry {}
 
 impl From<*mut FMOD_GEOMETRY> for Geometry {

@@ -54,5 +54,7 @@ impl From<System> for *mut FMOD_STUDIO_SYSTEM {
 
 /// Most of FMOD is thread safe.
 /// There are some select functions that are not thread safe to call, those are marked as unsafe.
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for System {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for System {}

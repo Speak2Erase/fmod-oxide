@@ -21,7 +21,9 @@ pub struct Bank {
     pub(crate) inner: NonNull<FMOD_STUDIO_BANK>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for Bank {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for Bank {}
 
 impl From<*mut FMOD_STUDIO_BANK> for Bank {

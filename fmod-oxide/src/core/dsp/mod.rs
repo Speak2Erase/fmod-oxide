@@ -24,7 +24,9 @@ pub struct Dsp {
     pub(crate) inner: NonNull<FMOD_DSP>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for Dsp {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for Dsp {}
 
 impl From<*mut FMOD_DSP> for Dsp {

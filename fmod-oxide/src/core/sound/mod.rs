@@ -23,7 +23,9 @@ pub struct Sound {
     pub(crate) inner: NonNull<FMOD_SOUND>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for Sound {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for Sound {}
 
 impl From<*mut FMOD_SOUND> for Sound {

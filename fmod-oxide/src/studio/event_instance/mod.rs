@@ -27,7 +27,9 @@ pub struct EventInstance {
     pub(crate) inner: NonNull<FMOD_STUDIO_EVENTINSTANCE>,
 }
 
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Send for EventInstance {}
+#[cfg(not(feature = "thread-unsafe"))]
 unsafe impl Sync for EventInstance {}
 
 impl From<*mut FMOD_STUDIO_EVENTINSTANCE> for EventInstance {
