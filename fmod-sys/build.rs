@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 #[cfg(windows)]
 fn find_fmod_directory() -> PathBuf {
@@ -47,6 +47,12 @@ fn main() {
     #[cfg(feature = "force-docs-bindings")]
     return;
 
+    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    fs::create_dir_all(&out_dir).expect("Failed to create output directory");
+
+    let docs_dir = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("docs");
+    fs::create_dir_all(&docs_dir).expect("Failed to create docs directory");
+
     let fmod_dir = find_fmod_directory();
     let api_dir = fmod_dir.join("api");
 
@@ -82,33 +88,62 @@ fn main() {
     let include_debug = cfg!(any(debug_assertions, feature = "force-debug"));
     let debug_char = if include_debug { "L" } else { "" };
 
-    println!("cargo:rustc-link-search={api_dir_display}/core/lib/{target_arch}");
-    println!("cargo:rustc-link-search={api_dir_display}/studio/lib/{target_arch}");
+    // On macOS the fmod library uses @rpath to find the dylib and the following doesn't work:
+    // println!("cargo:rustc-link-args='-rpath {api_dir_display}/core/lib'");
+    // Therefore, as workaround, copy the libraries to OUT_DIR before the build.
+    // Note: you will probably have to run `xattr -d com.apple.quarantine` on all the `.dylib`s
+    // in the fmod installation folder.
+    #[cfg(target_os = "macos")]
+    {
+        let corelib = format!("libfmod{debug_char}.dylib");
+        fs::copy(
+            api_dir.join("core").join("lib").join(&corelib),
+            out_dir.join(&corelib),
+        )
+        .expect("failed to copy core lib");
 
-    #[cfg(target_os = "linux")]
+        let studiolib = format!("libfmodstudio{debug_char}.dylib");
+        fs::copy(
+            api_dir.join("studio").join("lib").join(&studiolib),
+            out_dir.join(&studiolib),
+        )
+        .expect("failed to copy studio lib");
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        println!("cargo:rustc-link-search={api_dir_display}/core/lib/{target_arch}");
+        println!("cargo:rustc-link-search={api_dir_display}/studio/lib/{target_arch}");
+    }
+    #[cfg(target_os = "macos")]
+    {
+        println!("cargo:rustc-link-search={api_dir_display}/core/lib");
+        println!("cargo:rustc-link-search={api_dir_display}/studio/lib");
+    }
+
+    #[cfg(not(windows))]
     {
         println!("cargo:rustc-link-lib=fmod{debug_char}");
         println!("cargo:rustc-link-lib=fmodstudio{debug_char}");
     }
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     {
         println!("cargo:rustc-link-lib=fmod{debug_char}_vc");
         println!("cargo:rustc-link-lib=fmodstudio{debug_char}_vc");
     }
 
     let bindings = bindgen.generate().expect("failed to generate bindings");
-    let out_path = PathBuf::from(std::env::var_os("OUT_DIR").unwrap()).join("bindings.rs");
+    let out_path = out_dir.join("bindings.rs");
 
     bindings
         .write_to_file(out_path)
         .expect("failed to write bindings");
 
-    let docs_path = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap())
-        .join("docs/documentation.rs");
+    let docs_path = docs_dir.join("documentation.rs");
 
     bindings
         .write_to_file(docs_path)
-        .expect("failed to write bindings");
+        .expect("failed to write docs");
 
     println!("cargo:rerun-if-changed=\"src/channel_control.cpp\"");
     println!("cargo:rerun-if-changed=\"src/channel_control.h\"");
